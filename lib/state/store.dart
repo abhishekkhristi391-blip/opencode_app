@@ -437,6 +437,34 @@ class OcStore extends ChangeNotifier {
     if (parts.isEmpty) return;
     clearAttachments();
 
+    // Optimistically add user message for instant feedback
+    final userMsgId = 'local-${DateTime.now().millisecondsSinceEpoch}';
+    final userMsg = Message(
+      id: userMsgId,
+      sessionId: sid,
+      role: 'user',
+      parentId: '',
+      agent: agent,
+      providerId: providerId,
+      modelId: modelId,
+      created: DateTime.now().millisecondsSinceEpoch,
+      cost: 0,
+      tokens: Tokens(0, 0, 0, 0, 0),
+      finishReason: '',
+      summaryText: '',
+      summary: false,
+      raw: {'optimistic': true},
+    );
+    final userParts = parts.where((p) => p['type'] == 'text' || p['type'] == 'file').map((p) {
+      if (p['type'] == 'text') {
+        return Part.fromJson({'id': 'part-${userMsgId}', 'messageID': userMsgId, 'sessionID': sid, 'type': 'text', 'text': p['text']});
+      } else {
+        return Part.fromJson({'id': 'part-${userMsgId}-${p['filename']}', 'messageID': userMsgId, 'sessionID': sid, 'type': 'file', 'filename': p['filename'], 'mime': p['mime'], 'url': p['url']});
+      }
+    }).toList();
+    messages.add(ChatMessage(userMsg, userParts));
+    notifyListeners();
+
     sessionError = null;
     await _sendParts(sid, parts);
   }
@@ -871,6 +899,15 @@ class OcStore extends ChangeNotifier {
     if (existing != null) {
       existing.info = info;
     } else {
+      // Check if this is a server-echoed user message replacing an optimistic one
+      if (info.role == 'user' && !info.raw.containsKey('optimistic')) {
+        final optimisticIdx = messages.indexWhere((m) => m.info.raw['optimistic'] == true && m.info.role == 'user');
+        if (optimisticIdx >= 0) {
+          messages[optimisticIdx] = ChatMessage(info, const []);
+          notifyListeners();
+          return;
+        }
+      }
       messages.add(ChatMessage(info, const []));
     }
     notifyListeners();
@@ -880,25 +917,33 @@ class OcStore extends ChangeNotifier {
     if (!_isCurrent(part.sessionId)) return;
     var msg = _messageById(part.messageId);
     if (msg == null) {
-      // The part arrived before its message header; synthesise a placeholder.
-      final info = Message(
-        id: part.messageId,
-        sessionId: part.sessionId,
-        role: part.type == 'text' && part.messageId.isEmpty ? 'user' : 'assistant',
-        parentId: '',
-        agent: agent,
-        providerId: providerId,
-        modelId: modelId,
-        created: DateTime.now().millisecondsSinceEpoch,
-        cost: 0,
-        tokens: Tokens(0, 0, 0, 0, 0),
-        finishReason: '',
-        summaryText: '',
-        summary: false,
-        raw: const {},
-      );
-      msg = ChatMessage(info, const []);
-      messages.add(msg);
+      // Check if the message was an optimistic one that got replaced
+      final optimisticMsg = messages.firstWhereOrNull((m) => m.info.raw['optimistic'] == true && m.info.role == 'user');
+      if (optimisticMsg != null && part.messageId.startsWith('local-')) {
+        // Map the optimistic message ID to the real one
+        // This is a heuristic - the server might send parts for the real message ID
+        msg = optimisticMsg;
+      } else {
+        // The part arrived before its message header; synthesise a placeholder.
+        final info = Message(
+          id: part.messageId,
+          sessionId: part.sessionId,
+          role: part.type == 'text' && part.messageId.isEmpty ? 'user' : 'assistant',
+          parentId: '',
+          agent: agent,
+          providerId: providerId,
+          modelId: modelId,
+          created: DateTime.now().millisecondsSinceEpoch,
+          cost: 0,
+          tokens: Tokens(0, 0, 0, 0, 0),
+          finishReason: '',
+          summaryText: '',
+          summary: false,
+          raw: const {},
+        );
+        msg = ChatMessage(info, const []);
+        messages.add(msg);
+      }
     }
     final i = msg.parts.indexWhere((p) => p.id == part.id);
     if (i >= 0) {
@@ -917,8 +962,12 @@ class OcStore extends ChangeNotifier {
       final p = m.parts[i];
       final raw = Map<String, dynamic>.from(p.raw);
       raw[field] = '${asStr(raw[field])}$delta';
-      m.parts[i] = Part.fromJson(raw);
-      notifyListeners();
+      // Only replace if the part actually changed meaningfully
+      final newPart = Part.fromJson(raw);
+      if (newPart != p) {
+        m.parts[i] = newPart;
+        notifyListeners();
+      }
       return;
     }
   }

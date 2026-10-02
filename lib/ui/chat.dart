@@ -40,8 +40,12 @@ class _ChatPageState extends State<ChatPage> {
       final near = scroll.position.pixels >= scroll.position.maxScrollExtent - 220;
       if (near || last == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (scroll.hasClients) {
-            scroll.jumpTo(scroll.position.maxScrollExtent);
+          if (scroll.hasClients && mounted) {
+            scroll.animateTo(
+              scroll.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+            );
           }
         });
       }
@@ -52,9 +56,14 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
 
-    if (store.messages.length != _lastCount) {
+    // Only autoscroll when NEW messages are added, not when existing ones update
+    if (store.messages.length > _lastCount) {
       _lastCount = store.messages.length;
-      _autoscroll(store.messages.isEmpty ? null : store.messages.last);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _autoscroll(store.messages.last);
+      });
+    } else if (store.messages.length < _lastCount) {
+      _lastCount = store.messages.length;
     }
 
     return Column(
@@ -1176,3 +1185,4 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
     };
   }
 }
+                                            
