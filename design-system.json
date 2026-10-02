@@ -1,0 +1,411 @@
+{
+  "meta": {
+    "name": "Playful Soft-UI Mobile Design System",
+    "version": "1.0.0",
+    "platform": "mobile (iOS/Android), portrait",
+    "base_viewport": { "width": 390, "height": 844, "unit": "px" },
+    "purpose": "Context for AI code generation. Replicate the visual language, not the specific content of the source screenshots."
+  },
+
+  "style": {
+    "summary": "Friendly, playful, consumer-fintech/lifestyle mobile UI. Soft pastel gradients, oversized rounded corners, white floating cards on a pale lavender-grey canvas, bold black display type, 3D/emoji-style characters and mascots as hero art, and high-contrast pill CTAs.",
+    "keywords": ["playful", "bubbly", "soft", "pastel", "rounded", "friendly", "gamified", "airy", "high-contrast CTA", "illustration-led"],
+    "mood": "optimistic, approachable, delightful, low-stress",
+    "density": "medium-low; generous whitespace inside cards, tight grouping between related rows",
+    "depth_model": "flat surfaces with very soft, diffuse shadows; depth comes from card layering and gradient hero areas, never harsh borders",
+    "shape_language": "squircles and pills everywhere; no sharp corners",
+    "illustration_style": [
+      "3D-rendered or claymation-like avatars/characters with glossy pastel materials",
+      "Flat blobby mascots with simple dot eyes and smile, thick black or saturated yellow/pink/blue fills",
+      "Emoji/memoji-style circular avatars",
+      "Sticker-like decorative sparkles (4-point stars) in pastel colors scattered near hero elements",
+      "Oversized bold lettering used as a graphic banner behind characters (partially cropped)"
+    ],
+    "overall_composition": "Cards in a vertical feed. Each screen = optional gradient hero/header + one or more white rounded cards + one dominant CTA."
+  },
+
+  "color": {
+    "approach": "Neutral white/near-white surfaces + black text + one or two saturated accent hues per screen + pastel gradients for heroes and highlights.",
+    "neutrals": {
+      "canvas": "#F0F0F7",
+      "surface": "#FFFFFF",
+      "surface_subtle": "#F6F6FA",
+      "surface_muted": "#EFEFF5",
+      "border_hairline": "#ECECF2",
+      "divider": "#F0F0F4",
+      "text_primary": "#0D0D12",
+      "text_secondary": "#6B6B7B",
+      "text_tertiary": "#A0A0B0",
+      "text_inverse": "#FFFFFF"
+    },
+    "brand_accents": {
+      "purple": { "base": "#8B5CF6", "soft": "#C7B8F5", "tint": "#EDE7FD", "use": "charts, banners, icons, highlights, active states" },
+      "orange": { "base": "#FF8A1F", "deep": "#F97316", "tint": "#FFF1E3", "use": "primary action buttons, toggles ON, selected radio/check" },
+      "pink": { "base": "#F472B6", "hot": "#E879F9", "tint": "#FCE7F3", "use": "gradient CTAs, card art, hero accents" },
+      "yellow": { "base": "#FFD23F", "soft": "#FFE48A", "tint": "#FFF7D6", "use": "mascots, celebratory backgrounds" },
+      "blue": { "base": "#4C9AFF", "sky": "#BFE3FF", "tint": "#E6F2FF", "use": "sky gradients, info icons, stat chips" },
+      "green": { "base": "#34C759", "tint": "#E4F8E8", "use": "success status, online dots, positive deltas" },
+      "red": { "base": "#EF4444", "tint": "#FEE8E8", "use": "negative deltas, due-soon dates, alerts" }
+    },
+    "semantic": {
+      "primary_cta_solid": "#0D0D12",
+      "primary_cta_alt": "#FF8A1F",
+      "success": "#34C759",
+      "danger": "#EF4444",
+      "warning": "#FFB020",
+      "info": "#4C9AFF",
+      "toggle_on": "#FF8A1F",
+      "toggle_off": "#D9D9E3"
+    },
+    "gradients": {
+      "hero_sky": "linear-gradient(180deg, #BFE3FF 0%, #E9F3FF 60%, #FFFFFF 100%)",
+      "hero_pastel_blend": "linear-gradient(135deg, #FFD6E8 0%, #E1D4FF 50%, #C9F0FF 100%)",
+      "hero_mint_to_cream": "linear-gradient(180deg, #E5F7D8 0%, #FFF6D9 100%)",
+      "hero_purple": "linear-gradient(180deg, #C9B5FF 0%, #A78BFA 100%)",
+      "hero_warm_cream": "linear-gradient(180deg, #FFF3C9 0%, #FFFFFF 100%)",
+      "cta_sunset": "linear-gradient(90deg, #FF9A5A 0%, #FF6FA8 60%, #E879F9 100%)",
+      "cta_orange_soft": "linear-gradient(180deg, #FFA033 0%, #FF8A1F 100%)",
+      "card_visual_pink": "linear-gradient(135deg, #F9A8E8 0%, #E879F9 100%)",
+      "progress_warm": "linear-gradient(90deg, #FFB84D 0%, #FFD58A 100%)",
+      "meter_multi": "linear-gradient(90deg, #FF9A5A 0%, #FFD23F 35%, #7EE0A8 70%, #8B5CF6 100%)",
+      "text_gradient_number": "linear-gradient(90deg, #8B5CF6 0%, #F472B6 100%)"
+    },
+    "rules": [
+      "Keep >=90% of UI area neutral (white/off-white); accents are for focal points only.",
+      "Pick ONE dominant hero hue per screen and echo it in small accents (icons, chart line, chips).",
+      "Tinted backgrounds for chips/icons use the accent's 'tint' with the accent's 'base' as icon/text color.",
+      "Gradients are always soft and low-contrast except on CTAs and rare highlight numbers."
+    ]
+  },
+
+  "typography": {
+    "font_family": {
+      "primary": "'Plus Jakarta Sans', 'Poppins', 'Inter', -apple-system, system-ui, sans-serif",
+      "display": "'Plus Jakarta Sans' or a heavy rounded geometric grotesk (weight 800), tight tracking",
+      "mono_numeric": "tabular-nums on primary font for prices and balances"
+    },
+    "scale": {
+      "display_xl": { "size": 32, "weight": 800, "line_height": 1.05, "letter_spacing": "-0.03em", "use": "hero headlines, section titles on hero art (e.g. big 'Collection', 'Share the vibe')" },
+      "display_amount": { "size": 36, "weight": 700, "line_height": 1.1, "letter_spacing": "-0.02em", "use": "big currency/amount display, may use gradient text" },
+      "h1": { "size": 24, "weight": 700, "line_height": 1.2, "letter_spacing": "-0.02em" },
+      "h2": { "size": 20, "weight": 700, "line_height": 1.25, "letter_spacing": "-0.01em", "use": "card headings, balance values" },
+      "h3": { "size": 16, "weight": 600, "line_height": 1.3, "use": "card titles, list row titles" },
+      "body": { "size": 14, "weight": 500, "line_height": 1.4 },
+      "body_strong": { "size": 14, "weight": 600, "line_height": 1.4 },
+      "caption": { "size": 12, "weight": 500, "line_height": 1.35, "color": "text_secondary" },
+      "micro": { "size": 10, "weight": 500, "line_height": 1.3, "color": "text_tertiary", "use": "sub-labels under list rows, helper text" },
+      "button": { "size": 15, "weight": 700, "line_height": 1, "letter_spacing": "0" }
+    },
+    "rules": [
+      "Headlines are bold/black and left- or center-aligned depending on hero context; center-align for celebratory or empty-state modals.",
+      "Secondary text is a mid-grey, 1 to 2 steps smaller than primary.",
+      "Prices/amounts right-aligned in lists; title + tiny subtitle stacked on the left.",
+      "Use sentence case, short phrases. Avoid all-caps except tiny section labels."
+    ]
+  },
+
+  "spacing": {
+    "base_unit": 4,
+    "scale": [4, 8, 12, 16, 20, 24, 32, 40],
+    "screen_padding_x": 16,
+    "card_padding": 16,
+    "card_padding_large": 20,
+    "gap_between_cards": 12,
+    "gap_between_list_rows": 8,
+    "gap_icon_text": 12,
+    "gap_grid_tiles": 12,
+    "section_vertical_gap": 20,
+    "cta_bottom_margin": 24
+  },
+
+  "radius": {
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 20,
+    "xl": 28,
+    "card": 24,
+    "phone_frame_modal": 32,
+    "app_icon": 16,
+    "pill": 9999,
+    "avatar": "50%"
+  },
+
+  "elevation": {
+    "none": "none",
+    "card": "0 4px 20px rgba(20, 20, 50, 0.06)",
+    "card_hover": "0 8px 28px rgba(20, 20, 50, 0.10)",
+    "floating_cta": "0 10px 24px rgba(0, 0, 0, 0.18)",
+    "colored_cta_glow": "0 8px 20px rgba(255, 111, 168, 0.35)",
+    "sheet": "0 -8px 40px rgba(20, 20, 50, 0.10)",
+    "rules": "Shadows are large-blur, very low opacity, slightly purple-tinted. Prefer shadow over borders. Inner cells within a card use a subtle fill (#F6F6FA) instead of a shadow."
+  },
+
+  "borders": {
+    "default": "none",
+    "hairline": "1px solid #ECECF2",
+    "selected": "1.5px solid #FF8A1F",
+    "note": "Most separation comes from fill contrast and whitespace, not outlines."
+  },
+
+  "iconography": {
+    "style": "rounded, friendly, filled or duotone; 20 to 24px glyphs; consistent 1.75 to 2px stroke if outline",
+    "app_icon_tile": {
+      "size": 52,
+      "radius": 16,
+      "fill": "saturated pastel (purple, green, lime, pink, orange, yellow)",
+      "glyph": "white or dark glyph centered, 24px",
+      "grid": "4 columns, 12px gap"
+    },
+    "chip_icon": { "size": 28, "radius": 10, "bg": "accent tint", "glyph_color": "accent base" },
+    "circular_action": { "size": 44, "radius": "50%", "bg": "#F0F0F7", "glyph_color": "text_primary", "label_below": "caption 12/500" },
+    "brand_logo_tiles": "40px rounded squares (radius 12) holding third-party logos"
+  },
+
+  "imagery": {
+    "avatars": {
+      "sizes": [24, 32, 40, 48, 64],
+      "style": "emoji/memoji or 3D character busts on pastel circular backgrounds",
+      "stacked_group": "overlapping circles with -8px margin and 2px white ring",
+      "status_dot": "10px circle, green/yellow, bottom-right, 2px white ring"
+    },
+    "hero_art": [
+      "Large character illustrations that overlap or break out of the card boundary",
+      "Cropped giant display lettering as decorative backdrop",
+      "Cloud shapes, sparkles, floating stickers around a central avatar",
+      "Stack of rotated, overlapping illustrated cards (carousel peek) with pastel gradients"
+    ],
+    "decoration": "4-point sparkles, small hearts, music notes, swirls in 12 to 24px, placed asymmetrically, low opacity or pastel"
+  },
+
+  "layout": {
+    "grid": "single-column feed; occasional 2-col stat grid (gap 12) and 4-col icon grid",
+    "alignment": "content left-aligned in cards; modals/celebratory states centered",
+    "screen_anatomy": [
+      "Optional status/top area with small circular utility buttons (close, back, more) at 28 to 32px, grey fill",
+      "Hero zone: gradient or illustration, 160 to 260px tall, bleeds to screen edges with rounded bottom/top corners",
+      "Content zone: stacked white cards overlapping the hero by 16 to 24px",
+      "Primary CTA: full-width pill, 52 to 56px tall, near bottom of card/sheet"
+    ],
+    "modal_sheet": {
+      "presentation": "rounded-top sheet or phone-frame card with 32px radius, small grab handle or circular close button top-right",
+      "close_button": "28px circle, light grey fill, x glyph",
+      "content_alignment": "center"
+    },
+    "safe_areas": "respect device notch/home indicator; bottom padding >= 24px"
+  },
+
+  "components": {
+    "card": {
+      "bg": "surface",
+      "radius": 24,
+      "padding": 16,
+      "shadow": "card",
+      "variants": {
+        "default": "white on canvas",
+        "tinted": "pastel gradient background with white inner cells at 70% opacity",
+        "hero": "gradient fill + illustration overflow"
+      }
+    },
+    "inner_cell": {
+      "bg": "#F6F6FA",
+      "radius": 16,
+      "padding": "12px 14px",
+      "use": "stat tiles, list rows inside a larger white card"
+    },
+    "button": {
+      "primary_black": { "bg": "#0D0D12", "color": "#FFFFFF", "height": 56, "radius": 9999, "font": "button", "width": "100%", "extra": "optional leading '+' icon" },
+      "primary_orange": { "bg": "cta_orange_soft", "color": "#FFFFFF", "height": 48, "radius": 14, "font": "button", "shadow": "none" },
+      "primary_gradient": { "bg": "cta_sunset", "color": "#FFFFFF", "height": 52, "radius": 9999, "shadow": "colored_cta_glow" },
+      "secondary_pill": { "bg": "#F0F0F7", "color": "#0D0D12", "height": 40, "radius": 9999, "icon": "leading 16 to 18px glyph" },
+      "ghost_outline": { "bg": "#FFFFFF", "border": "hairline", "height": 36, "radius": 9999, "font": "caption 600" },
+      "small_inline": { "height": 32, "radius": 10, "padding_x": 14, "font": "caption 700", "use": "Start, Details" },
+      "states": { "pressed": "scale(0.97) + 8% darken", "disabled": "40% opacity" }
+    },
+    "segmented_control": {
+      "container": { "bg": "#F0F0F7", "radius": 9999, "padding": 4 },
+      "item": { "height": 36, "radius": 9999, "font": "caption 600", "inactive_color": "text_secondary" },
+      "active": { "bg": "#FFFFFF", "shadow": "0 2px 8px rgba(0,0,0,0.06)", "color": "text_primary" },
+      "variant_tabs_pills": "row of pills; active = black fill + white text, inactive = light grey fill + grey text"
+    },
+    "list_row": {
+      "height": "56 to 64",
+      "structure": "[leading icon/logo 40px] [title body_strong + subtitle micro stacked] [trailing value / ring / toggle / button]",
+      "container": "inner_cell or plain row with 1px divider",
+      "trailing_value": "body_strong, right-aligned; secondary line (cycle/frequency) in micro grey; due-soon date in red"
+    },
+    "progress": {
+      "bar": { "height": 10, "radius": 9999, "track": "#FFF1D6", "fill": "progress_warm" },
+      "ring": { "size": 28, "stroke": 4, "track": "#FFE6B8", "fill": "#FFA033", "linecap": "round" },
+      "multi_meter": { "height": 8, "radius": 9999, "fill": "meter_multi" }
+    },
+    "stat_tile": {
+      "layout": "2-column grid; each tile: icon chip + label (caption) on top row, value (body_strong/h3) below",
+      "bg": "#F6F6FA",
+      "radius": 16,
+      "padding": 12
+    },
+    "day_selector": {
+      "layout": "horizontal row of 5 days, each: weekday micro label, date number, mood/emoji status below",
+      "active": "pill with accent fill (#C7F0A8 or brand tint), bolder text",
+      "inactive": "transparent, grey text"
+    },
+    "balance_card": {
+      "layout": "title/amount row + 4-up circular action/category shortcuts with micro badge counts",
+      "badge": "14px circle, red/orange bg, white 9px bold number, top-right of icon"
+    },
+    "toggle": {
+      "size": "44x26",
+      "on": "#FF8A1F",
+      "off": "#D9D9E3",
+      "thumb": "#FFFFFF 22px with soft shadow"
+    },
+    "radio_card_option": {
+      "container": "inner_cell, radius 16, padding 14",
+      "selected": "check circle filled orange (22px) + hairline orange border or tinted bg",
+      "unselected": "empty 22px circle, grey 1.5px stroke",
+      "price": "right-aligned, strikethrough or secondary for unit price"
+    },
+    "feature_row_with_toggle": "icon chip (28px tint) + title body_strong + subtitle micro + trailing toggle",
+    "chart_card": {
+      "type": "smooth line (monotone cubic) with 2.5px stroke, accent purple #8B5CF6, no fill or very faint gradient fill, no gridlines",
+      "tooltip": "small white pill with shadow + 8px dot on the line + vertical dashed guide",
+      "delta_badge": "caption with arrow icon, red for negative / green for positive"
+    },
+    "payment_receipt_card": {
+      "status_row": "label left, success text + check icon right (green)",
+      "detail_rows": "label (body) left, value right; separated by hairline",
+      "avatar_stack": "overlapping circles trailing"
+    },
+    "promo_banner": {
+      "bg": "accent gradient (purple)",
+      "radius": 20,
+      "content": "oversized display text + 3D character cropped at edge",
+      "height": "88 to 120"
+    },
+    "stacked_cards_carousel": "rotated (-8 to +8 deg) overlapping illustrated cards with pastel fills, radius 20, partially cut by screen edge",
+    "credit_style_card": { "bg": "card_visual_pink", "radius": 24, "aspect_ratio": "1.9:1", "content": "logo top-left, masked digits bottom-left, toggle/switch bottom-right, mascot top-right" },
+    "avatar_row_with_amount": "circle avatar 48px with status dot, name body_strong below, amount micro grey",
+    "notification_chip_row": "tinted rounded cell (radius 16) with stacked avatars + 1 to 2 line text + caption"
+  },
+
+  "motion": {
+    "principles": "springy, playful, quick",
+    "durations_ms": { "micro": 120, "base": 220, "emphasis": 360 },
+    "easing": { "standard": "cubic-bezier(0.2, 0.8, 0.2, 1)", "spring": "stiffness 300, damping 22" },
+    "patterns": [
+      "Buttons scale to 0.97 on press",
+      "Sheets slide up with spring overshoot",
+      "Progress rings/bars animate fill on mount",
+      "Mascots/stickers idle bob (+-4px, 3s loop) or pop-in with scale 0.8 to 1",
+      "List rows fade+rise 8px with 40ms stagger"
+    ]
+  },
+
+  "content_patterns": {
+    "tone": "warm, casual, encouraging, short sentences, occasional emoji or sparkle",
+    "headline_style": "2 to 4 punchy words",
+    "support_text": "1 to 2 lines, grey, centered in modals",
+    "cta_labels": "verb-first, 1 to 3 words (e.g. 'Send again', 'Invite friends', 'Start')",
+    "numbers": "formatted with thousands separators and currency symbol; units attached (kcal, ml, steps, hrs)",
+    "dates": "short format; urgent dates colored red"
+  },
+
+  "screen_archetypes": [
+    { "name": "Progress / learning list", "recipe": "Gradient hero with progress pill -> icon grid (4x2 squircles) -> segmented control -> list rows with ring progress and one filled orange 'Start' button" },
+    { "name": "Receipt / transaction detail", "recipe": "Sky gradient hero + centered avatar overlapping card top -> name -> two secondary pill buttons -> big gradient amount -> detail rows -> full-width gradient CTA" },
+    { "name": "Wallet / asset dashboard", "recipe": "Giant display title -> rotated stacked illustrated cards -> 4 circular actions -> asset card with value + delta + smooth purple chart + tooltip -> grey full-width secondary button" },
+    { "name": "Social invite / empty-state modal", "recipe": "White sheet with close button -> two big mascots -> centered display headline + grey subtext -> avatar row -> black pill CTA" },
+    { "name": "Celebration / streak", "recipe": "Warm cream-to-white gradient -> mascot cluster with speech bubbles -> centered headline + subtext -> orange full-width CTA -> notification chip row below" },
+    { "name": "Wellness daily check-in", "recipe": "Mint/cream gradient card -> day selector with moods -> info chip row with avatars -> 2-col stat tile grid" },
+    { "name": "Finance subscriptions", "recipe": "Purple hero with giant lettering + 3D characters -> balance card with 4 shortcuts -> list of subscription rows (logo, name, next charge, price/cycle) -> purple promo banner" },
+    { "name": "Card / transfers", "recipe": "Gradient bank-card visual -> row of 3 pill actions -> recent contacts avatar row with amounts -> category pills + list" },
+    { "name": "Paywall / premium", "recipe": "Soft pastel hero with sticker art -> title + subtitle -> radio pricing cards -> 'what is included' feature rows with toggles" }
+  ],
+
+  "design_tokens_css": {
+    ":root": {
+      "--bg-canvas": "#F0F0F7",
+      "--bg-surface": "#FFFFFF",
+      "--bg-subtle": "#F6F6FA",
+      "--bg-muted": "#EFEFF5",
+      "--text-primary": "#0D0D12",
+      "--text-secondary": "#6B6B7B",
+      "--text-tertiary": "#A0A0B0",
+      "--accent-purple": "#8B5CF6",
+      "--accent-orange": "#FF8A1F",
+      "--accent-pink": "#F472B6",
+      "--accent-yellow": "#FFD23F",
+      "--accent-blue": "#4C9AFF",
+      "--success": "#34C759",
+      "--danger": "#EF4444",
+      "--radius-card": "24px",
+      "--radius-inner": "16px",
+      "--radius-pill": "9999px",
+      "--shadow-card": "0 4px 20px rgba(20,20,50,0.06)",
+      "--space-screen-x": "16px",
+      "--space-card": "16px",
+      "--space-gap": "12px",
+      "--font-sans": "'Plus Jakarta Sans','Poppins','Inter',system-ui,sans-serif"
+    }
+  },
+
+  "tailwind_extend": {
+    "colors": {
+      "canvas": "#F0F0F7",
+      "ink": "#0D0D12",
+      "muted": "#6B6B7B",
+      "subtle": "#F6F6FA",
+      "brand-purple": "#8B5CF6",
+      "brand-orange": "#FF8A1F",
+      "brand-pink": "#F472B6",
+      "brand-yellow": "#FFD23F",
+      "brand-blue": "#4C9AFF"
+    },
+    "borderRadius": { "card": "24px", "inner": "16px", "icon": "16px", "sheet": "32px" },
+    "boxShadow": {
+      "card": "0 4px 20px rgba(20,20,50,0.06)",
+      "cta": "0 10px 24px rgba(0,0,0,0.18)",
+      "cta-glow": "0 8px 20px rgba(255,111,168,0.35)"
+    },
+    "fontFamily": { "sans": ["Plus Jakarta Sans", "Poppins", "Inter", "system-ui", "sans-serif"] }
+  },
+
+  "ai_implementation_guidelines": {
+    "do": [
+      "Use white cards (radius 24) on a #F0F0F7 canvas with soft purple-tinted shadows.",
+      "Make exactly one dominant CTA per screen: full-width pill, black or orange or sunset-gradient.",
+      "Use squircle (radius 16) tinted tiles for icons; pair each with a saturated pastel color.",
+      "Pair a bold, tight-tracked headline with small grey supporting text.",
+      "Use pastel gradient heroes and let illustrations/avatars overlap card edges.",
+      "Use inner cells (#F6F6FA, radius 16) for list rows and stat tiles inside white cards.",
+      "Right-align numeric values; keep subtitles tiny and grey.",
+      "Use round avatars with white rings and small status dots; stack them with negative margin.",
+      "Add subtle springy press/enter animations."
+    ],
+    "dont": [
+      "Do not use sharp corners, heavy borders, or dark/gritty palettes.",
+      "Do not use more than two saturated accent hues on one screen (excluding illustrations).",
+      "Do not use dense tables or small tap targets (<44px).",
+      "Do not use hard drop shadows or pure-black shadows.",
+      "Do not use thin/light font weights for headlines.",
+      "Do not copy the literal text, names, brands, or numbers from reference screenshots; use placeholder content suited to the feature being built."
+    ],
+    "accessibility": [
+      "Minimum tap target 44x44.",
+      "Maintain 4.5:1 text contrast; do not place grey text on saturated gradients (use white or black).",
+      "Do not rely on color alone for status; pair with icon or label.",
+      "Support dynamic type: use rem/sp units and allow wrapping."
+    ],
+    "build_order": [
+      "1. Set tokens (colors, radius, shadow, font).",
+      "2. Build primitives: Card, InnerCell, Button, Pill, Avatar, IconTile, Toggle, Progress.",
+      "3. Compose patterns: ListRow, StatTile, SegmentedControl, DaySelector, BalanceCard, PricingOption.",
+      "4. Assemble screen archetypes with a gradient hero + stacked cards + a single CTA.",
+      "5. Add placeholder illustration slots (aspect-ratio boxes with gradient fills) where hero art/mascots go."
+    ],
+    "illustration_placeholder_guidance": "When no asset exists, render a pastel gradient blob or emoji/avatar circle in the hero slot, plus 2 to 3 sparkle shapes, instead of leaving it empty."
+  },
+
+  "prompt_template_for_cursor": "Build [SCREEN/FEATURE] following the attached design system JSON. Use the tokens exactly, a pale lavender-grey canvas, white 24px-radius cards with soft shadows, bold tight-tracked headlines, tinted squircle icon tiles, inner cells (#F6F6FA, 16px radius) for rows, a pastel gradient hero with overlapping illustration/avatar slot, and ONE full-width pill CTA. Use placeholder content only. Make it responsive for a 390px-wide mobile viewport."
+}
