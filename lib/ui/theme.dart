@@ -145,6 +145,13 @@ class OCTypography {
 
   // Helper to create a TextStyle with a specific color from the base style.
   static TextStyle withColor(TextStyle base, Color color) => base.copyWith(color: color);
+
+  // Extension to allow .withColor() on any TextStyle
+  static TextStyle _withColor(TextStyle style, Color color) => style.copyWith(color: color);
+}
+
+extension _TextStyleExt on TextStyle {
+  TextStyle withColor(Color color) => copyWith(color: color);
 }
 
 /// Light theme derived from dark (for completeness).
