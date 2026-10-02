@@ -13,7 +13,10 @@ class ChatMessage {
   Message info;
   List<Part> parts;
   String? errorText;
-  ChatMessage(this.info, this.parts, {this.errorText});
+
+  // FIX: always copy into a *growable* list. Passing `const []` used to make
+  // parts.add() throw, so streamed parts never showed up.
+  ChatMessage(this.info, List<Part> parts, {this.errorText}) : parts = List<Part>.of(parts);
 
   bool get streaming => info.finishReason.isEmpty && info.role == 'assistant' && errorText == null;
 }
@@ -84,6 +87,29 @@ class OcStore extends ChangeNotifier {
   List<NamedStatus> formatters = [];
 
   List<PendingAttachment> attachments = [];
+
+  // =====================================================================
+  // throttled notify (FIX: streaming used to rebuild the UI on every token)
+  // =====================================================================
+
+  Timer? _notifyTimer;
+
+  /// Coalesces many rapid updates (stream deltas etc.) into ~16 rebuilds/sec.
+  void _scheduleNotify() {
+    if (_disposed || _notifyTimer != null) return;
+    _notifyTimer = Timer(const Duration(milliseconds: 60), () {
+      _notifyTimer = null;
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  Timer? _todoTimer;
+  void _debouncedTodos() {
+    _todoTimer?.cancel();
+    _todoTimer = Timer(const Duration(milliseconds: 600), () {
+      if (!_disposed) unawaited(refreshTodos());
+    });
+  }
 
   // =====================================================================
   // boot
@@ -169,10 +195,26 @@ class OcStore extends ChangeNotifier {
         notifyListeners();
         if (v && !_disposed) {
           unawaited(loadPending());
+          // Re-sync the open chat: events missed while disconnected are gone.
+          final id = current?.id;
+          if (id != null && !messagesLoading) unawaited(_resyncMessages(id));
         }
       },
     );
     _stream!.start();
+  }
+
+  Future<void> _resyncMessages(String id) async {
+    try {
+      final fresh = (await api.messages(id))
+          .map((e) => ChatMessage(e.info, e.parts))
+          .where((m) => !m.info.summary)
+          .toList();
+      if (current?.id == id) {
+        messages = fresh;
+        notifyListeners();
+      }
+    } catch (_) {/* ignore */}
   }
 
   Future<void> refreshServerInfo() async {
@@ -284,7 +326,10 @@ class OcStore extends ChangeNotifier {
       final st = asMap(await api.sessionStatus())[id];
       busy = st != null && asStr(asMap(st)['type']) == 'busy';
       busyStatus = busy ? asStr(asMap(st)['message'], 'busy') : '';
-      await Future.wait([refreshTodos(), refreshDiff()]);
+      if (busy) _startBusyTimer();
+      // Todos / diff are secondary: don't block the chat on them.
+      unawaited(refreshTodos());
+      unawaited(refreshDiff());
     } on ApiException catch (e) {
       sessionError = e.message;
     }
@@ -469,15 +514,29 @@ class OcStore extends ChangeNotifier {
     await _sendParts(sid, parts);
   }
 
+  // ---- busy watchdog -------------------------------------------------
+  // FIX: the old 5-minute one-shot timer was never reset, so any long agent
+  // run showed a fake "timeout". Now it only fires after 5 min of *silence*.
   Timer? _busyTimer;
+  DateTime _lastActivity = DateTime.now();
+
+  void _touchActivity() => _lastActivity = DateTime.now();
 
   void _startBusyTimer() {
-    _busyTimer?.cancel();
-    _busyTimer = Timer(const Duration(minutes: 5), () {
-      if (busy) {
+    _touchActivity();
+    if (_busyTimer?.isActive ?? false) return;
+    _busyTimer = Timer.periodic(const Duration(seconds: 30), (t) {
+      if (_disposed || !busy) {
+        t.cancel();
+        _busyTimer = null;
+        return;
+      }
+      if (DateTime.now().difference(_lastActivity) > const Duration(minutes: 5)) {
+        t.cancel();
+        _busyTimer = null;
         busy = false;
         busyStatus = '';
-        sessionError = 'Server response timeout (5 min). Check server logs or try again.';
+        sessionError = 'Server se 5 min tak koi activity nahi aayi. Server logs check karo ya dobara try karo.';
         notifyListeners();
       }
     });
@@ -493,6 +552,11 @@ class OcStore extends ChangeNotifier {
       _toast('Pehle model choose karo');
       return;
     }
+    // Instant feedback: show "working" right away, don't wait for the server.
+    busy = true;
+    busyStatus = '';
+    _startBusyTimer();
+    notifyListeners();
     try {
       await api.promptAsync(
         sid,
@@ -502,8 +566,9 @@ class OcStore extends ChangeNotifier {
         parts: parts,
         tools: toolMap,
       );
-      _startBusyTimer();
     } on ApiException catch (e) {
+      _clearBusyTimer();
+      busy = false;
       sessionError = e.message;
       notifyListeners();
     }
@@ -761,16 +826,28 @@ class OcStore extends ChangeNotifier {
 
   void handleEvent(OcEvent e) {
     if (_disposed) return;
+    // FIX: one malformed event must never kill the handler / stream.
+    try {
+      _handleEvent(e);
+    } catch (err, st) {
+      if (kDebugMode) debugPrint('handleEvent(${e.type}) failed: $err\n$st');
+    }
+  }
+
+  void _handleEvent(OcEvent e) {
     final p = e.properties;
 
     switch (e.type) {
       case 'message.updated':
+        _touchActivity();
         _upsertMessage(Message.fromJson(asMap(p['info'])));
         break;
       case 'message.part.updated':
+        _touchActivity();
         _upsertPart(Part.fromJson(asMap(p['part'])));
         break;
       case 'message.part.delta':
+        _touchActivity();
         _applyDelta(asStr(p['partID']), asStr(p['field']), asStr(p['delta']));
         break;
       case 'message.part.removed':
@@ -787,7 +864,7 @@ class OcStore extends ChangeNotifier {
           busy = t == 'busy';
           busyStatus = busy ? asStr(st['message'], 'busy') : '';
           if (wasBusy && !busy) _clearBusyTimer();
-          if (!wasBusy && busy) _startBusyTimer();
+          if (busy) _startBusyTimer();
           notifyListeners();
         }
         break;
@@ -813,14 +890,14 @@ class OcStore extends ChangeNotifier {
         }
         break;
       case 'session.updated':
-        _upsertSession(Session.fromJson(asMap(p['info'])));
-        break;
       case 'session.created':
         _upsertSession(Session.fromJson(asMap(p['info'])));
         break;
       case 'session.deleted':
-        sessions.removeWhere((s) => s.id == asStr(p['sessionID'], asStr(p['info'] != null ? asMap(p['info'])['id'] : '')));
-        if (current?.id == asStr(p['info'] != null ? asMap(p['info'])['id'] : '')) {
+        final info = p['info'];
+        final delId = asStr(p['sessionID'], info != null ? asStr(asMap(info)['id']) : '');
+        sessions.removeWhere((s) => s.id == delId);
+        if (current?.id == delId) {
           current = null;
           messages = [];
         }
@@ -864,16 +941,15 @@ class OcStore extends ChangeNotifier {
         notifyListeners();
         break;
       case 'todo.updated':
-      case 'lsp.updated':
-      case 'file.edited':
-      case 'mcp.tools.changed':
-      case 'installation.updated':
-        if (!_disposed) unawaited(refreshTodos());
+        // FIX: debounced. Used to fire an HTTP call + rebuild on every event.
+        _debouncedTodos();
         break;
       case 'server.connected':
         online = true;
         notifyListeners();
         break;
+      // file.edited / lsp.updated / mcp.tools.changed / installation.updated:
+      // no need to refetch todos for these any more.
     }
   }
 
@@ -884,72 +960,66 @@ class OcStore extends ChangeNotifier {
     return msg.isEmpty ? (name.isEmpty ? 'Unknown error' : name) : msg;
   }
 
-  bool _isCurrent(String sid) => sid.isEmpty || current == null || current!.id == sid;
+  // FIX: with no open session, events from other sessions no longer leak into
+  // the current message list.
+  bool _isCurrent(String sid) => current != null && (sid.isEmpty || current!.id == sid);
 
   ChatMessage? _messageById(String id) {
-    for (final m in messages) {
-      if (m.info.id == id) return m;
+    // Newest messages are at the end, and streaming targets them: search backwards.
+    for (var i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].info.id == id) return messages[i];
     }
     return null;
   }
 
+  int _optimisticIndex() =>
+      messages.indexWhere((m) => m.info.raw['optimistic'] == true && m.info.role == 'user');
+
   void _upsertMessage(Message info) {
     if (!_isCurrent(info.sessionId)) return;
     final existing = _messageById(info.id);
+    final isRealUser = info.role == 'user' && info.raw['optimistic'] != true;
+
     if (existing != null) {
       existing.info = info;
-    } else {
-      // Check if this is a server-echoed user message replacing an optimistic one
-      if (info.role == 'user' && !info.raw.containsKey('optimistic')) {
-        final optimisticIdx = messages.indexWhere((m) => m.info.raw['optimistic'] == true && m.info.role == 'user');
-        if (optimisticIdx >= 0) {
-          messages[optimisticIdx] = ChatMessage(info, const []);
-          notifyListeners();
-          return;
-        }
+      // Part events can arrive before the header; drop the stale local bubble.
+      if (isRealUser) {
+        final oi = _optimisticIndex();
+        if (oi >= 0) messages.removeAt(oi);
       }
-      messages.add(ChatMessage(info, const []));
+    } else if (isRealUser && _optimisticIndex() >= 0) {
+      // Server echo of the message we showed optimistically: swap in place.
+      messages[_optimisticIndex()] = ChatMessage(info, <Part>[]);
+    } else {
+      messages.add(ChatMessage(info, <Part>[]));
     }
-    notifyListeners();
+    _scheduleNotify();
   }
 
   void _upsertPart(Part part) {
     if (!_isCurrent(part.sessionId)) return;
     var msg = _messageById(part.messageId);
     if (msg == null) {
-      // Check if the message was an optimistic one that got replaced
-      ChatMessage? optimisticMsg;
-      for (final m in messages) {
-        if (m.info.raw['optimistic'] == true && m.info.role == 'user') {
-          optimisticMsg = m;
-          break;
-        }
-      }
-      if (optimisticMsg != null && part.messageId.startsWith('local-')) {
-        // Map the optimistic message ID to the real one
-        // This is a heuristic - the server might send parts for the real message ID
-        msg = optimisticMsg;
-      } else {
-        // The part arrived before its message header; synthesise a placeholder.
-        final info = Message(
-          id: part.messageId,
-          sessionId: part.sessionId,
-          role: part.type == 'text' && part.messageId.isEmpty ? 'user' : 'assistant',
-          parentId: '',
-          agent: agent,
-          providerId: providerId,
-          modelId: modelId,
-          created: DateTime.now().millisecondsSinceEpoch,
-          cost: 0,
-          tokens: Tokens(0, 0, 0, 0, 0),
-          finishReason: '',
-          summaryText: '',
-          summary: false,
-          raw: const {},
-        );
-        msg = ChatMessage(info, const []);
-        messages.add(msg);
-      }
+      // The part arrived before its message header; synthesise a placeholder.
+      // message.updated will fill in the real info (role etc.) right after.
+      final info = Message(
+        id: part.messageId,
+        sessionId: part.sessionId,
+        role: 'assistant',
+        parentId: '',
+        agent: agent,
+        providerId: providerId,
+        modelId: modelId,
+        created: DateTime.now().millisecondsSinceEpoch,
+        cost: 0,
+        tokens: Tokens(0, 0, 0, 0, 0),
+        finishReason: '',
+        summaryText: '',
+        summary: false,
+        raw: const {},
+      );
+      msg = ChatMessage(info, <Part>[]);
+      messages.add(msg);
     }
     final i = msg.parts.indexWhere((p) => p.id == part.id);
     if (i >= 0) {
@@ -957,24 +1027,22 @@ class OcStore extends ChangeNotifier {
     } else {
       msg.parts.add(part);
     }
-    notifyListeners();
+    _scheduleNotify();
   }
 
   void _applyDelta(String partId, String field, String delta) {
-    if (delta.isEmpty) return;
-    for (final m in messages) {
-      final i = m.parts.indexWhere((p) => p.id == partId);
-      if (i < 0) continue;
-      final p = m.parts[i];
-      final raw = Map<String, dynamic>.from(p.raw);
-      raw[field] = '${asStr(raw[field])}$delta';
-      // Only replace if the part actually changed meaningfully
-      final newPart = Part.fromJson(raw);
-      if (newPart != p) {
-        m.parts[i] = newPart;
-        notifyListeners();
+    if (delta.isEmpty || partId.isEmpty) return;
+    // Search newest message first: deltas always belong to the live message.
+    for (var mi = messages.length - 1; mi >= 0; mi--) {
+      final m = messages[mi];
+      for (var i = m.parts.length - 1; i >= 0; i--) {
+        if (m.parts[i].id != partId) continue;
+        final raw = Map<String, dynamic>.from(m.parts[i].raw);
+        raw[field] = '${asStr(raw[field])}$delta';
+        m.parts[i] = Part.fromJson(raw);
+        _scheduleNotify(); // FIX: was notifyListeners() on every single token
+        return;
       }
-      return;
     }
   }
 
@@ -983,13 +1051,13 @@ class OcStore extends ChangeNotifier {
     for (final m in messages) {
       m.parts.removeWhere((p) => p.id == partId);
     }
-    notifyListeners();
+    _scheduleNotify();
   }
 
   void _removeMessage(String sid, String messageId) {
     if (!_isCurrent(sid)) return;
     messages.removeWhere((m) => m.info.id == messageId);
-    notifyListeners();
+    _scheduleNotify();
   }
 
   void _upsertSession(Session s) {
@@ -1001,7 +1069,7 @@ class OcStore extends ChangeNotifier {
     }
     sessions.sort((a, b) => b.updated.compareTo(a.updated));
     if (current?.id == s.id) current = s;
-    notifyListeners();
+    _scheduleNotify();
   }
 
   // =====================================================================
@@ -1014,10 +1082,17 @@ class OcStore extends ChangeNotifier {
     return t;
   }
 
+  /// Call this on app resume to reconnect the SSE stream if needed.
+  void reconnectStream() {
+    _stream?.reconnect();
+  }
+
   @override
   void dispose() {
     _disposed = true;
     _clearBusyTimer();
+    _notifyTimer?.cancel();
+    _todoTimer?.cancel();
     _stream?.stop();
     api.close();
     super.dispose();

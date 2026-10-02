@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import 'markdown.dart';
@@ -18,7 +19,7 @@ class PartTile extends StatelessWidget {
             ? const SizedBox.shrink()
             : Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Markdown(part.text, base: Theme.of(context).textTheme.bodyMedium),
+                child: Markdown(part.text, base: Theme.of(context).textTheme.bodyMedium, onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
               ),
         'reasoning' => _Collapsible(
             icon: Icons.psychology_alt_outlined,
@@ -218,22 +219,31 @@ class _InputBlock extends StatelessWidget {
   }
 }
 
-class _OutputBlock extends StatelessWidget {
+class _OutputBlock extends StatefulWidget {
   final String text;
   final bool isError;
-  const _OutputBlock({required this.text, required this.isError});
+  const _OutputBlock({required this.text, required this.isError, super.key});
+
+  @override
+  State<_OutputBlock> createState() => _OutputBlockState();
+}
+
+class _OutputBlockState extends State<_OutputBlock> {
+  static const _maxLines = 40;
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final maxLines = 40;
-    final truncated = text.split('\n').length > maxLines;
-    final shown = truncated ? text.split('\n').take(maxLines).join('\n') : text;
+    final lines = widget.text.split('\n');
+    final truncated = lines.length > _maxLines;
+    final shown = _expanded || !truncated ? widget.text : lines.take(_maxLines).join('\n');
+
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
-        color: isError ? cs.errorContainer.withValues(alpha: 0.4) : cs.surfaceContainerHighest,
+        color: widget.isError ? cs.errorContainer.withValues(alpha: 0.4) : cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(7),
       ),
       child: Column(
@@ -246,14 +256,23 @@ class _OutputBlock extends StatelessWidget {
                   fontFamily: 'monospace',
                   fontSize: 11.5,
                   height: 1.45,
-                  color: isError ? cs.onErrorContainer : cs.onSurface,
+                  color: widget.isError ? cs.onErrorContainer : cs.onSurface,
                 )),
           ),
           if (truncated)
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Text('... ${text.length} chars',
-                  style: TextStyle(fontSize: 10.5, color: cs.outline)),
+              child: Row(
+                children: [
+                  Text('... ${widget.text.length} chars (${lines.length} lines)',
+                      style: TextStyle(fontSize: 10.5, color: cs.outline)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => setState(() => _expanded = !_expanded),
+                    child: Text(_expanded ? 'Show less' : 'Show more'),
+                  ),
+                ],
+              ),
             ),
           Align(
             alignment: Alignment.centerRight,
@@ -261,7 +280,7 @@ class _OutputBlock extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               iconSize: 15,
               icon: const Icon(Icons.copy, size: 15),
-              onPressed: () => Clipboard.setData(ClipboardData(text: text)),
+              onPressed: () => Clipboard.setData(ClipboardData(text: widget.text)),
             ),
           ),
         ],
@@ -379,36 +398,36 @@ class DiffText extends StatelessWidget {
       constraints: const BoxConstraints(maxHeight: 420),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: SingleChildScrollView(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final l in lines)
-                Container(
-                  width: double.infinity,
+        scrollDirection: Axis.horizontal,
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: lines.length,
+          itemBuilder: (_, i) {
+            final l = lines[i];
+            return Container(
+              width: double.infinity,
+              color: l.startsWith('+')
+                  ? add.withValues(alpha: 0.12)
+                  : l.startsWith('-')
+                      ? del.withValues(alpha: 0.12)
+                      : null,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+              child: Text(
+                l.isEmpty ? ' ' : l,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11.5,
+                  height: 1.4,
                   color: l.startsWith('+')
-                      ? add.withValues(alpha: 0.12)
+                      ? add
                       : l.startsWith('-')
-                          ? del.withValues(alpha: 0.12)
-                          : null,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
-                  child: Text(
-                    l.isEmpty ? ' ' : l,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 11.5,
-                      height: 1.4,
-                      color: l.startsWith('+')
-                          ? add
-                          : l.startsWith('-')
-                              ? del
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                          ? del
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-            ],
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

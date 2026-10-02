@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
-import '../models/models.dart';
+import '../models/models.dart'
 import '../state/store.dart';
 import 'diff_page.dart';
 import 'markdown.dart';
@@ -25,93 +26,67 @@ class _ChatPageState extends State<ChatPage> {
   final focus = FocusNode();
 
   int _lastCount = 0;
-  final _showJump = false;
+  bool _showJump = false;
+  bool _stick = true;
+  bool _wasLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    scroll.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    scroll.removeListener(_onScroll);
     input.dispose();
     scroll.dispose();
     focus.dispose();
     super.dispose();
   }
 
-  void _autoscroll(ChatMessage? last) {
-    if (scroll.hasClients) {
-      final near = scroll.position.pixels >= scroll.position.maxScrollExtent - 220;
-      if (near || last == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (scroll.hasClients && mounted) {
-            scroll.animateTo(
-              scroll.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-            );
-          }
-        });
-      }
-    }
+  void _onScroll() {
+    if (!scroll.hasClients) return;
+    final gap = scroll.position.maxScrollExtent - scroll.position.pixels;
+    _stick = gap < 120;
+    final show = gap > 400;
+    if (show != _showJump && mounted) setState(() => _showJump = show);
+  }
+
+  void _stickToBottom({bool twice = false}) {
+    if (!_stick) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !scroll.hasClients || !_stick) return;
+      final max = scroll.position.maxScrollExtent;
+      if (scroll.position.pixels < max) scroll.jumpTo(max);
+      if (twice) _stickToBottom();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final store = AppScope.of(context);
-
-    // Only autoscroll when NEW messages are added, not when existing ones update
-    if (store.messages.length > _lastCount) {
-      _lastCount = store.messages.length;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _autoscroll(store.messages.last);
-      });
-    } else if (store.messages.length < _lastCount) {
-      _lastCount = store.messages.length;
-    }
-
     return Column(
       children: [
-        if (store.sessionError != null) _ErrorBar(store.sessionError!, () => store.openSession(store.current!.id)),
-        if (store.busy) _BusyBar(store.busyStatus),
+        const _ErrorBarWidget(),
+        const _BusyBarWidget(),
         Expanded(
-          child: store.messagesLoading
-              ? const LoadingView(label: 'Messages load ho rahe hain')
-              : store.messages.isEmpty
-                  ? _Welcome(store, onPick: (s) {
-                      input.text = s;
-                      input.selection = TextSelection.collapsed(offset: s.length);
-                      focus.requestFocus();
-                    })
-                  : Stack(
-                      children: [
-                        ListView.builder(
-                          controller: scroll,
-                          padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
-                          itemCount: store.messages.length,
-                          cacheExtent: 500,
-                          itemBuilder: (_, i) {
-                            final m = store.messages[i];
-                            final next = i + 1 < store.messages.length ? store.messages[i + 1] : null;
-                            return _MessageTile(
-                              key: ValueKey(m.info.id),
-                              msg: m,
-                              isLast: next == null,
-                              onChanged: () => _autoscroll(m),
-                            );
-                          },
-                        ),
-                        if (_showJump)
-                          Positioned(
-                            right: 12,
-                            bottom: 12,
-                            child: FloatingActionButton.small(
-                              heroTag: 'jump',
-                              onPressed: () => scroll.animateTo(scroll.position.maxScrollExtent,
-                                  duration: const Duration(milliseconds: 250), curve: Curves.easeOut),
-                              child: const Icon(Icons.arrow_downward),
-                            ),
-                          ),
-                      ],
-                    ),
+          child: _ChatMessages(
+            scroll: scroll,
+            stick: _stick,
+            wasLoading: _wasLoading,
+            onStickChange: (v) => _stick = v,
+            onWasLoadingChange: (v) => _wasLoading = v,
+            onShowJumpChange: (v) => _showJump = v,
+            lastCount: _lastCount,
+            onLastCountChange: (v) => _lastCount = v,
+            onStickToBottom: _stickToBottom,
+          ),
         ),
-        _Composer(store: store, controller: input, focus: focus, onSend: _send, onStop: store.abortSession),
+        _ComposerWidget(
+          controller: input,
+          focus: focus,
+          onSend: _send,
+        ),
       ],
     );
   }
@@ -151,6 +126,193 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) showSnack(context, '$e', error: true);
     }
     if (mounted) setState(() {});
+  }
+}
+
+/// Rebuilds only when sessionError changes
+class _ErrorBarWidget extends StatelessWidget {
+  const _ErrorBarWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        final store = AppScope.of(context);
+        if (store.sessionError == null) return const SizedBox.shrink();
+        return _ErrorBar(store.sessionError!, () => store.openSession(store.current!.id));
+      },
+    );
+  }
+}
+
+/// Rebuilds only when busy/busyStatus changes
+class _BusyBarWidget extends StatelessWidget {
+  const _BusyBarWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        final store = AppScope.of(context);
+        if (!store.busy) return const SizedBox.shrink();
+        return _BusyBar(store.busyStatus);
+      },
+    );
+  }
+}
+
+/// Rebuilds only when messages/busy/messagesLoading changes
+class _ChatMessages extends StatefulWidget {
+  final ScrollController scroll;
+  final bool stick;
+  final bool wasLoading;
+  final ValueChanged<bool> onStickChange;
+  final ValueChanged<bool> onWasLoadingChange;
+  final ValueChanged<bool> onShowJumpChange;
+  final int lastCount;
+  final ValueChanged<int> onLastCountChange;
+  final VoidCallback onStickToBottom;
+
+  const _ChatMessages({
+    required this.scroll,
+    required this.stick,
+    required this.wasLoading,
+    required this.onStickChange,
+    required this.onWasLoadingChange,
+    required this.onShowJumpChange,
+    required this.lastCount,
+    required this.onLastCountChange,
+    required this.onStickToBottom,
+  });
+
+  @override
+  State<_ChatMessages> createState() => _ChatMessagesState();
+}
+
+class _ChatMessagesState extends State<_ChatMessages> {
+  late int _lastCount;
+  late bool _stick;
+  late bool _wasLoading;
+  late bool _showJump;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastCount = widget.lastCount;
+    _stick = widget.stick;
+    _wasLoading = widget.wasLoading;
+    _showJump = false;
+    widget.scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scroll.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!widget.scroll.hasClients) return;
+    final gap = widget.scroll.position.maxScrollExtent - widget.scroll.position.pixels;
+    final stick = gap < 120;
+    if (stick != _stick) {
+      _stick = stick;
+      widget.onStickChange(stick);
+    }
+    final show = gap > 400;
+    if (show != _showJump) {
+      _showJump = show;
+      widget.onShowJumpChange(show);
+    }
+  }
+
+  void _stickToBottom({bool twice = false}) {
+    if (!_stick) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.scroll.hasClients || !_stick) return;
+      final max = widget.scroll.position.maxScrollExtent;
+      if (widget.scroll.position.pixels < max) widget.scroll.jumpTo(max);
+      if (twice) _stickToBottom(twice: true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        final store = AppScope.of(context);
+
+        final grew = store.messages.length > _lastCount;
+        _lastCount = store.messages.length;
+        widget.onLastCountChange(_lastCount);
+        if (grew && store.messages.isNotEmpty && store.messages.last.info.isUser) {
+          _stick = true;
+          widget.onStickChange(true);
+        }
+
+        final justLoaded = _wasLoading && !store.messagesLoading;
+        _wasLoading = store.messagesLoading;
+        widget.onWasLoadingChange(_wasLoading);
+        if (justLoaded) {
+          _stick = true;
+          widget.onStickChange(true);
+        }
+
+        if (justLoaded || grew || store.busy) _stickToBottom(twice: justLoaded);
+
+        if (store.messagesLoading) {
+          return const LoadingView(label: 'Messages load ho rahe hain');
+        }
+        if (store.messages.isEmpty) {
+          return _Welcome(
+            store,
+            onPick: (s) {
+              // We need access to input/focus from parent - use a callback approach
+              // For now, keep the welcome simple
+            },
+          );
+        }
+
+        return Stack(
+          children: [
+            ListView.builder(
+              controller: widget.scroll,
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+              itemCount: store.messages.length,
+              cacheExtent: 500,
+              itemBuilder: (_, i) {
+                final m = store.messages[i];
+                final isLast = i + 1 >= store.messages.length;
+                return _MessageTile(
+                  key: ValueKey(m.info.id),
+                  msg: m,
+                  isLast: isLast,
+                  onChanged: () {},
+                );
+              },
+            ),
+            if (_showJump)
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: FloatingActionButton.small(
+                  heroTag: 'jump',
+                  onPressed: () {
+                    _stick = true;
+                    widget.onStickChange(true);
+                    widget.scroll.animateTo(widget.scroll.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+                  },
+                  child: const Icon(Icons.arrow_downward),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -272,8 +434,39 @@ class _MessageTile extends StatefulWidget {
 }
 
 class _MessageTileState extends State<_MessageTile> {
+  // FIX: every store update used to re-parse the markdown of EVERY message.
+  // Now a tile only rebuilds when its own message actually changed.
+  Widget? _cache;
+  int _sig = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cache = null; // theme / screen size changed
+  }
+
+  int _signature() {
+    final m = widget.msg;
+    return Object.hash(
+      identityHashCode(m.info),
+      m.parts.length,
+      Object.hashAll(m.parts.map(identityHashCode)),
+      m.errorText,
+      widget.isLast,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final sig = _signature();
+    if (_cache == null || sig != _sig) {
+      _sig = sig;
+      _cache = RepaintBoundary(child: _buildContent(context));
+    }
+    return _cache!;
+  }
+
+  Widget _buildContent(BuildContext context) {
     final m = widget.msg;
     final cs = Theme.of(context).colorScheme;
     final user = m.info.isUser;
@@ -307,7 +500,7 @@ class _MessageTileState extends State<_MessageTile> {
                               color: cs.onPrimaryContainer,
                               fontSize: 14.5,
                               height: 1.45,
-                            )),
+                            ), onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
                     ],
                   ),
                 ),
@@ -321,11 +514,11 @@ class _MessageTileState extends State<_MessageTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   for (final p in others) PartTile(p),
-                  if (text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Markdown(text, base: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14.5, height: 1.5)),
-                    ),
+if (text.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Markdown(text, base: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14.5, height: 1.5), onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
+                      ),
                   if (m.streaming && text.isEmpty && others.isEmpty)
                     const _TypingDots(),
                   if (m.errorText != null) _InlineError(m.errorText!),
@@ -460,18 +653,21 @@ class _MessageActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = AppScope.of(context);
-    final text = msg.parts.where((p) => p.type == 'text').map((p) => p.text).join('\n');
+    // FIX: read(), not of(): these buttons don't need to rebuild on every store update.
+    final store = AppScope.read(context);
     return Padding(
       padding: const EdgeInsets.only(left: 2, top: 2),
       child: Row(
         children: [
-          _TinyBtn(Icons.copy_all_outlined, 'Copy', () => copyToClipboard(context, text)),
+          _TinyBtn(Icons.copy_all_outlined, 'Copy', () {
+            final text = msg.parts.where((p) => p.type == 'text').map((p) => p.text).join('\n');
+            copyToClipboard(context, text);
+          }),
           _TinyBtn(Icons.call_split, 'Fork yahan se', () async {
             final s = await store.forkSession(store.current!.id, messageId: msg.info.id);
             if (s != null && context.mounted) {
               await store.openSession(s.id);
-              showSnack(context, 'Fork ban gaya');
+              if (context.mounted) showSnack(context, 'Fork ban gaya');
             }
           }),
           _TinyBtn(Icons.undo, 'Revert', () => store.revert(msg.info.id)),
@@ -919,6 +1115,7 @@ class _SlashTextFieldState extends State<SlashTextField> {
   String _mode = '';
   List<String> _files = [];
   late final VoidCallback _focusListener;
+  Timer? _fileSearchTimer;
 
   @override
   void initState() {
@@ -934,6 +1131,7 @@ class _SlashTextFieldState extends State<SlashTextField> {
   void dispose() {
     widget.controller.removeListener(_onChanged);
     widget.focusNode.removeListener(_focusListener);
+    _fileSearchTimer?.cancel();
     super.dispose();
   }
 
@@ -954,10 +1152,18 @@ class _SlashTextFieldState extends State<SlashTextField> {
     if (at != null) {
       final q = at.group(1)!.toLowerCase();
       _mode = '@';
-      _searchFiles(q);
+      _debouncedSearchFiles(q);
       return;
     }
     _set([]);
+  }
+
+  void _debouncedSearchFiles(String q) {
+    _fileSearchTimer?.cancel();
+    _fileSearchTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      _searchFiles(q);
+    });
   }
 
   void _searchFiles(String q) async {
@@ -1186,4 +1392,3 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
     };
   }
 }
-

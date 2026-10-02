@@ -1,21 +1,32 @@
 // Compact markdown renderer tuned for agent output: inline styles, fenced
 // code blocks, headings, lists, blockquotes and tables.
+//
+// Perf fixes vs. the old version:
+//  * inline parser was O(n * tokens * 8): every token re-ran all 8 regexes
+//    over the whole rest of the string and built a span for EVERY match.
+//    Now each rule is searched lazily and only the winning match builds a span.
+//  * block regexes are hoisted to static finals (they were re-created per line)
+//  * ONE SelectionArea per Markdown instead of one per paragraph / list row
+//  * small LRU cache of parsed blocks (scrolling tiles back in = no re-parse)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Markdown extends StatelessWidget {
   final String text;
   final TextStyle? base;
   final bool selectable;
-  const Markdown(this.text, {super.key, this.base, this.selectable = true});
+  final void Function(String url)? onLink;
+  const Markdown(this.text, {super.key, this.base, this.selectable = true, this.onLink});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final style = base ?? theme.textTheme.bodyMedium!;
-    final blocks = _parse(text);
+    final blocks = _parseCached(text);
     if (blocks.isEmpty) return const SizedBox.shrink();
-    return Column(
+    final col = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < blocks.length; i++)
@@ -25,6 +36,7 @@ class Markdown extends StatelessWidget {
           ),
       ],
     );
+    return selectable ? SelectionArea(child: col) : col;
   }
 
   Widget _buildBlock(BuildContext context, _Block b, TextStyle style) {
@@ -36,7 +48,7 @@ class Markdown extends StatelessWidget {
         final s = sizes[(b.level - 1).clamp(0, 5)];
         return Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 2),
-          child: _inline(context, b.lines.join(' '),
+          child: _rich(context, b.lines.join(' '),
               style.copyWith(fontSize: s, fontWeight: FontWeight.w700, height: 1.3)),
         );
       case _Kind.quote:
@@ -45,7 +57,7 @@ class Markdown extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 3)),
           ),
-          child: _inline(context, b.lines.join('\n'), style.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          child: _rich(context, b.lines.join('\n'), style.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         );
       case _Kind.bullet:
       case _Kind.number:
@@ -66,18 +78,17 @@ class Markdown extends StatelessWidget {
       spans.addAll(_inlineSpans(context, b.lines[i], style));
       if (i != b.lines.length - 1) spans.add(const TextSpan(text: '\n'));
     }
-    return _wrap(context, Text.rich(TextSpan(children: spans, style: style)));
+    return Text.rich(TextSpan(children: spans, style: style));
   }
 
   Widget _listBlock(BuildContext context, _Block b, TextStyle style) {
     final ordered = b.kind == _Kind.number;
+    final markerColor = Theme.of(context).colorScheme.outline;
     Widget row(int i) {
       final line = b.lines[i];
-      final isItem = ordered || RegExp(r'^\s*([-*+]|\d+[.)])\s+').hasMatch(line);
-      final marker = isItem
-          ? (ordered ? '${i + 1}.' : _bulletMarker(line))
-          : '';
-      final text = isItem ? line.replaceFirst(RegExp(r'^\s*([-*+]|\d+[.)])\s+'), '') : line.trimLeft();
+      final isItem = ordered || _listItemRe.hasMatch(line);
+      final marker = isItem ? (ordered ? '${i + 1}.' : _bulletMarker(line)) : '';
+      final text = isItem ? line.replaceFirst(_listItemRe, '') : line.trimLeft();
       return Padding(
         padding: const EdgeInsets.only(left: 4, top: 1, bottom: 1),
         child: Row(
@@ -85,12 +96,9 @@ class Markdown extends StatelessWidget {
           children: [
             SizedBox(
               width: ordered ? 22 : 14,
-              child: Text(
-                marker,
-                style: style.copyWith(color: Theme.of(context).colorScheme.outline),
-              ),
+              child: Text(marker, style: style.copyWith(color: markerColor)),
             ),
-            Expanded(child: _wrap(context, _rich(context, text, style))),
+            Expanded(child: _rich(context, text, style)),
           ],
         ),
       );
@@ -102,16 +110,16 @@ class Markdown extends StatelessWidget {
     );
   }
 
-  static String _bulletMarker(String line) {
-    final m = RegExp(r'^\s*([-*+])').firstMatch(line);
-    return m?.group(1) ?? '•';
-  }
+  static final _bulletRe = RegExp(r'^\s*([-*+])');
+  static String _bulletMarker(String line) => _bulletRe.firstMatch(line)?.group(1) ?? '•';
+
+  static final _tableEdgeRe = RegExp(r'^\s*\||\|\s*$');
 
   Widget _table(BuildContext context, _Block b, TextStyle style) {
     final rows = <List<String>>[];
     for (final l in b.lines) {
-      if (RegExp(r'^\s*\|?[\s:|-]+\|[\s:|-]*$').hasMatch(l)) continue;
-      rows.add(l.replaceAll(RegExp(r'^\s*\||\|\s*$'), '').split('|').map((e) => e.trim()).toList());
+      if (_tableSepRe.hasMatch(l)) continue;
+      rows.add(l.replaceAll(_tableEdgeRe, '').split('|').map((e) => e.trim()).toList());
     }
     if (rows.isEmpty) return const SizedBox.shrink();
     final header = rows.first;
@@ -129,7 +137,7 @@ class Markdown extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: [
-                for (final c in header) Expanded(child: _inline(context, c, style.copyWith(fontWeight: FontWeight.w600))),
+                for (final c in header) Expanded(child: _rich(context, c, style.copyWith(fontWeight: FontWeight.w600))),
               ],
             ),
           ),
@@ -143,7 +151,7 @@ class Markdown extends StatelessWidget {
                   for (var c = 0; c < header.length; c++)
                     Expanded(
                       child: c < body[r].length
-                          ? _inline(context, body[r][c], style)
+                          ? _rich(context, body[r][c], style)
                           : const SizedBox.shrink(),
                     ),
                 ],
@@ -154,80 +162,112 @@ class Markdown extends StatelessWidget {
     );
   }
 
-  Widget _wrap(BuildContext context, Widget child) =>
-      selectable ? SelectionArea(child: child) : child;
-
   Widget _rich(BuildContext context, String text, TextStyle style) =>
       Text.rich(TextSpan(children: _inlineSpans(context, text, style), style: style));
-
-  Widget _inline(BuildContext context, String text, TextStyle style) => _rich(context, text, style);
 
   // ---------------------------------------------------------------------
   // inline parsing
   // ---------------------------------------------------------------------
 
-  static final _code = RegExp(r'`([^`\n]+)`');
-  static final _bold = RegExp(r'\*\*([^*\n]+)\*\*');
-  static final _bold2 = RegExp(r'(?<![_\w])__([^_\n]+)__(?!_)');
-  static final _italic = RegExp(r'(?<![*\w])\*([^*\n]+)\*(?!\*)');
-  static final _italic2 = RegExp(r'(?<![_\w])_([^_\n]+)_(?!_)');
-  static final _strike = RegExp(r'~~([^~\n]+)~~');
-  static final _link = RegExp(r'\[([^\]\n]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)');
-  static final _autoLink = RegExp(r'(?<![(\w])(https?://[^\s<>()\[\]]+)');
+  // Order matters for ties (earlier rule wins): code, link, autolink, bold,
+  // bold2, strike, italic, italic2.
+  static final _rules = <RegExp>[
+    RegExp(r'`([^`\n]+)`'),
+    RegExp(r'\[([^\]\n]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)'),
+    RegExp(r'(?<![(\w])(https?://[^\s<>()\[\]]+)'),
+    RegExp(r'\*\*([^*\n]+)\*\*'),
+    RegExp(r'(?<![_\w])__([^_\n]+)__(?!_)'),
+    RegExp(r'~~([^~\n]+)~~'),
+    RegExp(r'(?<![*\w])\*([^*\n]+)\*(?!\*)'),
+    RegExp(r'(?<![_\w])_([^_\n]+)_(?!_)'),
+  ];
+
+  static final _maybeInlineRe = RegExp(r'[`*_~\[]|https?://');
+
+  static RegExpMatch? _firstFrom(RegExp re, String s, int from) {
+    final it = re.allMatches(s, from).iterator;
+    return it.moveNext() ? it.current : null;
+  }
 
   List<InlineSpan> _inlineSpans(BuildContext context, String src, TextStyle style) {
     final spans = <InlineSpan>[];
-    var rest = src;
+    final n = src.length;
+    if (n == 0) return spans;
 
-    void addPlain(String t) {
-      if (t.isEmpty) return;
-      spans.add(_auto(context, t, style));
+    // Fast path: nothing that could start inline markup.
+    if (!_maybeInlineRe.hasMatch(src)) {
+      spans.add(TextSpan(text: src));
+      return spans;
     }
 
-    while (true) {
-      final candidates = <({int start, int end, InlineSpan? span})>[];
+    final cache = List<RegExpMatch?>.filled(_rules.length, null);
+    final searched = List<bool>.filled(_rules.length, false);
+    var pos = 0;
 
-      void consider(RegExp re, InlineSpan? Function(RegExpMatch) make) {
-        for (final m in re.allMatches(rest)) {
-          candidates.add((start: m.start, end: m.end, span: make(m)));
+    while (pos < n) {
+      var bestRule = -1;
+      RegExpMatch? best;
+      for (var r = 0; r < _rules.length; r++) {
+        var m = cache[r];
+        if (!searched[r] || (m != null && m.start < pos)) {
+          m = _firstFrom(_rules[r], src, pos);
+          cache[r] = m;
+          searched[r] = true;
+        }
+        if (m != null && (best == null || m.start < best.start)) {
+          best = m;
+          bestRule = r;
         }
       }
-
-      consider(_code, (m) => TextSpan(
-            text: m.group(1),
-            style: _codeStyle(context, style),
-          ));
-      consider(_link, (m) => _linkSpan(context, m.group(1)!.isEmpty ? m.group(2)! : m.group(1)!, m.group(2)!, style));
-      consider(_autoLink, (m) => _linkSpan(context, m.group(1)!, m.group(1)!, style));
-      consider(_bold, (m) => TextSpan(text: m.group(1), style: style.copyWith(fontWeight: FontWeight.w700)));
-      consider(_bold2, (m) => TextSpan(text: m.group(1), style: style.copyWith(fontWeight: FontWeight.w700)));
-      consider(_strike, (m) => TextSpan(text: m.group(1), style: style.copyWith(decoration: TextDecoration.lineThrough)));
-      consider(_italic, (m) => TextSpan(text: m.group(1), style: style.copyWith(fontStyle: FontStyle.italic)));
-      consider(_italic2, (m) => TextSpan(text: m.group(1), style: style.copyWith(fontStyle: FontStyle.italic)));
-
-      if (candidates.isEmpty) {
-        addPlain(rest);
-        break;
-      }
-      candidates.sort((a, b) => a.start.compareTo(b.start));
-      final best = candidates.first;
-      addPlain(rest.substring(0, best.start));
-      if (best.span != null) spans.add(best.span!);
-      rest = rest.substring(best.end);
+      if (best == null) break;
+      if (best.start > pos) spans.add(TextSpan(text: src.substring(pos, best.start)));
+      spans.add(_makeSpan(context, bestRule, best, style));
+      pos = best.end;
     }
+    if (pos < n) spans.add(TextSpan(text: src.substring(pos)));
     return spans;
   }
 
-  InlineSpan _auto(BuildContext context, String t, TextStyle style) => TextSpan(text: t);
+  InlineSpan _makeSpan(BuildContext context, int rule, RegExpMatch m, TextStyle style) {
+    switch (rule) {
+      case 0:
+        return TextSpan(text: m.group(1), style: _codeStyle(context, style));
+      case 1:
+        final label = m.group(1)!.isEmpty ? m.group(2)! : m.group(1)!;
+        return _linkSpan(context, label, m.group(2)!, style);
+      case 2:
+        return _linkSpan(context, m.group(1)!, m.group(1)!, style);
+      case 3:
+      case 4:
+        return TextSpan(text: m.group(1), style: style.copyWith(fontWeight: FontWeight.w700));
+      case 5:
+        return TextSpan(text: m.group(1), style: style.copyWith(decoration: TextDecoration.lineThrough));
+      default:
+        return TextSpan(text: m.group(1), style: style.copyWith(fontStyle: FontStyle.italic));
+    }
+  }
 
   InlineSpan _linkSpan(BuildContext context, String label, String url, TextStyle style) {
     final color = Theme.of(context).colorScheme.primary;
+    final recognizer = TapGestureRecognizer()
+      ..onTap = () {
+        if (onLink != null) {
+          onLink!(url);
+        } else {
+          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        }
+      }
+      ..onLongPress = () {
+        Clipboard.setData(ClipboardData(text: url));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Link copy ho gaya'), duration: Duration(seconds: 1)),
+        );
+      };
     return TextSpan(
       text: label,
       style: style.copyWith(color: color, decoration: TextDecoration.underline),
-      recognizer: null,
+      recognizer: recognizer,
       mouseCursor: SystemMouseCursors.click,
-      // Tap handling is wired by the caller through [onLink] if needed.
     );
   }
 
@@ -254,6 +294,31 @@ class _Block {
   _Block(this.kind, this.lines, {this.level = 1, this.lang = ''});
 }
 
+// Hoisted: these used to be constructed again for every single line.
+final _fenceRe = RegExp(r'^\s*(`{3,}|~{3,})\s*([\w+-]*)\s*$');
+final _headingRe = RegExp(r'^\s{0,3}(#{1,6})\s+(.*)$');
+final _hrRe = RegExp(r'^\s{0,3}([-*_])\s*(\1\s*){2,}$');
+final _quoteRe = RegExp(r'^\s{0,3}>');
+final _quoteStripRe = RegExp(r'^\s{0,3}>\s?');
+final _tableSepRe = RegExp(r'^\s*\|?[\s:|-]+\|[\s:|-]*$');
+final _listItemRe = RegExp(r'^\s*([-*+]|\d+[.)])\s+');
+final _orderedItemRe = RegExp(r'^\s*\d+[.)]\s');
+
+// Small LRU cache: re-building a tile (scroll back, theme change) is free.
+final _parseCache = <String, List<_Block>>{};
+
+List<_Block> _parseCached(String src) {
+  final hit = _parseCache.remove(src);
+  if (hit != null) {
+    _parseCache[src] = hit;
+    return hit;
+  }
+  final r = _parse(src);
+  _parseCache[src] = r;
+  if (_parseCache.length > 40) _parseCache.remove(_parseCache.keys.first);
+  return r;
+}
+
 List<_Block> _parse(String src) {
   final lines = src.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
   final out = <_Block>[];
@@ -271,16 +336,17 @@ List<_Block> _parse(String src) {
     final line = lines[i];
 
     // fenced code
-    final fence = RegExp(r'^\s*(`{3,}|~{3,})\s*([\w+-]*)\s*$').firstMatch(line);
+    final fence = _fenceRe.firstMatch(line);
     if (fence != null) {
       flushPara();
       final marker = fence.group(1)![0];
       final len = fence.group(1)!.length;
+      final closeRe = RegExp('^\\s*${RegExp.escape(marker)}{$len,}\\s*\$');
       final body = <String>[];
       i++;
       while (i < lines.length) {
         final c = lines[i];
-        if (RegExp('^\\s*${RegExp.escape(marker)}{$len,}\\s*\$').hasMatch(c)) {
+        if (closeRe.hasMatch(c)) {
           i++;
           break;
         }
@@ -292,7 +358,7 @@ List<_Block> _parse(String src) {
     }
 
     // heading
-    final h = RegExp(r'^\s{0,3}(#{1,6})\s+(.*)$').firstMatch(line);
+    final h = _headingRe.firstMatch(line);
     if (h != null) {
       flushPara();
       out.add(_Block(_Kind.heading, [h.group(2)!], level: h.group(1)!.length));
@@ -301,7 +367,7 @@ List<_Block> _parse(String src) {
     }
 
     // horizontal rule
-    if (RegExp(r'^\s{0,3}([-*_])\s*(\1\s*){2,}$').hasMatch(line)) {
+    if (_hrRe.hasMatch(line)) {
       flushPara();
       out.add(_Block(_Kind.hr, const []));
       i++;
@@ -309,11 +375,11 @@ List<_Block> _parse(String src) {
     }
 
     // blockquote
-    if (RegExp(r'^\s{0,3}>').hasMatch(line)) {
+    if (_quoteRe.hasMatch(line)) {
       flushPara();
       final body = <String>[];
-      while (i < lines.length && RegExp(r'^\s{0,3}>').hasMatch(lines[i])) {
-        body.add(lines[i].replaceFirst(RegExp(r'^\s{0,3}>\s?'), ''));
+      while (i < lines.length && _quoteRe.hasMatch(lines[i])) {
+        body.add(lines[i].replaceFirst(_quoteStripRe, ''));
         i++;
       }
       out.add(_Block(_Kind.quote, body));
@@ -321,7 +387,7 @@ List<_Block> _parse(String src) {
     }
 
     // table
-    if (line.contains('|') && i + 1 < lines.length && RegExp(r'^\s*\|?[\s:|-]+\|[\s:|-]*$').hasMatch(lines[i + 1])) {
+    if (line.contains('|') && i + 1 < lines.length && _tableSepRe.hasMatch(lines[i + 1])) {
       flushPara();
       final body = <String>[];
       while (i < lines.length && lines[i].contains('|')) {
@@ -333,13 +399,13 @@ List<_Block> _parse(String src) {
     }
 
     // lists (a blank line does not break a list)
-    if (RegExp(r'^\s*([-*+]|\d+[.)])\s+').hasMatch(line)) {
+    if (_listItemRe.hasMatch(line)) {
       flushPara();
       final body = <String>[];
-      final ordered = RegExp(r'^\s*\d+[.)]\s').hasMatch(line);
+      final ordered = _orderedItemRe.hasMatch(line);
       while (i < lines.length) {
         final l = lines[i];
-        if (RegExp(r'^\s*([-*+]|\d+[.)])\s+').hasMatch(l)) {
+        if (_listItemRe.hasMatch(l)) {
           body.add(l);
         } else if (l.trim().isEmpty) {
           break;

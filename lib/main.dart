@@ -15,19 +15,33 @@ class OpenCodeApp extends StatefulWidget {
   State<OpenCodeApp> createState() => _OpenCodeAppState();
 }
 
-class _OpenCodeAppState extends State<OpenCodeApp> {
+class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
   final store = OcStore();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     store.boot();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     store.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      store.reconnectStream();
+      // Refresh the open session if any
+      final id = store.current?.id;
+      if (id != null) {
+        unawaited(store.openSession(id));
+      }
+    }
   }
 
   @override

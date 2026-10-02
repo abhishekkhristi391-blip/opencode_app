@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 import '../models/models.dart';
 
@@ -19,6 +22,12 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Runs in a background isolate so big JSON never freezes the UI.
+dynamic _parseBytes(Uint8List b) => jsonDecode(utf8.decode(b, allowMalformed: true));
+
+/// Bodies bigger than this are parsed off the UI thread.
+const _isolateThreshold = 32 * 1024;
+
 /// Thin typed wrapper over the opencode HTTP server.
 class OcClient {
   String baseUrl;
@@ -27,15 +36,18 @@ class OcClient {
 
   OcClient({this.baseUrl = 'http://127.0.0.1:4096', this.username = 'opencode', this.password = ''});
 
-  final _client = http.Client();
+  // Fast connect timeout + keep-alive so repeated calls reuse the socket.
+  final http.Client _client = IOClient(HttpClient()
+    ..connectionTimeout = const Duration(seconds: 10)
+    ..idleTimeout = const Duration(minutes: 2));
 
   String get root => baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
 
   Map<String, String> _headers({bool json = true}) => {
         if (json) 'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (password.isNotEmpty) 'Authorization':
-            'Basic ${base64Encode(utf8.encode('$username:$password'))}',
+        if (password.isNotEmpty)
+          'Authorization': 'Basic ${base64Encode(utf8.encode('$username:$password'))}',
       };
 
   Uri _u(String path, [Map<String, dynamic>? q]) {
@@ -46,23 +58,35 @@ class OcClient {
       if (s.isEmpty) return;
       qs[k] = s;
     });
-    return Uri.parse('$root$path').replace(
-        queryParameters: qs.isEmpty ? null : qs.map((k, v) => MapEntry(k, v)));
+    return Uri.parse('$root$path').replace(queryParameters: qs.isEmpty ? null : qs);
   }
 
   /// Decode a response body, turning opencode's `{name, data}` error envelope
-  /// into an [ApiException] so callers never see raw JSON errors.
-  dynamic _decode(http.Response r) {
-    final text = utf8.decode(r.bodyBytes, allowMalformed: true);
+  /// into an [ApiException]. Large bodies are parsed in a background isolate.
+  Future<dynamic> _decode(http.Response r) async {
+    final bytes = r.bodyBytes;
     dynamic body;
-    if (text.isNotEmpty) {
-      try {
-        body = jsonDecode(text);
-      } catch (_) {
-        body = text;
+    var text = '';
+
+    if (bytes.isNotEmpty) {
+      if (bytes.length > _isolateThreshold && r.statusCode < 400) {
+        try {
+          body = await compute(_parseBytes, bytes);
+        } catch (_) {
+          body = utf8.decode(bytes, allowMalformed: true);
+        }
+      } else {
+        text = utf8.decode(bytes, allowMalformed: true);
+        try {
+          body = jsonDecode(text);
+        } catch (_) {
+          body = text;
+        }
       }
     }
+
     if (r.statusCode >= 400) {
+      if (text.isEmpty && bytes.isNotEmpty) text = utf8.decode(bytes, allowMalformed: true);
       if (body is Map && body['name'] != null && body['data'] != null) {
         throw ApiException(r.statusCode, body['name'].toString(),
             asMap(body['data'])['message']?.toString() ?? text);
@@ -76,7 +100,7 @@ class OcClient {
   Future<dynamic> _send(Future<http.Response> Function() run, Duration timeout) async {
     try {
       final r = await run().timeout(timeout);
-      return _decode(r);
+      return await _decode(r);
     } on ApiException {
       rethrow;
     } on TimeoutException {
@@ -113,6 +137,61 @@ class OcClient {
       timeout ?? const Duration(seconds: 30));
 
   void close() => _client.close();
+
+  // ---------------- live events (SSE) ----------------
+
+  /// Live event stream. Each item is one decoded event: `{type, properties}`.
+  /// Use this for streaming chat instead of polling `messages()`.
+  Stream<Map<String, dynamic>> events({bool global = false}) async* {
+    final req = http.Request('GET', _u(global ? '/global/event' : '/event'));
+    req.headers.addAll({
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      if (password.isNotEmpty)
+        'Authorization': 'Basic ${base64Encode(utf8.encode('$username:$password'))}',
+    });
+
+    http.StreamedResponse resp;
+    try {
+      resp = await _client.send(req).timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      throw ApiException(0, 'Timeout', 'Event stream connect nahi hua');
+    } on SocketException {
+      throw ApiException(0, 'NoConnection', 'Server se connect nahi ho raha.');
+    }
+    if (resp.statusCode >= 400) {
+      throw ApiException(resp.statusCode, 'HTTP ${resp.statusCode}', 'Event stream error ${resp.statusCode}');
+    }
+
+    final buf = StringBuffer();
+    final lines = resp.stream.transform(utf8.decoder).transform(const LineSplitter());
+    await for (final line in lines) {
+      if (line.isEmpty) {
+        if (buf.isEmpty) continue;
+        final raw = buf.toString();
+        buf.clear();
+        try {
+          final j = jsonDecode(raw);
+          if (j is Map) yield asMap(j);
+        } catch (_) {}
+      } else if (line.startsWith('data:')) {
+        if (buf.isNotEmpty) buf.write('\n');
+        buf.write(line.substring(5).trimLeft());
+      }
+    }
+  }
+
+  /// Same as [events] but reconnects automatically if the connection drops.
+  Stream<Map<String, dynamic>> eventsAutoReconnect({bool global = false}) async* {
+    while (true) {
+      try {
+        await for (final e in events(global: global)) {
+          yield e;
+        }
+      } catch (_) {}
+      await Future.delayed(const Duration(seconds: 2));
+    }
+  }
 
   // ---------------- global ----------------
 
@@ -243,7 +322,9 @@ class OcClient {
   // ---------------- messages ----------------
 
   /// Returns a flat list of (message, parts) pairs.
-  Future<List<({Message info, List<Part> parts})>> messages(String id, {int? limit}) async {
+  /// Default [limit] keeps payloads small; pass `limit: null`-style bigger
+  /// value only when you really need full history.
+  Future<List<({Message info, List<Part> parts})>> messages(String id, {int? limit = 60}) async {
     final raw = asList(await get('/session/$id/message', q: {'limit': limit}));
     return raw.map((e) {
       final m = asMap(e);
@@ -262,7 +343,7 @@ class OcClient {
   Future<void> deleteMessage(String id, String messageId) =>
       delete('/session/$id/message/$messageId', timeout: const Duration(minutes: 2));
 
-  /// Fire-and-forget prompt. Progress arrives over the SSE stream.
+  /// Fire-and-forget prompt. Progress arrives over [events].
   Future<void> promptAsync(
     String sessionId, {
     required String providerId,
@@ -281,7 +362,7 @@ class OcClient {
     }, timeout: const Duration(seconds: 60));
   }
 
-  /// Blocking prompt, returns the assistant reply.
+  /// Blocking prompt, returns the assistant reply. Avoid for chat UI: use [promptAsync].
   Future<({Message info, List<Part> parts})> prompt(
     String sessionId, {
     required String providerId,
@@ -481,15 +562,12 @@ class ProviderEntry {
   });
 
   factory ProviderEntry.fromJson(Map<String, dynamic> j) {
-    final ids = <String>[];
     final out = <ModelInfo>[];
     asMap(j['models']).forEach((mid, mv) {
       final m = asMap(mv);
       final merged = {...m, 'providerID': asStr(j['id'])};
       out.add(ModelInfo.fromJson(asStr(j['id']), mid, merged));
-      ids.add(mid);
     });
-    ids.sort();
     return ProviderEntry(
       id: asStr(j['id']),
       name: asStr(j['name'], asStr(j['id'])),

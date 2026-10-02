@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
 import '../models/models.dart';
@@ -130,7 +131,7 @@ class SkillsSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Markdown(s.description, base: Theme.of(context).textTheme.bodySmall),
+                    Markdown(s.description, base: Theme.of(context).textTheme.bodySmall, onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
                     const SizedBox(height: 8),
                     FilledButton.tonalIcon(
                       onPressed: () async {

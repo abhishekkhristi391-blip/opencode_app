@@ -14,62 +14,104 @@ class SessionsPage extends StatefulWidget {
 }
 
 class _SessionsPageState extends State<SessionsPage> {
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: AppScope.read(context).refreshSessions,
+      child: Column(
+        children: [
+          const _SessionsHeader(),
+          const _SessionsList(),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionsHeader extends StatelessWidget {
+  const _SessionsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        final store = AppScope.of(context);
+        final all = store.sessions.where((s) => s.title != OcStore.utilSessionTitle).toList();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text('${all.length} sessions',
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SessionsList extends StatefulWidget {
+  const _SessionsList();
+
+  @override
+  State<_SessionsList> createState() => _SessionsListState();
+}
+
+class _SessionsListState extends State<_SessionsList> {
   bool parentsOnly = true;
 
   @override
   Widget build(BuildContext context) {
-    final store = AppScope.of(context);
-    final all = store.sessions.where((s) => s.title != OcStore.utilSessionTitle).toList();
-    final list = parentsOnly ? all.where((s) => !s.isChild).toList() : all;
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        final store = AppScope.of(context);
+        final all = store.sessions.where((s) => s.title != OcStore.utilSessionTitle).toList();
+        final list = parentsOnly ? all.where((s) => !s.isChild).toList() : all;
 
-    return RefreshIndicator(
-      onRefresh: store.refreshSessions,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text('${all.length} sessions',
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
-                ),
-                SegmentedButton<bool>(
-                  style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                  segments: const [
-                    ButtonSegment(value: true, label: Text('Main'), icon: Icon(Icons.account_tree_outlined, size: 15)),
-                    ButtonSegment(value: false, label: Text('Sab'), icon: Icon(Icons.list, size: 15)),
-                  ],
-                  selected: {parentsOnly},
-                  onSelectionChanged: (s) => setState(() => parentsOnly = s.first),
-                ),
-              ],
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+              child: SegmentedButton<bool>(
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                segments: const [
+                  ButtonSegment(value: true, label: Text('Main'), icon: Icon(Icons.account_tree_outlined, size: 15)),
+                  ButtonSegment(value: false, label: Text('Sab'), icon: Icon(Icons.list, size: 15)),
+                ],
+                selected: {parentsOnly},
+                onSelectionChanged: (s) => setState(() => parentsOnly = s.first),
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: list.isEmpty
-                ? EmptyHint(
-                    icon: Icons.history,
-                    title: 'Koi session nahi',
-                    message: 'Naya chat start karo.',
-                    action: FilledButton.icon(
-                      onPressed: () async {
-                        await store.newSession();
-                        if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatPage()));
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('New chat'),
+            Expanded(
+              child: list.isEmpty
+                  ? EmptyHint(
+                      icon: Icons.history,
+                      title: 'Koi session nahi',
+                      message: 'Naya chat start karo.',
+                      action: FilledButton.icon(
+                        onPressed: () async {
+                          await store.newSession();
+                          if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatPage()));
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('New chat'),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      itemCount: list.length,
+                      itemBuilder: (_, i) => _SessionTile(s: list[i]),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    itemCount: list.length,
-                    itemBuilder: (_, i) => _SessionTile(s: list[i]),
-                  ),
-          ),
-        ],
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -80,7 +122,7 @@ class _SessionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = AppScope.of(context);
+    final store = AppScope.read(context);
     final cs = Theme.of(context).colorScheme;
     final active = store.current?.id == s.id;
 

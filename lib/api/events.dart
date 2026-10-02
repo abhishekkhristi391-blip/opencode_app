@@ -30,6 +30,12 @@ class OcEvent {
 }
 
 /// Long-lived SSE connection to the opencode server with automatic reconnect.
+///
+/// Fixes vs. the old version:
+///  * watchdog: a silently dead socket (wifi switch, phone sleep, Termux
+///    restart) is detected and reconnected instead of hanging forever
+///  * backoff counter resets after a successful connect
+///  * [reconnect] for app-resume, so streaming restarts instantly
 class EventStream {
   final String baseUrl;
   final String username;
@@ -45,12 +51,19 @@ class EventStream {
     this.onStatus,
   });
 
+  /// If nothing (not even a heartbeat) arrives for this long, assume the
+  /// connection is dead and reconnect.
+  static const _staleAfter = Duration(seconds: 75);
+
   StreamSubscription<String>? _sub;
   http.Client? _client;
   Timer? _retry;
+  Timer? _watchdog;
+  DateTime _lastData = DateTime.now();
   bool _stopped = false;
   int _attempt = 0;
   bool _connected = false;
+  int _gen = 0; // guards against callbacks from an old connection
 
   bool get connected => _connected;
 
@@ -61,9 +74,19 @@ class EventStream {
     await _connect();
   }
 
+  /// Drop the current connection and connect again right now (e.g. app resumed).
+  void reconnect() {
+    if (_stopped) return;
+    _attempt = 0;
+    _retry?.cancel();
+    unawaited(_connect());
+  }
+
   Future<void> _connect() async {
     if (_stopped) return;
     await stop(keepStopped: false);
+    if (_stopped) return;
+    final gen = ++_gen;
     _client = http.Client();
 
     final headers = {
@@ -78,56 +101,54 @@ class EventStream {
         ..headers.addAll(headers)
         ..persistentConnection = true;
       final res = await _client!.send(req).timeout(const Duration(seconds: 20));
+      if (gen != _gen || _stopped) return;
 
       if (res.statusCode != 200) {
         throw http.ClientException('HTTP ${res.statusCode}', req.url);
       }
+      _attempt = 0; // FIX: successful connect resets the backoff
+      _lastData = DateTime.now();
       _setConnected(true);
 
-      final buf = StringBuffer();
+      _watchdog = Timer.periodic(const Duration(seconds: 15), (_) {
+        if (gen != _gen) return;
+        if (DateTime.now().difference(_lastData) > _staleAfter) _scheduleRetry();
+      });
+
+      var pending = '';
       _sub = res.stream.transform(utf8.decoder).listen(
         (chunk) {
-          buf.write(chunk);
-          var s = buf.toString();
+          if (gen != _gen) return;
+          _lastData = DateTime.now();
+          pending = (pending + chunk).replaceAll('\r\n', '\n');
+          // SSE frames end at a blank line.
           while (true) {
-            // SSE frames end at a blank line: "\n\n" or "\r\n\r\n".
-            final lf = s.indexOf('\n\n');
-            final crlf = s.indexOf('\r\n\r\n');
-            int idx, skip;
-            if (lf == -1 && crlf == -1) {
-              break;
-            } else if (crlf != -1 && (lf == -1 || crlf < lf)) {
-              idx = crlf;
-              skip = 4;
-            } else {
-              idx = lf;
-              skip = 2;
-            }
-            final frame = s.substring(0, idx);
-            s = s.substring(idx + skip);
+            final idx = pending.indexOf('\n\n');
+            if (idx == -1) break;
+            final frame = pending.substring(0, idx);
+            pending = pending.substring(idx + 2);
             _handleFrame(frame);
           }
-          buf
-            ..clear()
-            ..write(s);
         },
-        onError: (_) => _scheduleRetry(),
-        onDone: _scheduleRetry,
+        onError: (_) {
+          if (gen == _gen) _scheduleRetry();
+        },
+        onDone: () {
+          if (gen == _gen) _scheduleRetry();
+        },
         cancelOnError: true,
       );
     } catch (_) {
-      _scheduleRetry();
+      if (gen == _gen) _scheduleRetry();
     }
   }
 
   void _handleFrame(String frame) {
     if (frame.trim().isEmpty) return;
-    final lines = frame.split(RegExp(r'\r?\n'));
     final data = <String>[];
-    for (final l in lines) {
+    for (final l in frame.split('\n')) {
       if (l.startsWith('data:')) data.add(l.substring(5).trimLeft());
-      // `event:` / `id:` lines carry no payload we need; opencode puts the
-      // event type inside the JSON body.
+      // `event:` / `id:` / `:comment` lines carry no payload we need.
     }
     if (data.isEmpty) return;
     final text = data.join('\n');
@@ -147,6 +168,9 @@ class EventStream {
 
   void _scheduleRetry() {
     if (_stopped) return;
+    _gen++; // invalidate callbacks of the connection being torn down
+    _watchdog?.cancel();
+    _watchdog = null;
     _setConnected(false);
     _sub?.cancel();
     _sub = null;
@@ -162,6 +186,8 @@ class EventStream {
     if (keepStopped) _stopped = true;
     _retry?.cancel();
     _retry = null;
+    _watchdog?.cancel();
+    _watchdog = null;
     await _sub?.cancel();
     _sub = null;
     _client?.close();
