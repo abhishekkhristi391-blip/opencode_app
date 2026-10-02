@@ -81,7 +81,7 @@ class _SessionsList extends StatefulWidget {
 }
 
 class _SessionsListState extends State<_SessionsList> {
-  ValueListenable<bool> get filter => widget.filter;
+  ValueNotifier<bool> get filter => widget.filter as ValueNotifier<bool>;
 
   @override
   Widget build(BuildContext context) {
