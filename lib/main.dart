@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'state/store.dart';
 import 'ui/home.dart';
+import 'ui/theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,45 +53,10 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
         title: 'OpenCode',
         debugShowCheckedModeBanner: false,
         themeMode: ThemeMode.dark,
-        theme: _theme(Brightness.dark),
-        darkTheme: _theme(Brightness.dark),
+        theme: buildDarkTheme(),
+        darkTheme: buildDarkTheme(),
         home: const HomeShell(),
       ),
-    );
-  }
-
-  ThemeData _theme(Brightness b) {
-    final cs = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6C63FF),
-      brightness: b,
-    );
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: cs,
-      scaffoldBackgroundColor: cs.surface,
-      appBarTheme: AppBarTheme(
-        backgroundColor: cs.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        centerTitle: false,
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: cs.surfaceContainerLow,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: cs.surfaceContainerHighest,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      chipTheme: const ChipThemeData(side: BorderSide.none, padding: EdgeInsets.symmetric(horizontal: 6)),
-      dividerTheme: DividerThemeData(color: cs.outlineVariant, thickness: 1, space: 1),
-      listTileTheme: const ListTileThemeData(dense: false, contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 2)),
     );
   }
 }

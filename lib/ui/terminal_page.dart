@@ -126,27 +126,27 @@ class _TerminalPageState extends State<TerminalPage> {
           ),
         ),
         const Divider(height: 1),
-        Expanded(
+Expanded(
           child: Container(
             width: double.infinity,
-            color: const Color(0xFF0B0D12),
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
             child: out.text.isEmpty
                 ? Center(
                     child: Text('Command likho aur Enter dabao.\nShortcut upar diye hain.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: cs.outline.withValues(alpha: 0.7), fontSize: 12.5, height: 1.6)),
+                        style: TextStyle(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.7), fontSize: 12.5, height: 1.6)),
                   )
                 : SingleChildScrollView(
                     controller: scroll,
                     padding: const EdgeInsets.all(12),
                     child: wrap
-                        ? Text(out.text, style: _style)
+                        ? Text(out.text, style: _terminalStyle(context))
                         : SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
-                            child: Text(out.text, style: _style),
+                            child: Text(out.text, style: _terminalStyle(context)),
                           ),
                   ),
-          ),
+        ),
         ),
         if (running)
           const LinearProgressIndicator(minHeight: 2),
@@ -212,11 +212,11 @@ class _TerminalPageState extends State<TerminalPage> {
     );
   }
 
-  static const _style = TextStyle(
+  static TextStyle _terminalStyle(BuildContext context) => TextStyle(
     fontFamily: 'monospace',
-    fontFamilyFallback: ['monospace'],
+    fontFamilyFallback: const ['monospace'],
     fontSize: 12,
     height: 1.45,
-    color: Color(0xFFD6DEEB),
+    color: Theme.of(context).colorScheme.onSurface,
   );
 }
