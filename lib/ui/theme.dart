@@ -149,7 +149,7 @@ class OCGradient {
   static const ctaOrangeSoft = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [orangeBright, orange],
+    colors: [OCColors.orangeBright, OCColors.orange],
   );
   static const cardVisualPink = LinearGradient(
     begin: Alignment.topLeft,

@@ -243,8 +243,6 @@ class _ChatMessagesState extends State<_ChatMessages> {
 
   void _loadOlderMessages(OcStore store) {
     if (!store.hasMoreMessages || store.messagesLoading) return;
-    // Save current scroll position relative to the first item
-    final firstItemOffset = widget.scroll.position.pixels;
     store.loadOlderMessages().then((_) {
       if (mounted) {
         // Restore scroll position by offsetting by the height of new items
@@ -1341,13 +1339,7 @@ class _QuickBar extends StatelessWidget {
                       CheckboxListTile(
                         dense: true,
                         value: store.toolsEnabled.contains(id),
-                        title: Text(
-                          id,
-                          style: const TextStyle(
-                            fontFamily: OCTypography.mono().fontFamily,
-                            fontSize: 12.5,
-                          ),
-                        ),
+                        title: Text(id, style: OCTypography.mono(size: 12.5)),
                         onChanged: (v) {
                           store.toggleTool(id, v ?? false);
                           setSheet(() {});
