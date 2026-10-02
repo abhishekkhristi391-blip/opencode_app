@@ -362,6 +362,10 @@ class OcStore extends ChangeNotifier {
     } on ApiException catch (e) {
       _toast(e.message);
     }
+    _clearBusyTimer();
+    busy = false;
+    busyStatus = '';
+    notifyListeners();
   }
 
   // =====================================================================
@@ -437,6 +441,25 @@ class OcStore extends ChangeNotifier {
     await _sendParts(sid, parts);
   }
 
+  Timer? _busyTimer;
+
+  void _startBusyTimer() {
+    _busyTimer?.cancel();
+    _busyTimer = Timer(const Duration(minutes: 5), () {
+      if (busy) {
+        busy = false;
+        busyStatus = '';
+        sessionError = 'Server response timeout (5 min). Check server logs or try again.';
+        notifyListeners();
+      }
+    });
+  }
+
+  void _clearBusyTimer() {
+    _busyTimer?.cancel();
+    _busyTimer = null;
+  }
+
   Future<void> _sendParts(String sid, List<Map<String, dynamic>> parts) async {
     if (providerId.isEmpty || modelId.isEmpty) {
       _toast('Pehle model choose karo');
@@ -451,6 +474,7 @@ class OcStore extends ChangeNotifier {
         parts: parts,
         tools: toolMap,
       );
+      _startBusyTimer();
     } on ApiException catch (e) {
       sessionError = e.message;
       notifyListeners();
@@ -731,13 +755,17 @@ class OcStore extends ChangeNotifier {
         if (_isCurrent(asStr(p['sessionID']))) {
           final st = asMap(p['status']);
           final t = asStr(st['type']);
+          final wasBusy = busy;
           busy = t == 'busy';
           busyStatus = busy ? asStr(st['message'], 'busy') : '';
+          if (wasBusy && !busy) _clearBusyTimer();
+          if (!wasBusy && busy) _startBusyTimer();
           notifyListeners();
         }
         break;
       case 'session.idle':
         if (_isCurrent(asStr(p['sessionID']))) {
+          _clearBusyTimer();
           busy = false;
           busyStatus = '';
           notifyListeners();
@@ -750,6 +778,7 @@ class OcStore extends ChangeNotifier {
         break;
       case 'session.error':
         if (_isCurrent(asStr(p['sessionID']))) {
+          _clearBusyTimer();
           sessionError = _errorText(asMap(p['error']));
           busy = false;
           notifyListeners();
@@ -933,6 +962,7 @@ class OcStore extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _clearBusyTimer();
     _stream?.stop();
     api.close();
     super.dispose();
