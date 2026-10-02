@@ -54,7 +54,9 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
       child: MaterialApp(
         title: 'OpenCode',
         debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.light,
+        // Follow the OS. The dark palette lives in OCTokens, which every
+        // redesigned widget reads through `context.oc`.
+        themeMode: ThemeMode.system,
         theme: buildLightTheme(),
         darkTheme: buildDarkTheme(),
         home: const HomeShell(),

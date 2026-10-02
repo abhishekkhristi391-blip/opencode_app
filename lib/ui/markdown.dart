@@ -14,6 +14,7 @@ import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'theme.dart';
+import 'line_icons.dart';
 
 class Markdown extends StatelessWidget {
   final String text;
@@ -335,13 +336,17 @@ class Markdown extends StatelessWidget {
     );
   }
 
-  static TextStyle _codeStyle(BuildContext context, TextStyle base) =>
-      base.copyWith(
-        fontFamily: OCTypography.mono(color: null).fontFamily,
-        fontSize: (base.fontSize ?? 14) - 0.5,
-        backgroundColor: OCColors.surfaceMuted,
-        color: Theme.of(context).colorScheme.onSurface,
-      );
+  static TextStyle _codeStyle(BuildContext context, TextStyle base) {
+    // Inline code keeps a light tint so it stays distinguishable from body
+    // text; the dark code *blocks* use OCTokens.code instead.
+    final t = OCTokens.of(context);
+    return base.copyWith(
+      fontFamily: OCTypography.mono(color: null).fontFamily,
+      fontSize: (base.fontSize ?? 14) - 0.5,
+      backgroundColor: t.bg == OCTokens.dark.bg ? t.accSoft : t.accSoft,
+      color: t.ink,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -508,11 +513,13 @@ class _CodeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = OCTokens.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: OCColors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(OCRadius.inner),
+        // Reference `--code`: dark in both themes.
+        color: t.code,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,9 +531,9 @@ class _CodeBlock extends StatelessWidget {
               OCSpace.xs,
               OCSpace.xs,
             ),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: OCColors.borderHairline),
+                bottom: BorderSide(color: t.codeInk.withValues(alpha: 0.18)),
               ),
             ),
             child: Row(
@@ -534,20 +541,14 @@ class _CodeBlock extends StatelessWidget {
                 Expanded(
                   child: Text(
                     lang.isEmpty ? 'code' : lang,
-                    style: OCTypography.mono(
-                      size: 11,
-                      color: OCColors.textTertiary,
-                    ),
+                    style: OCTypography.mono(size: 11, color: t.codeInk),
                   ),
                 ),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   iconSize: 16,
                   tooltip: 'Copy',
-                  icon: const Icon(
-                    Icons.copy_all_outlined,
-                    color: OCColors.textSecondary,
-                  ),
+                  icon: LIcon(LI.copy, size: 16, color: t.codeInk),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: code));
                     ScaffoldMessenger.of(context).showSnackBar(

@@ -82,6 +82,18 @@ class OcStore extends ChangeNotifier {
   String modelId = '';
   String modelQuery = '';
 
+  // ---- display prefs ----
+  /// When true each assistant reply shows its token / cost footer. Persisted.
+  /// Defaults to off; the chat redesign hides tokens behind this flag.
+  bool showTokensInChat = false;
+
+  void setShowTokensInChat(bool v) {
+    if (showTokensInChat == v) return;
+    showTokensInChat = v;
+    unawaited(_persist());
+    notifyListeners();
+  }
+
   // ---- prompts ----
   List<PermissionReq> permissions = [];
   List<QuestionReq> questions = [];
@@ -132,6 +144,7 @@ class OcStore extends ChangeNotifier {
     providerId = _prefs!.getString('provider') ?? '';
     modelId = _prefs!.getString('model') ?? '';
     toolsEnabled.addAll(_prefs!.getStringList('tools') ?? const []);
+    showTokensInChat = _prefs!.getBool('showTokens') ?? false;
     booted = true;
     notifyListeners();
     await connect();
@@ -147,6 +160,7 @@ class OcStore extends ChangeNotifier {
     await p.setString('provider', providerId);
     await p.setString('model', modelId);
     await p.setStringList('tools', toolsEnabled.toList());
+    await p.setBool('showTokens', showTokensInChat);
   }
 
   // =====================================================================

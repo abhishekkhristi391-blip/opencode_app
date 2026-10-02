@@ -63,7 +63,7 @@ class S {
   // navigation
   // ------------------------------------------------------------------
   static const navChat = 'Chat';
-  static const navSessions = 'Sessions';
+  static const navSessions = 'History';
   static const navFiles = 'Files';
   static const navTerminal = 'Terminal';
   static const navMore = 'More';
@@ -155,6 +155,52 @@ class S {
   static const chatSuggestionTests = 'Run the tests and explain failures';
   static const chatSuggestionTodo = 'Find the biggest TODO in the repo';
   static const chatSuggestionPlan = 'Draft a plan for a new feature';
+
+  // Empty-state cards mirror the reference: a title plus a muted subtitle.
+  static const chatSuggestionStructureSub = 'Short tour of the folders';
+  static const chatSuggestionTestsSub = 'And explain any failures';
+  static const chatSuggestionTodoSub = 'Search the whole repo';
+  static const chatSuggestionPlanSub = 'Draft steps before coding';
+
+  // Header.
+  static const headerTasks = 'Tasks';
+  static const headerNewChat = 'New chat';
+  static const headerMore = 'More';
+  static const headerConnected = 'Connected';
+  static const headerOffline = 'Offline';
+
+  // Composer.
+  static const composerModelPill = 'Model and agent';
+  static String composerModelAgent(String model, String agent) =>
+      '$model · $agent';
+  static const composerVoiceTooltip = 'Voice chat';
+  static const composerAttachTooltip = 'Attach a file or image';
+
+  // Tool-call timeline.
+  static const toolOutputShow = 'Show output';
+  static String toolRunning(String name) => 'Running $name';
+  static String toolDone(String name) => '$name finished';
+
+  // More sheet.
+  static const moreSheetTitle = 'Menu';
+  static const moreModel = 'Model';
+  static const moreAgent = 'Agent';
+  static const moreTools = 'Tools';
+  static String moreToolsCount(int n) =>
+      n == 0 ? 'All tools enabled' : '$n enabled';
+  static const moreVoiceChat = 'Voice chat';
+  static const moreChatHistory = 'Chat history';
+  static const moreSettings = 'Settings and token usage';
+  static const moreAbout = 'About';
+  static const moreCommands = 'Commands';
+
+  // Jump-to-latest.
+  static const jumpToLatest = 'Jump to latest';
+
+  // Long-press message menu.
+  static const messageMenuTitle = 'Message';
+  static const messageCopy = 'Copy';
+  static const messageUndo = 'Undo';
 
   static const chipModel = 'Model';
   static const chipPickModel = 'Pick a model';

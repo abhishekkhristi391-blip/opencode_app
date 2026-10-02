@@ -5,10 +5,208 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
+import 'line_icons.dart';
 import 'markdown.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';
+
+/// Reference `.steps`: tool calls collapse into a compact vertical timeline
+/// instead of a stack of cards.
+///
+/// Each step is one 34px line — a status dot on a 2px rail, the tool name in
+/// bold, the summary in monospace with an ellipsis, and a chevron. Tapping a
+/// step expands its output into the dark code block below it. Non-tool parts
+/// (reasoning, patches, subtasks) still render as tiles underneath.
+class ToolTimeline extends StatefulWidget {
+  final List<Part> parts;
+  const ToolTimeline({required this.parts, super.key});
+
+  @override
+  State<ToolTimeline> createState() => _ToolTimelineState();
+}
+
+class _ToolTimelineState extends State<ToolTimeline> {
+  /// Keys of the steps whose output is showing.
+  final Set<String> _open = <String>{};
+
+  @override
+  Widget build(BuildContext context) {
+    final tools = <Part>[];
+    final rest = <Part>[];
+    for (final p in widget.parts) {
+      (p.type == 'tool' ? tools : rest).add(p);
+    }
+    if (tools.isEmpty)
+      return Column(children: [for (final p in rest) PartTile(p)]);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 18),
+          child: Stack(
+            children: [
+              // The rail: a 2px line behind the dots, inset from the top and
+              // bottom so it does not overshoot the first and last step.
+              Positioned(
+                left: 4,
+                top: 10,
+                bottom: 10,
+                width: 2,
+                child: ColoredBox(color: context.oc.line),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [for (final p in tools) _buildStep(p)],
+              ),
+            ],
+          ),
+        ),
+        for (final p in rest) PartTile(p),
+      ],
+    );
+  }
+
+  Widget _buildStep(Part p) {
+    final t = context.oc;
+    final key = '${p.id}:${p.callID}';
+    final open = _open.contains(key);
+    final status = p.status;
+    // Reference `.step.run`: accent while in flight, green once finished,
+    // red on failure, muted outline before it starts.
+    final dotColor = switch (status) {
+      ToolStatus.completed => t.ok,
+      ToolStatus.error => t.err,
+      ToolStatus.running => t.acc,
+      _ => t.mute,
+    };
+
+    final summary = (p.summaryLine.isEmpty ? p.toolName : p.summaryLine)
+        .replaceAll('\n', ' ');
+    final name = p.toolName.isEmpty ? 'tool' : p.toolName;
+    final dur = p.toolEnd > 0 ? fmtDuration(p.toolEnd - p.toolStart) : '';
+    final exit = p.exitCode;
+    final out = p.output.isNotEmpty
+        ? p.output
+        : (p.errorText.isNotEmpty
+              ? p.errorText
+              : p.toolMeta['output']?.toString() ?? '');
+    final hasDetail =
+        out.isNotEmpty ||
+        (p.toolInput.isNotEmpty &&
+            p.toolInput.keys.any(
+              (k) => k != 'command' || p.toolName != 'bash',
+            ));
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 10px dot, 2px ring in the page background so the rail reads as
+        // passing behind it. Centred vertically against the step row.
+        Positioned(
+          left: -18,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: t.bg, width: 2),
+              ),
+            ),
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: hasDetail
+                  ? () => setState(
+                      () => _open.contains(key)
+                          ? _open.remove(key)
+                          : _open.add(key),
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                child: Row(
+                  children: [
+                    // `<b>tool</b>` — bold name, then the summary filling the
+                    // rest of the line and truncating with an ellipsis.
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.body.copyWith(
+                          color: t.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        [
+                          summary,
+                          if (dur.isNotEmpty) dur,
+                          if (exit != null) 'exit $exit',
+                          if (p.truncated) 'truncated',
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.mono(
+                          size: 12,
+                          color: t.mute,
+                        ).copyWith(height: 1.2),
+                      ),
+                    ),
+                    if (hasDetail) ...[
+                      const SizedBox(width: 4),
+                      AnimatedRotation(
+                        turns: open ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 150),
+                        child: LIcon(LI.chevronDown, size: 16, color: t.mute),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (open)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (p.toolInput.isNotEmpty &&
+                        p.toolInput.keys.any(
+                          (k) => k != 'command' || p.toolName != 'bash',
+                        ))
+                      _InputBlock(json: p.toolInput),
+                    if (out.isNotEmpty)
+                      _OutputBlock(
+                        text: out,
+                        isError:
+                            status == ToolStatus.error ||
+                            (exit != null && exit != 0),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
 class PartTile extends StatelessWidget {
   final Part part;
@@ -308,24 +506,20 @@ class _OutputBlockState extends State<_OutputBlock> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final t = context.oc;
     final lines = widget.text.split('\n');
     final truncated = lines.length > _maxLines;
     final shown = _expanded || !truncated
         ? widget.text
         : lines.take(_maxLines).join('\n');
 
+    // Reference `.out`: always the dark code surface, in both themes.
     return Container(
-      margin: const EdgeInsets.fromLTRB(
-        OCSpace.md,
-        OCSpace.sm,
-        OCSpace.md,
-        OCSpace.md,
-      ),
-      padding: const EdgeInsets.all(OCSpace.sm + 2),
+      margin: const EdgeInsets.only(top: 2, bottom: 4),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: widget.isError ? OCColors.redTint : OCColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(OCRadius.inner),
+        color: t.code,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,9 +529,9 @@ class _OutputBlockState extends State<_OutputBlock> {
             child: Text(
               shown,
               style: OCTypography.mono(
-                size: 11.5,
-                color: widget.isError ? OCColors.redInk : cs.onSurface,
-              ),
+                size: 12,
+                color: t.codeInk,
+              ).copyWith(height: 1.5),
             ),
           ),
           if (truncated)
@@ -345,26 +539,31 @@ class _OutputBlockState extends State<_OutputBlock> {
               padding: const EdgeInsets.only(top: 6),
               child: Row(
                 children: [
-                  Text(
-                    '... ${widget.text.length} chars (${lines.length} lines)',
-                    style: OCTypography.micro,
+                  Expanded(
+                    child: Text(
+                      '... ${widget.text.length} chars (${lines.length} lines)',
+                      style: OCTypography.micro.copyWith(color: t.codeInk),
+                    ),
                   ),
-                  const Spacer(),
                   TextButton(
                     onPressed: () => setState(() => _expanded = !_expanded),
-                    child: Text(_expanded ? 'Show less' : 'Show more'),
+                    child: Text(
+                      _expanded ? 'Show less' : 'Show more',
+                      style: TextStyle(color: t.codeInk),
+                    ),
                   ),
                 ],
               ),
             ),
           Align(
             alignment: Alignment.centerRight,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              iconSize: 15,
-              icon: const Icon(Icons.copy, size: 15),
-              onPressed: () =>
-                  Clipboard.setData(ClipboardData(text: widget.text)),
+            child: InkWell(
+              onTap: () => Clipboard.setData(ClipboardData(text: widget.text)),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: LIcon(LI.copy, size: 15, color: t.codeInk),
+              ),
             ),
           ),
         ],

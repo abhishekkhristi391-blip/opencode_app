@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,6 +11,7 @@ import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
 import 'diff_page.dart';
+import 'line_icons.dart';
 import 'markdown.dart';
 import 'models_page.dart';
 import 'parts.dart';
@@ -24,14 +26,45 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
+/// Owns the one and only scroll position of the transcript.
+///
+/// Everything about follow-the-tail lives here instead of being split across
+/// the page and the list, which is what let two independent `_stick` flags
+/// disagree before.
 class _ChatPageState extends State<ChatPage> {
   final input = TextEditingController();
   final scroll = ScrollController();
   final focus = FocusNode();
 
-  int _lastCount = 0;
+  // ---- follow-the-tail state (TASK A) ----
+
+  /// How close to the bottom still counts as "following". The reference
+  /// tolerates a small gap so a token arriving a few pixels after the last
+  /// scroll still keeps the tail in view.
+  static const double _stickSlop = 80;
+
+  /// How far past the slop the user has to be before the jump button appears.
+  /// A little hysteresis keeps it from flickering around the threshold.
+  static const double _jumpThreshold = 220;
+
+  /// True while the user has not scrolled away from the tail.
+  bool _follow = true;
+
+  /// True while a finger is on the list. Auto-scroll must not touch the
+  /// controller at all in this window, otherwise `jumpTo` calls `goIdle()`
+  /// and yanks the drag out from under the user.
+  bool _dragging = false;
+
+  /// Set while [scroll] is being moved programmatically, so the scroll
+  /// listener does not mistake our own jump for the user scrolling away.
+  bool _programmatic = false;
+
+  /// A post-frame auto-scroll is already queued. Guarantees at most one
+  /// scroll adjustment per frame no matter how many tokens land in it.
+  bool _scrollQueued = false;
+
   bool _showJump = false;
-  bool _stick = true;
+  int _lastCount = 0;
   bool _wasLoading = false;
 
   @override
@@ -49,55 +82,173 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
+  double get _gap {
+    if (!scroll.hasClients) return 0;
+    return scroll.position.maxScrollExtent - scroll.position.pixels;
+  }
+
   void _onScroll() {
     if (!scroll.hasClients) return;
-    final gap = scroll.position.maxScrollExtent - scroll.position.pixels;
-    _stick = gap < 120;
-    final show = gap > 400;
+    final show = _gap > _jumpThreshold;
     if (show != _showJump && mounted) setState(() => _showJump = show);
   }
 
-  void _stickToBottom({bool twice = false}) {
-    if (!_stick) return;
+  /// Distinguishes a drag from a fling/keyboard/programmatic scroll.
+  ///
+  /// Returns true when the notification came from a real pointer.
+  bool _handleNotification(ScrollNotification n) {
+    if (_programmatic) return false;
+    if (n is ScrollStartNotification && n.dragDetails != null) {
+      _dragging = true;
+      // Grabbing the list always releases follow mode; the user is taking
+      // over. They can re-arm it by scrolling back or tapping the button.
+      if (_follow) _setFollow(false);
+    } else if (n is ScrollUpdateNotification && n.dragDetails != null) {
+      _dragging = true;
+      // Dragging back down toward the tail re-arms auto-scroll once the gap
+      // closes, so a small overscroll snaps to following again.
+      final gap = n.metrics.maxScrollExtent - n.metrics.pixels;
+      if (gap <= _stickSlop && !_follow) _setFollow(true);
+    } else if (n is ScrollEndNotification && n.dragDetails != null) {
+      _dragging = false;
+    } else if (n is UserScrollNotification && n.depth == 0) {
+      // Flings and keyboard-driven scrolls carry no dragDetails. Treat them
+      // as intent too, so scrolling up with a trackpad also detaches.
+      if (n.direction == ScrollDirection.reverse) _setFollow(false);
+    }
+    return false;
+  }
+
+  void _setFollow(bool v) {
+    if (_follow == v) return;
+    _follow = v;
+    if (!v && mounted) {
+      final show = _gap > _jumpThreshold;
+      if (show != _showJump) setState(() => _showJump = show);
+    }
+  }
+
+  /// Coalesces every pending auto-scroll into a single post-frame callback.
+  void _queueAutoScroll() {
+    if (!_follow || _scrollQueued) return;
+    _scrollQueued = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !scroll.hasClients || !_stick) return;
-      final max = scroll.position.maxScrollExtent;
-      if (scroll.position.pixels < max) scroll.jumpTo(max);
-      if (twice) _stickToBottom();
+      _scrollQueued = false;
+      _runAutoScroll();
     });
+  }
+
+  /// Moves the list to the tail, at most once, and never with an animation.
+  ///
+  /// `jumpTo` rather than `animateTo` is deliberate: an animation started per
+  /// token stacks up into a fight with the user's finger, and it keeps
+  /// dispatching scroll updates long after the turn is over.
+  void _runAutoScroll() {
+    if (!mounted || !_follow || _dragging || !scroll.hasClients) return;
+    final pos = scroll.position;
+    if (!pos.hasContentDimensions || pos.maxScrollExtent <= 0) return;
+    if ((pos.maxScrollExtent - pos.pixels).abs() < 0.5) return;
+    _programmatic = true;
+    pos.jumpTo(pos.maxScrollExtent);
+    _programmatic = false;
+  }
+
+  /// Jump button: resume following and glide to the newest message.
+  void _jumpToLatest() {
+    _setFollow(true);
+    _showJump = false;
+    if (!scroll.hasClients) return;
+    _programmatic = true;
+    scroll
+        .animateTo(
+          scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+        )
+        .whenComplete(() => _programmatic = false);
+    // Re-run once the layout settles in case the tail grew while animating.
+    _queueAutoScroll();
+  }
+
+  /// Prepending older messages changes every offset above the viewport, so
+  /// restore by measuring the extent delta instead of guessing a constant.
+  Future<void> _loadOlderMessages(OcStore store) async {
+    if (!store.hasMoreMessages || store.messagesLoading) return;
+    if (!scroll.hasClients) return;
+    final beforeExtent = scroll.position.maxScrollExtent;
+    final beforePixels = scroll.position.pixels;
+
+    await store.loadOlderMessages();
+    if (!mounted || !scroll.hasClients) return;
+    // Wait for the new rows to be laid out before measuring again.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !scroll.hasClients || _dragging) return;
+      final grew = scroll.position.maxScrollExtent - beforeExtent;
+      if (grew <= 0) return;
+      _programmatic = true;
+      scroll.jumpTo(beforePixels + grew);
+      _programmatic = false;
+    });
+  }
+
+  /// Runs after every store notification: decides whether the tail should
+  /// move. Never called per token — [OcStore] already coalesces notifications
+  /// to ~16/s, and [_queueAutoScroll] collapses whatever is left to one jump
+  /// per frame.
+  void _syncFollow() {
+    final store = AppScope.read(context);
+    final count = store.messages.length;
+
+    // A fresh user message always re-arms follow: the user just spoke.
+    if (count > _lastCount && count > 0 && store.messages.last.info.isUser) {
+      _setFollow(true);
+    }
+    _lastCount = count;
+
+    final justLoaded = _wasLoading && !store.messagesLoading;
+    _wasLoading = store.messagesLoading;
+    if (justLoaded) _setFollow(true);
+
+    _queueAutoScroll();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const _ErrorBarWidget(),
-        const _BusyBarWidget(),
-        Expanded(
-          child: _ChatMessages(
-            scroll: scroll,
-            stick: _stick,
-            wasLoading: _wasLoading,
-            onStickChange: (v) => _stick = v,
-            onWasLoadingChange: (v) => _wasLoading = v,
-            onShowJumpChange: (v) => _showJump = v,
-            lastCount: _lastCount,
-            onLastCountChange: (v) => _lastCount = v,
-            onStickToBottom: _stickToBottom,
-            onPickSuggestion: _applySuggestion,
-          ),
-        ),
-        _ComposerWidget(controller: input, focus: focus, onSend: _send),
-      ],
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        _syncFollow();
+        return Column(
+          children: [
+            const _ErrorBarWidget(),
+            const _BusyBarWidget(),
+            Expanded(
+              child: _ChatMessages(
+                scroll: scroll,
+                showJump: _showJump,
+                onNotification: _handleNotification,
+                onJump: _jumpToLatest,
+                onLoadOlder: _loadOlderMessages,
+                onPickSuggestion: _sendSuggestion,
+              ),
+            ),
+            _ComposerWidget(controller: input, focus: focus, onSend: _send),
+          ],
+        );
+      },
     );
   }
 
-  /// Suggested prompts drop straight into the composer.
-  void _applySuggestion(String text) {
+  /// Suggestion cards send straight away. Dropping the text into the field
+  /// first made the composer grow and the keyboard pop, so the user lost
+  /// their place.
+  Future<void> _sendSuggestion(String text) async {
+    if (input.text.trim().isNotEmpty) {
+      await _send();
+      return;
+    }
     input.text = text;
-    input.selection = TextSelection.collapsed(offset: text.length);
-    focus.requestFocus();
-    setState(() {});
+    await _send();
   }
 
   Future<void> _send() async {
@@ -175,182 +326,134 @@ class _BusyBarWidget extends StatelessWidget {
   }
 }
 
-/// Rebuilds only when messages/busy/messagesLoading changes
-class _ChatMessages extends StatefulWidget {
+/// The transcript.
+///
+/// There is exactly one scrollable here and the parent owns its controller, so
+/// follow-mode, the jump button and the loader cannot disagree. Anything that
+/// needs to scroll (suggestion lists, sheets) lives in the composer or in a
+/// modal route, never in the message list.
+class _ChatMessages extends StatelessWidget {
   final ScrollController scroll;
-  final bool stick;
-  final bool wasLoading;
-  final ValueChanged<bool> onStickChange;
-  final ValueChanged<bool> onWasLoadingChange;
-  final ValueChanged<bool> onShowJumpChange;
-  final int lastCount;
-  final ValueChanged<int> onLastCountChange;
-  final VoidCallback onStickToBottom;
-  final ValueChanged<String> onPickSuggestion;
+  final bool showJump;
+  final bool Function(ScrollNotification) onNotification;
+  final VoidCallback onJump;
+  final Future<void> Function(OcStore) onLoadOlder;
+  final void Function(String) onPickSuggestion;
 
   const _ChatMessages({
     required this.scroll,
-    required this.stick,
-    required this.wasLoading,
-    required this.onStickChange,
-    required this.onWasLoadingChange,
-    required this.onShowJumpChange,
-    required this.lastCount,
-    required this.onLastCountChange,
-    required this.onStickToBottom,
+    required this.showJump,
+    required this.onNotification,
+    required this.onJump,
+    required this.onLoadOlder,
     required this.onPickSuggestion,
   });
 
   @override
-  State<_ChatMessages> createState() => _ChatMessagesState();
+  Widget build(BuildContext context) {
+    final store = AppScope.of(context);
+    final messages = store.messages;
+
+    if (store.messagesLoading && messages.isEmpty) {
+      return const LoadingView(label: S.chatLoading);
+    }
+    if (messages.isEmpty) {
+      return _Welcome(store, onPick: onPickSuggestion);
+    }
+
+    // The footer belongs to the last assistant reply only; older ones keep
+    // their tokens hidden behind the store flag like everything else.
+    var lastAssistantIndex = -1;
+    for (var i = messages.length - 1; i >= 0; i--) {
+      if (!messages[i].info.isUser) {
+        lastAssistantIndex = i;
+        break;
+      }
+    }
+
+    final hasOlder = store.hasMoreMessages;
+    final leading = hasOlder ? 1 : 0;
+
+    return Stack(
+      children: [
+        NotificationListener<ScrollNotification>(
+          onNotification: onNotification,
+          child: ListView.builder(
+            controller: scroll,
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+            itemCount: messages.length + leading,
+            cacheExtent: 600,
+            itemBuilder: (_, i) {
+              if (hasOlder && i == 0) {
+                return _LoadOlderButton(
+                  onTap: () => onLoadOlder(store),
+                  loading: store.messagesLoading,
+                );
+              }
+              final index = i - leading;
+              final m = messages[index];
+              return _MessageTile(
+                key: ValueKey(m.info.id),
+                msg: m,
+                isLastReply: index == lastAssistantIndex,
+                showTokens: store.showTokensInChat,
+              );
+            },
+          ),
+        ),
+        if (showJump)
+          Positioned(
+            right: 18,
+            bottom: 14,
+            child: _JumpToLatest(onTap: onJump),
+          ),
+      ],
+    );
+  }
 }
 
-class _ChatMessagesState extends State<_ChatMessages> {
-  late int _lastCount;
-  late bool _stick;
-  late bool _wasLoading;
-  late bool _showJump;
-
-  @override
-  void initState() {
-    super.initState();
-    _lastCount = widget.lastCount;
-    _stick = widget.stick;
-    _wasLoading = widget.wasLoading;
-    _showJump = false;
-    widget.scroll.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    widget.scroll.removeListener(_onScroll);
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (!widget.scroll.hasClients) return;
-    final gap =
-        widget.scroll.position.maxScrollExtent - widget.scroll.position.pixels;
-    final stick = gap < 120;
-    if (stick != _stick) {
-      _stick = stick;
-      widget.onStickChange(stick);
-    }
-    final show = gap > 400;
-    if (show != _showJump) {
-      _showJump = show;
-      widget.onShowJumpChange(show);
-    }
-  }
-
-  void _stickToBottom({bool twice = false}) {
-    if (!_stick) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !widget.scroll.hasClients || !_stick) return;
-      final max = widget.scroll.position.maxScrollExtent;
-      if (widget.scroll.position.pixels < max) widget.scroll.jumpTo(max);
-      if (twice) _stickToBottom(twice: true);
-    });
-  }
-
-  void _loadOlderMessages(OcStore store) {
-    if (!store.hasMoreMessages || store.messagesLoading) return;
-    store.loadOlderMessages().then((_) {
-      if (mounted) {
-        // Restore scroll position by offsetting by the height of new items
-        // Since we prepend, we need to scroll down by the amount of new content
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (widget.scroll.hasClients) {
-            widget.scroll.jumpTo(
-              widget.scroll.position.pixels + 100,
-            ); // approximate
-          }
-        });
-      }
-    });
-  }
+/// Floating pill that appears once the reader scrolls away from the tail.
+class _JumpToLatest extends StatelessWidget {
+  final VoidCallback onTap;
+  const _JumpToLatest({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: AppScope.of(context),
-      builder: (context, _) {
-        final store = AppScope.of(context);
-
-        final grew = store.messages.length > _lastCount;
-        _lastCount = store.messages.length;
-        widget.onLastCountChange(_lastCount);
-        if (grew &&
-            store.messages.isNotEmpty &&
-            store.messages.last.info.isUser) {
-          _stick = true;
-          widget.onStickChange(true);
-        }
-
-        final justLoaded = _wasLoading && !store.messagesLoading;
-        _wasLoading = store.messagesLoading;
-        widget.onWasLoadingChange(_wasLoading);
-        if (justLoaded) {
-          _stick = true;
-          widget.onStickChange(true);
-        }
-
-        if (justLoaded || grew || store.busy) _stickToBottom(twice: justLoaded);
-
-        if (store.messagesLoading) {
-          return const LoadingView(label: S.chatLoading);
-        }
-        if (store.messages.isEmpty) {
-          return _Welcome(store, onPick: widget.onPickSuggestion);
-        }
-
-        return Stack(
-          children: [
-            ListView.builder(
-              controller: widget.scroll,
-              padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
-              itemCount:
-                  store.messages.length + (store.hasMoreMessages ? 1 : 0),
-              cacheExtent: 500,
-              itemBuilder: (_, i) {
-                if (i == 0 && store.hasMoreMessages) {
-                  return _LoadOlderButton(
-                    onTap: () => _loadOlderMessages(store),
-                    loading: store.messagesLoading,
-                  );
-                }
-                final msgIndex = store.hasMoreMessages ? i - 1 : i;
-                final m = store.messages[msgIndex];
-                final isLast = msgIndex + 1 >= store.messages.length;
-                return _MessageTile(
-                  key: ValueKey(m.info.id),
-                  msg: m,
-                  isLast: isLast,
-                  onChanged: () {},
-                );
-              },
+    final t = context.oc;
+    return Semantics(
+      button: true,
+      label: S.jumpToLatest,
+      child: Material(
+        color: t.card,
+        borderRadius: BorderRadius.circular(999),
+        elevation: 2,
+        shadowColor: Colors.black26,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: t.line),
             ),
-            if (_showJump)
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: FloatingActionButton.small(
-                  heroTag: 'jump',
-                  onPressed: () {
-                    _stick = true;
-                    widget.onStickChange(true);
-                    widget.scroll.animateTo(
-                      widget.scroll.position.maxScrollExtent,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
-                    );
-                  },
-                  child: const Icon(Icons.arrow_downward),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LIcon(LI.arrowDown, size: 16, color: t.mute, strokeWidth: 2.2),
+                const SizedBox(width: 6),
+                Text(
+                  S.jumpToLatest,
+                  style: OCTypography.micro.copyWith(
+                    color: t.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-          ],
-        );
-      },
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -390,33 +493,30 @@ class _ErrorBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     return Container(
       width: double.infinity,
-      color: OCColors.redTint,
-      padding: const EdgeInsets.fromLTRB(
-        OCSpace.md,
-        OCSpace.sm,
-        OCSpace.xs,
-        OCSpace.sm,
-      ),
+      color: t.errSoft,
+      padding: const EdgeInsets.fromLTRB(18, 8, 4, 8),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, size: 17, color: OCColors.redInk),
-          const SizedBox(width: OCSpace.sm),
+          LIcon(LI.warning, size: 17, color: t.err),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               msg,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: OCTypography.caption.copyWith(color: OCColors.redInk),
+              style: OCTypography.caption.copyWith(color: t.err),
             ),
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            iconSize: 17,
-            color: OCColors.redInk,
-            icon: const Icon(Icons.close),
-            onPressed: onRetry,
+          LIconButton(
+            icon: LI.close,
+            size: 17,
+            color: t.err,
+            padding: const EdgeInsets.all(6),
+            semanticLabel: S.delete,
+            onTap: onRetry,
           ),
         ],
       ),
@@ -435,62 +535,103 @@ class _BusyBar extends StatelessWidget {
   );
 }
 
+/// Reference `.empty`: a big question, a muted line, then four bordered cards
+/// with a title and a subtitle. Tapping one sends it immediately.
 class _Welcome extends StatelessWidget {
   final OcStore store;
   final void Function(String) onPick;
   const _Welcome(this.store, {required this.onPick});
 
+  static const _suggestions = <(String, String)>[
+    (S.chatSuggestionStructure, S.chatSuggestionStructureSub),
+    (S.chatSuggestionTests, S.chatSuggestionTestsSub),
+    (S.chatSuggestionTodo, S.chatSuggestionTodoSub),
+    (S.chatSuggestionPlan, S.chatSuggestionPlanSub),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     return ListView(
-      padding: const EdgeInsets.all(OCSpace.lg),
+      // The parent wraps the body in a SafeArea, so only inset the top.
+      padding: const EdgeInsets.fromLTRB(18, 36, 18, 18),
       children: [
-        const SizedBox(height: OCSpace.xl),
-        const Center(
-          child: OCIconTile(
-            icon: Icons.bolt,
-            accent: OCAccent.orange,
-            size: 72,
-            iconSize: 34,
-            solid: true,
+        Text(
+          S.chatWelcomeTitle,
+          style: OCTypography.h1.copyWith(
+            color: t.ink,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: OCSpace.lg),
-        Center(
-          child: Text(
-            S.chatWelcomeTitle,
-            textAlign: TextAlign.center,
-            style: OCTypography.h2.copyWith(color: OCColors.textPrimary),
-          ),
+        const SizedBox(height: 4),
+        Text(
+          store.modelId.isEmpty
+              ? S.chatWelcomeEmptySubtitle
+              : S.chatWelcomeSubtitle(
+                  '${store.providerId}/${store.modelId}',
+                  store.agent,
+                ),
+          style: OCTypography.body.copyWith(color: t.mute),
         ),
-        const SizedBox(height: OCSpace.xs),
-        Center(
-          child: Text(
-            store.modelId.isEmpty
-                ? S.chatWelcomeEmptySubtitle
-                : S.chatWelcomeSubtitle(
-                    '${store.providerId}/${store.modelId}',
-                    store.agent,
-                  ),
-            style: OCTypography.caption,
-          ),
-        ),
-        const SizedBox(height: OCSpace.xl),
-        // Real suggestion cards: one row each, 8dp apart, 48dp tall.
-        for (final s in const [
-          S.chatSuggestionStructure,
-          S.chatSuggestionTests,
-          S.chatSuggestionTodo,
-          S.chatSuggestionPlan,
-        ])
-          OCListRow(
-            title: s,
-            titleStyle: OCTypography.body.copyWith(color: OCColors.textPrimary),
-            leadingIcon: Icons.auto_awesome_outlined,
-            accent: OCAccent.orange,
-            onTap: () => onPick(s),
+        const SizedBox(height: 22),
+        for (final (title, sub) in _suggestions)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _SuggestionCard(
+              title: title,
+              subtitle: sub,
+              onTap: () => onPick(title),
+            ),
           ),
       ],
+    );
+  }
+}
+
+class _SuggestionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _SuggestionCard({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Material(
+      color: t.card,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: t.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: OCTypography.body.copyWith(
+                  color: t.ink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(subtitle, style: OCTypography.body.copyWith(color: t.mute)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -501,13 +642,13 @@ class _Welcome extends StatelessWidget {
 
 class _MessageTile extends StatefulWidget {
   final ChatMessage msg;
-  final bool isLast;
-  final VoidCallback onChanged;
+  final bool isLastReply;
+  final bool showTokens;
   const _MessageTile({
     super.key,
     required this.msg,
-    required this.isLast,
-    required this.onChanged,
+    required this.isLastReply,
+    required this.showTokens,
   });
 
   @override
@@ -533,7 +674,8 @@ class _MessageTileState extends State<_MessageTile> {
       m.parts.length,
       Object.hashAll(m.parts.map(identityHashCode)),
       m.errorText,
-      widget.isLast,
+      widget.isLastReply,
+      widget.showTokens,
     );
   }
 
@@ -547,7 +689,12 @@ class _MessageTileState extends State<_MessageTile> {
     return _cache!;
   }
 
+  Future<void> _openMenu() async {
+    await showMessageMenu(context, widget.msg);
+  }
+
   Widget _buildContent(BuildContext context) {
+    final t = context.oc;
     final m = widget.msg;
     final user = m.info.isUser;
 
@@ -567,82 +714,330 @@ class _MessageTileState extends State<_MessageTile> {
         )
         .toList();
 
+    // OcStore._upsertMessage swaps an optimistic user message for the
+    // server's echo with an *empty* part list, then fills in the parts when
+    // their events land. Rendering the bubble during that window is what put
+    // a stray empty black pill in the transcript, so a row with nothing to
+    // show collapses to nothing.
+    final hasContent =
+        text.isNotEmpty ||
+        files.isNotEmpty ||
+        others.isNotEmpty ||
+        m.errorText != null;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: OCSpace.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (user)
-            Align(
-              alignment: Alignment.centerRight,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.86,
+      padding: const EdgeInsets.only(bottom: 18),
+      child: InkWell(
+        // Long press is the only entry point to fork / delete, which is what
+        // lets the inline row shrink to the two actions the reference shows.
+        onLongPress: _openMenu,
+        borderRadius: BorderRadius.circular(12),
+        child: user
+            ? _userBubble(context, t, text, files, hasContent)
+            : _assistantBlock(context, t, text, others, m, hasContent),
+      ),
+    );
+  }
+
+  Widget _userBubble(
+    BuildContext context,
+    OCTokens t,
+    String text,
+    List<Part> files,
+    bool hasContent,
+  ) {
+    if (!hasContent) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerRight,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.86,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          decoration: BoxDecoration(
+            color: t.ink,
+            // Reference: 20px radii with a 6px tail on the bottom right.
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(6),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final f in files) _IncomingFileChip(f),
+              if (text.isNotEmpty)
+                Markdown(
+                  text,
+                  base: OCTypography.body.copyWith(color: t.bg, height: 1.45),
+                  onLink: (url) => launchUrl(
+                    Uri.parse(url),
+                    mode: LaunchMode.externalApplication,
+                  ),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: OCSpace.lg,
-                    vertical: OCSpace.md,
-                  ),
-                  decoration: BoxDecoration(
-                    color: OCColors.ctaSolid,
-                    borderRadius: BorderRadius.circular(OCRadius.card),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final f in files) _IncomingFileChip(f),
-                      if (text.isNotEmpty)
-                        Markdown(
-                          text,
-                          base: OCTypography.body.copyWith(
-                            color: OCColors.textInverse,
-                            height: 1.45,
-                          ),
-                          onLink: (url) => launchUrl(
-                            Uri.parse(url),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(
-                OCSpace.xs,
-                OCSpace.xxs,
-                OCSpace.xs,
-                OCSpace.sm,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final p in others) PartTile(p),
-                  if (text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: OCSpace.xs),
-                      child: Markdown(
-                        text,
-                        base: OCTypography.body.copyWith(height: 1.5),
-                        onLink: (url) => launchUrl(
-                          Uri.parse(url),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
-                    ),
-                  if (m.streaming && text.isEmpty && others.isEmpty)
-                    const _TypingDots(),
-                  if (m.errorText != null) _InlineError(m.errorText!),
-                  _MessageFooter(msg: m),
-                ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _assistantBlock(
+    BuildContext context,
+    OCTokens t,
+    String text,
+    List<Part> others,
+    ChatMessage m,
+    bool hasContent,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (others.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: ToolTimeline(parts: others),
+          ),
+        if (text.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 4),
+            child: Markdown(
+              text,
+              base: OCTypography.body.copyWith(color: t.ink, height: 1.45),
+              onLink: (url) => launchUrl(
+                Uri.parse(url),
+                mode: LaunchMode.externalApplication,
               ),
             ),
-          if (!user) _MessageActions(msg: m),
+          ),
+        if (m.streaming && !hasContent) const _TypingDots(),
+        if (m.errorText != null) _InlineError(m.errorText!),
+        if (m.errorText == null && !m.streaming && m.info.tokens.total > 0)
+          _ReplyMeta(msg: m, visible: widget.showTokens),
+        // Only the newest reply carries the inline actions; older ones reach
+        // the same operations through the long-press menu.
+        if (widget.isLastReply && m.errorText == null) _ReplyActions(msg: m),
+      ],
+    );
+  }
+}
+
+/// Token / cost line under a finished reply. Hidden unless the settings toggle
+/// is on, and reduced to the bare counts when it is.
+class _ReplyMeta extends StatelessWidget {
+  final ChatMessage msg;
+  final bool visible;
+  const _ReplyMeta({required this.msg, required this.visible});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+    final t = context.oc;
+    final i = msg.info;
+    final bits = <String>[
+      if (i.tokens.total > 0) i.tokens.pretty,
+      if (i.cost > 0) '\$${i.cost.toStringAsFixed(4)}',
+    ];
+    if (bits.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        bits.join(' · '),
+        style: OCTypography.micro.copyWith(color: t.mute),
+      ),
+    );
+  }
+}
+
+/// Copy + Undo, shown only under the final AI reply (reference `.actions`).
+class _ReplyActions extends StatelessWidget {
+  final ChatMessage msg;
+  const _ReplyActions({required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
+    // read(), not of(): these buttons don't need to rebuild on every update.
+    final store = AppScope.read(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: -8, top: 2),
+      child: Row(
+        children: [
+          _ActionBtn(
+            icon: LI.copy,
+            label: S.copy,
+            onTap: () {
+              final text = msg.parts
+                  .where((p) => p.type == 'text')
+                  .map((p) => p.text)
+                  .join('\n');
+              copyToClipboard(context, text);
+            },
+          ),
+          _ActionBtn(
+            icon: LI.undo,
+            label: S.messageUndo,
+            onTap: () => store.revert(msg.info.id),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+  const _ActionBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LIcon(icon, size: 16, color: t.mute),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: OCTypography.micro.copyWith(color: t.mute, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Long-press menu: Copy, Fork, Undo, Delete.
+///
+/// Fork and Delete leave the inline row entirely, so they live here. Copy and
+/// Undo are deliberately duplicated from the last reply's inline row: a long
+/// press is the only way to reach them on an older message.
+Future<void> showMessageMenu(BuildContext context, ChatMessage msg) async {
+  final store = AppScope.read(context);
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetCtx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SheetRow(
+            icon: LI.copy,
+            label: S.copy,
+            onTap: () {
+              Navigator.pop(sheetCtx);
+              final text = msg.parts
+                  .where((p) => p.type == 'text')
+                  .map((p) => p.text)
+                  .join('\n');
+              copyToClipboard(context, text);
+            },
+          ),
+          _SheetRow(
+            icon: LI.fork,
+            label: S.messageForkHere,
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              final s = await store.forkSession(
+                store.current!.id,
+                messageId: msg.info.id,
+              );
+              if (s != null && context.mounted) {
+                await store.openSession(s.id);
+                if (context.mounted) showSnack(context, S.messageForked);
+              }
+            },
+          ),
+          if (!msg.info.isUser)
+            _SheetRow(
+              icon: LI.undo,
+              label: S.messageUndo,
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                store.revert(msg.info.id);
+              },
+            ),
+          _SheetRow(
+            icon: LI.trash,
+            label: S.delete,
+            danger: true,
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              final ok = await confirmDialog(
+                context,
+                title: S.messageDeleteTitle,
+                message: S.messageDeleteBody,
+                confirm: S.delete,
+                danger: true,
+              );
+              if (!ok) return;
+              try {
+                await store.api.deleteMessage(store.current!.id, msg.info.id);
+                await store.openSession(store.current!.id);
+              } catch (e) {
+                if (context.mounted) showSnack(context, '$e', error: true);
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+}
+
+/// One row in a bottom sheet, styled like the reference `.opt` line.
+class _SheetRow extends StatelessWidget {
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+  const _SheetRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final color = danger ? t.err : t.ink;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+        child: Row(
+          children: [
+            LIcon(icon, size: 20, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: OCTypography.body.copyWith(color: color),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -654,22 +1049,22 @@ class _IncomingFileChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sits inside the dark user bubble, so it inherits the bubble's contrast
+    // rather than a fixed light-only colour.
+    final t = context.oc;
+    final onBubble = t.ink;
     final isImg = part.mime.startsWith('image/');
     return Padding(
-      padding: const EdgeInsets.only(bottom: OCSpace.sm),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isImg ? Icons.image_outlined : Icons.attach_file,
-            size: 15,
-            color: OCColors.textInverse,
-          ),
-          const SizedBox(width: OCSpace.sm),
+          LIcon(isImg ? LI.terminal : LI.attach, size: 15, color: onBubble),
+          const SizedBox(width: 6),
           Flexible(
             child: Text(
               part.filename.isEmpty ? baseName(part.url) : part.filename,
-              style: OCTypography.caption.copyWith(color: OCColors.textInverse),
+              style: OCTypography.caption.copyWith(color: onBubble),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -685,21 +1080,26 @@ class _InlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     return Container(
-      margin: const EdgeInsets.only(top: OCSpace.sm),
-      padding: const EdgeInsets.all(OCSpace.md),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: OCColors.redTint,
-        borderRadius: BorderRadius.circular(OCRadius.inner),
+        color: t.errSoft,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber, size: 15, color: OCColors.redInk),
-          const SizedBox(width: OCSpace.sm),
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: LIcon(LI.warning, size: 15, color: t.err),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: OCTypography.caption.copyWith(color: OCColors.redInk),
+              style: OCTypography.caption.copyWith(color: t.err),
               maxLines: 6,
               overflow: TextOverflow.ellipsis,
             ),
@@ -732,23 +1132,24 @@ class _TypingDotsState extends State<_TypingDots>
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     return AnimatedBuilder(
       animation: c,
       builder: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: OCSpace.sm),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             for (var i = 0; i < 3; i++)
               Padding(
-                padding: const EdgeInsets.only(right: OCSpace.xs),
+                padding: const EdgeInsets.only(right: 5),
                 child: Opacity(
                   opacity: 0.35 + 0.65 * ((c.value * 3 - i).clamp(0.0, 1.0)),
                   child: Container(
                     width: 7,
                     height: 7,
-                    decoration: const BoxDecoration(
-                      color: OCColors.orange,
+                    decoration: BoxDecoration(
+                      color: t.acc,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -759,108 +1160,6 @@ class _TypingDotsState extends State<_TypingDots>
       ),
     );
   }
-}
-
-class _MessageFooter extends StatelessWidget {
-  final ChatMessage msg;
-  const _MessageFooter({required this.msg});
-
-  @override
-  Widget build(BuildContext context) {
-    final i = msg.info;
-    final bits = <String>[
-      if (i.providerId.isNotEmpty) '${i.providerId}/${i.modelId}',
-      if (i.tokens.total > 0) i.tokens.pretty,
-      if (i.cost > 0) '\$${i.cost.toStringAsFixed(4)}',
-      if (i.finishReason.isNotEmpty && i.finishReason != 'stop') i.finishReason,
-    ];
-    if (bits.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: OCSpace.xs, left: OCSpace.xxs),
-      child: Text(bits.join(' · '), style: OCTypography.micro),
-    );
-  }
-}
-
-class _MessageActions extends StatelessWidget {
-  final ChatMessage msg;
-  const _MessageActions({required this.msg});
-
-  @override
-  Widget build(BuildContext context) {
-    // FIX: read(), not of(): these buttons don't need to rebuild on every store update.
-    final store = AppScope.read(context);
-    return Padding(
-      padding: const EdgeInsets.only(left: OCSpace.xxs, top: OCSpace.xxs),
-      child: Row(
-        children: [
-          _TinyBtn(Icons.copy_all_outlined, S.copy, () {
-            final text = msg.parts
-                .where((p) => p.type == 'text')
-                .map((p) => p.text)
-                .join('\n');
-            copyToClipboard(context, text);
-          }),
-          _TinyBtn(Icons.call_split, S.messageForkHere, () async {
-            final s = await store.forkSession(
-              store.current!.id,
-              messageId: msg.info.id,
-            );
-            if (s != null && context.mounted) {
-              await store.openSession(s.id);
-              if (context.mounted) showSnack(context, S.messageForked);
-            }
-          }),
-          _TinyBtn(
-            Icons.undo,
-            S.messageRevert,
-            () => store.revert(msg.info.id),
-          ),
-          _TinyBtn(Icons.delete_outline, S.delete, () async {
-            final ok = await confirmDialog(
-              context,
-              title: S.messageDeleteTitle,
-              message: S.messageDeleteBody,
-              confirm: S.delete,
-              danger: true,
-            );
-            if (!ok) return;
-            try {
-              await store.api.deleteMessage(store.current!.id, msg.info.id);
-              await store.openSession(store.current!.id);
-            } catch (e) {
-              if (context.mounted) showSnack(context, '$e', error: true);
-            }
-          }),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-}
-
-class _TinyBtn extends StatelessWidget {
-  final IconData icon;
-  final String tip;
-  final VoidCallback onTap;
-  const _TinyBtn(this.icon, this.tip, this.onTap);
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-    message: tip,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.all(5),
-        child: Icon(
-          icon,
-          size: 15,
-          color: Theme.of(context).colorScheme.outline,
-        ),
-      ),
-    ),
-  );
 }
 
 // ---------------------------------------------------------------------
@@ -913,81 +1212,52 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     return Container(
-      decoration: const BoxDecoration(
-        color: OCColors.surface,
-        border: Border(top: BorderSide(color: OCColors.borderHairline)),
-      ),
-      child: SafeArea(
-        top: false,
+      // Reference `.composer`: 6px 12px 10px around a single 24px-radius box.
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
+        decoration: BoxDecoration(
+          color: t.card,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: t.line),
+          boxShadow: [
+            BoxShadow(color: t.line, offset: const Offset(0, 1), blurRadius: 0),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (store.attachments.isNotEmpty) _AttachmentStrip(store),
-            _QuickBar(store),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                OCSpace.sm,
-                OCSpace.sm,
-                OCSpace.sm,
-                OCSpace.md,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: S.chatAttachTooltip,
-                    onPressed: () => _showAttachSheet(context),
-                  ),
-                  Expanded(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 150),
-                      child: SlashTextField(
-                        controller: controller,
-                        focusNode: focus,
-                        store: store,
-                        onSubmit: onSend,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: OCSpace.sm),
-                  // Send stays disabled until there is something to send;
-                  // while the agent is running the same slot becomes Stop.
-                  ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: controller,
-                    builder: (context, value, _) {
-                      if (store.busy) {
-                        return IconButton.filled(
-                          tooltip: S.chatStopTooltip,
-                          onPressed: onStop,
-                          style: IconButton.styleFrom(
-                            backgroundColor: OCColors.redInk,
-                            foregroundColor: OCColors.textInverse,
-                            minimumSize: const Size.square(OCSpace.tapTarget),
-                          ),
-                          icon: const Icon(Icons.stop_rounded),
-                        );
-                      }
-                      final canSend =
-                          value.text.trim().isNotEmpty ||
-                          store.attachments.isNotEmpty;
-                      return IconButton.filled(
-                        tooltip: S.chatSendTooltip,
-                        onPressed: canSend ? onSend : null,
-                        style: IconButton.styleFrom(
-                          backgroundColor: OCColors.ctaSolid,
-                          foregroundColor: OCColors.textInverse,
-                          disabledBackgroundColor: OCColors.surfaceMuted,
-                          disabledForegroundColor: OCColors.textTertiary,
-                          minimumSize: const Size.square(OCSpace.tapTarget),
-                        ),
-                        icon: const Icon(Icons.arrow_upward),
-                      );
-                    },
-                  ),
-                ],
-              ),
+            // One field, then one tools row — the reference stacks the two
+            // inside a single container instead of using separate bars.
+            SlashTextField(
+              controller: controller,
+              focusNode: focus,
+              store: store,
+              onSubmit: onSend,
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                LIconButton(
+                  icon: LI.attach,
+                  size: 22,
+                  color: t.mute,
+                  semanticLabel: S.composerAttachTooltip,
+                  onTap: () => _showAttachSheet(context),
+                ),
+                const SizedBox(width: 2),
+                _ModelPill(store: store),
+                const Spacer(),
+                _SendButton(
+                  store: store,
+                  controller: controller,
+                  onSend: onSend,
+                  onStop: onStop,
+                ),
+              ],
             ),
           ],
         ),
@@ -1003,31 +1273,31 @@ class _Composer extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.image_outlined),
-              title: const Text(S.attachImage),
+            _SheetRow(
+              icon: LI.attach,
+              label: S.attachImage,
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _pickImage(context);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.file_present_outlined),
-              title: const Text(S.attachFile),
-              subtitle: const Text(S.attachFileHint),
+            _SheetRow(
+              icon: LI.folder,
+              label: S.attachFile,
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _pickProjectFile(context);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.code),
-              title: const Text(S.attachSlash),
+            _SheetRow(
+              icon: LI.terminal,
+              label: S.attachSlash,
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _showCommands(context);
               },
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -1098,6 +1368,8 @@ class _Composer extends StatelessWidget {
     final builtins = const ['init', 'compact', 'undo', 'redo', 'share'];
     final names = {...store.commands.map((c) => c.name), ...builtins}.toList()
       ..sort();
+    // Tappable: picking a command inserts it, which keeps the existing
+    // insert-into-the-field behaviour instead of silently doing nothing.
     final picked = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -1106,18 +1378,22 @@ class _Composer extends StatelessWidget {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: SectionTitle(S.pickerCommandsTitle),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+              child: Text(
+                S.pickerCommandsTitle,
+                style: OCTypography.bodyStrong.copyWith(color: context.oc.mute),
+              ),
             ),
             for (final n in names)
               ListTile(
                 dense: true,
-                leading: const Icon(Icons.code, size: 18),
+                leading: LIcon(LI.terminal, size: 18, color: context.oc.mute),
                 title: Text(
                   S.slashCommand(n),
                   style: OCTypography.mono(size: 13),
                 ),
+                onTap: () => Navigator.pop(context, n),
               ),
           ],
         ),
@@ -1173,187 +1449,332 @@ class _AttachmentStrip extends StatelessWidget {
   }
 }
 
-/// Model / agent / tools row that sits above the composer. It scrolls
-/// horizontally when it overflows and can be collapsed to a single chip so it
-/// never squeezes the input field.
-class _QuickBar extends StatefulWidget {
+/// Reference `.pill`: one accent-tinted chip reading `model · agent` that
+/// opens the model / agent / tools sheet. This replaces the old three-chip
+/// quick bar; there is no separate tools chip or dropdown anymore.
+class _ModelPill extends StatelessWidget {
   final OcStore store;
-  const _QuickBar(this.store);
-
-  @override
-  State<_QuickBar> createState() => _QuickBarState();
-}
-
-class _QuickBarState extends State<_QuickBar> {
-  bool collapsed = false;
-
-  OcStore get store => widget.store;
-
-  Widget _modelChip() => OCChip(
-    label: store.modelId.isEmpty ? S.chipPickModel : store.modelId,
-    icon: Icons.psychology_outlined,
-    accent: OCAccent.orange,
-    selected: store.modelId.isNotEmpty,
-    semanticLabel: store.modelId.isEmpty
-        ? S.chipPickModel
-        : S.label(S.chipModel, store.modelId),
-    onTap: () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ModelsPage()),
-    ),
-  );
-
-  Widget _agentChip() => OCChip(
-    label: store.agent,
-    icon: Icons.smart_toy_outlined,
-    accent: OCAccent.orange,
-    semanticLabel: S.label(S.chipAgent, store.agent),
-    onTap: () => _pickAgent(context),
-  );
-
-  Widget _toolsChip() => OCChip(
-    label: '${S.chipTools} (${store.toolsEnabled.length})',
-    icon: Icons.build_outlined,
-    accent: OCAccent.orange,
-    selected: store.toolsEnabled.isNotEmpty,
-    semanticLabel: store.toolsEnabled.isEmpty
-        ? S.chipToolsAll
-        : S.label(S.chipTools, store.toolsEnabled.join(', ')),
-    onTap: () => _pickTools(context),
-  );
+  const _ModelPill({required this.store});
 
   @override
   Widget build(BuildContext context) {
-    final chips = <Widget>[_modelChip(), _agentChip(), _toolsChip()];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(OCSpace.sm, OCSpace.sm, OCSpace.sm, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: collapsed
-                ? Align(alignment: Alignment.centerLeft, child: _modelChip())
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final c in chips)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              right: OCSpace.tapGap,
-                            ),
-                            child: c,
-                          ),
-                      ],
+    final t = context.oc;
+    final label = store.modelId.isEmpty
+        ? S.chipPickModel
+        : S.composerModelAgent(store.modelId, store.agent);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 200),
+      child: Material(
+        color: t.accSoft,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: () => showModelSheet(context, store),
+          borderRadius: BorderRadius.circular(999),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LIcon(LI.tune, size: 15, color: t.accInk, strokeWidth: 2),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: OCTypography.body.copyWith(
+                      color: t.accInk,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-          ),
-          Tooltip(
-            message: collapsed ? S.chipShowRow : S.chipHideRow,
-            child: IconButton(
-              onPressed: () => setState(() => collapsed = !collapsed),
-              icon: Icon(collapsed ? Icons.expand_less : Icons.expand_more),
-              color: OCColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _pickAgent(BuildContext context) async {
-    final store = AppScope.read(context);
-    final agents = store.agents;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetCtx) => RadioGroup<String>(
-        groupValue: store.agent,
-        onChanged: (v) {
-          if (v != null) store.setAgent(v);
-          Navigator.pop(sheetCtx);
-        },
-        child: SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: SectionTitle(S.pickerAgentTitle),
-              ),
-              for (final a in agents)
-                RadioListTile<String>(
-                  value: a.name,
-                  dense: true,
-                  title: Text(a.name, style: OCTypography.body),
-                  subtitle: a.description.isEmpty
-                      ? null
-                      : Text(
-                          a.description,
-                          maxLines: 2,
-                          style: OCTypography.micro,
-                        ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  Future<void> _pickTools(BuildContext context) async {
-    final store = AppScope.read(context);
-    List<String> ids;
-    try {
-      ids = await store.api.toolIds();
-    } catch (e) {
-      if (context.mounted) showSnack(context, '$e', error: true);
-      return;
-    }
-    if (!context.mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (c, setSheet) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Row(
-                  children: [
-                    const Expanded(child: Text(S.toolsSheetTitle)),
-                    TextButton(
-                      onPressed: () {
-                        store.toolsEnabled.clear();
+/// Model / agent / tools, as the reference `.sheet` panel.
+Future<void> showModelSheet(BuildContext context, OcStore store) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheetCtx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SheetOption(
+            label: S.moreModel,
+            value: store.modelId.isEmpty ? S.chipPickModel : store.modelId,
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ModelsPage()),
+              );
+            },
+          ),
+          _SheetOption(
+            label: S.moreAgent,
+            value: store.agent,
+            onTap: () {
+              Navigator.pop(sheetCtx);
+              _pickAgentSheet(context, store);
+            },
+          ),
+          _SheetOption(
+            label: S.moreTools,
+            value: S.moreToolsCount(store.toolsEnabled.length),
+            onTap: () {
+              Navigator.pop(sheetCtx);
+              _pickToolsSheet(context, store);
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+}
+
+/// `.opt` line: label on the left, muted value plus chevron on the right.
+class _SheetOption extends StatelessWidget {
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  const _SheetOption({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: t.line)),
+        ),
+        child: Row(
+          children: [
+            Text(label, style: OCTypography.body.copyWith(color: t.ink)),
+            const Spacer(),
+            Text(value, style: OCTypography.body.copyWith(color: t.mute)),
+            const SizedBox(width: 8),
+            LIcon(LI.chevronRight, size: 16, color: t.mute),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _pickAgentSheet(BuildContext context, OcStore store) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheetCtx) => RadioGroup<String>(
+      groupValue: store.agent,
+      onChanged: (v) {
+        if (v != null) store.setAgent(v);
+        Navigator.pop(sheetCtx);
+      },
+      child: SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+              child: Text(
+                S.moreAgent,
+                style: OCTypography.bodyStrong.copyWith(color: context.oc.mute),
+              ),
+            ),
+            for (final a in store.agents)
+              RadioListTile<String>(
+                value: a.name,
+                dense: true,
+                title: Text(a.name, style: OCTypography.body),
+                subtitle: a.description.isEmpty
+                    ? null
+                    : Text(
+                        a.description,
+                        maxLines: 2,
+                        style: OCTypography.micro,
+                      ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> _pickToolsSheet(BuildContext context, OcStore store) async {
+  List<String> ids;
+  try {
+    ids = await store.api.toolIds();
+  } catch (e) {
+    if (context.mounted) showSnack(context, '$e', error: true);
+    return;
+  }
+  if (!context.mounted) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheetCtx) => StatefulBuilder(
+      builder: (c, setSheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(S.moreTools, style: OCTypography.bodyStrong),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      store.toolsEnabled.clear();
+                      setSheet(() {});
+                    },
+                    child: Text(S.toolsEnableAll),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              S.toolsSheetHint,
+              style: OCTypography.micro.copyWith(color: context.oc.mute),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final id in ids)
+                    CheckboxListTile(
+                      dense: true,
+                      value: store.toolsEnabled.contains(id),
+                      title: Text(id, style: OCTypography.mono(size: 12.5)),
+                      onChanged: (v) {
+                        store.toggleTool(id, v ?? false);
                         setSheet(() {});
                       },
-                      child: Text(S.toolsEnableAll),
                     ),
-                  ],
-                ),
+                ],
               ),
-              Text(S.toolsSheetHint, style: OCTypography.micro),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final id in ids)
-                      CheckboxListTile(
-                        dense: true,
-                        value: store.toolsEnabled.contains(id),
-                        title: Text(id, style: OCTypography.mono(size: 12.5)),
-                        onChanged: (v) {
-                          store.toggleTool(id, v ?? false);
-                          setSheet(() {});
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Reference `.send`: a 40px circle that is Stop while the agent runs, an
+/// up-arrow while there is something to send, and the voice glyph otherwise.
+class _SendButton extends StatelessWidget {
+  final OcStore store;
+  final TextEditingController controller;
+  final VoidCallback onSend;
+  final VoidCallback onStop;
+  const _SendButton({
+    required this.store,
+    required this.controller,
+    required this.onSend,
+    required this.onStop,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        if (store.busy) {
+          return _CircleButton(
+            icon: LI.stop,
+            bg: t.ink,
+            fg: t.bg,
+            semanticLabel: S.chatStopTooltip,
+            onTap: onStop,
+          );
+        }
+        final canSend =
+            value.text.trim().isNotEmpty || store.attachments.isNotEmpty;
+        if (canSend) {
+          return _CircleButton(
+            icon: LI.send,
+            bg: t.acc,
+            fg: const Color(0xFFFFFFFF),
+            semanticLabel: S.chatSendTooltip,
+            onTap: onSend,
+          );
+        }
+        // Voice chat lands in a later prompt; keep the affordance visible so
+        // the composer reads the same as the reference.
+        return _CircleButton(
+          icon: LI.mic,
+          bg: t.card,
+          fg: t.ink,
+          semanticLabel: S.composerVoiceTooltip,
+          onTap: () => showSnack(context, S.composerVoiceTooltip),
+          border: t.line,
+        );
+      },
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final LI icon;
+  final Color bg;
+  final Color fg;
+  final String semanticLabel;
+  final VoidCallback onTap;
+  final Color? border;
+  const _CircleButton({
+    required this.icon,
+    required this.bg,
+    required this.fg,
+    required this.semanticLabel,
+    required this.onTap,
+    this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: bg,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: border == null
+                ? null
+                : BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: border!),
+                  ),
+            child: Center(child: LIcon(icon, size: 20, color: fg)),
           ),
         ),
       ),
@@ -1486,6 +1907,7 @@ class _SlashTextFieldState extends State<SlashTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     final showList =
         _suggestions.isNotEmpty || (_mode == '@' && _files.isNotEmpty);
     return Column(
@@ -1500,38 +1922,32 @@ class _SlashTextFieldState extends State<SlashTextField> {
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
           onSubmitted: (_) => widget.onSubmit(),
-          style: OCTypography.body.copyWith(height: 1.4),
+          style: OCTypography.body.copyWith(color: t.ink, height: 1.4),
           decoration: InputDecoration(
             hintText: S.chatPlaceholder,
-            hintStyle: OCTypography.body.copyWith(color: OCColors.textTertiary),
-            filled: true,
-            fillColor: OCColors.surfaceSubtle,
+            hintStyle: OCTypography.body.copyWith(color: t.mute),
+            // Borderless: the enclosing composer container already draws the
+            // 24px rounded box and its focus ring.
+            filled: false,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: OCSpace.lg,
-              vertical: OCSpace.md,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(OCRadius.full),
-              borderSide: BorderSide.none,
-            ),
-            suffixIcon: widget.controller.text.isEmpty
-                ? null
-                : IconButton(
-                    iconSize: 17,
-                    icon: const Icon(Icons.close),
-                    onPressed: widget.controller.clear,
-                  ),
+            contentPadding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
           ),
         ),
+        // Rendered above the tools row rather than below it, so accepting a
+        // completion never resizes the composer's bottom edge.
         if (showList)
           Container(
-            margin: const EdgeInsets.only(top: OCSpace.xs),
             constraints: const BoxConstraints(maxHeight: 190),
+            margin: const EdgeInsets.only(bottom: 6),
             decoration: BoxDecoration(
-              color: OCColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(OCRadius.inner),
+              color: t.card,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: t.line),
             ),
+            clipBehavior: Clip.antiAlias,
             child: ListView(
               shrinkWrap: true,
               padding: EdgeInsets.zero,
@@ -1540,42 +1956,35 @@ class _SlashTextFieldState extends State<SlashTextField> {
                   ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    leading: const Icon(
-                      Icons.code,
-                      size: 15,
-                      color: OCColors.textTertiary,
-                    ),
+                    leading: LIcon(LI.terminal, size: 15, color: t.mute),
                     title: Text(
                       s,
-                      style: OCTypography.caption.copyWith(
-                        color: OCColors.textPrimary,
-                      ),
+                      style: OCTypography.caption.copyWith(color: t.ink),
                     ),
                     subtitle: widget.store.commands
                         .where((c) => c.name == s)
                         .map((c) => c.description)
                         .firstOrNull
-                        ?.let((d) => Text(d, style: OCTypography.micro)),
+                        ?.let(
+                          (d) => Text(
+                            d,
+                            style: OCTypography.micro.copyWith(color: t.mute),
+                          ),
+                        ),
                     onTap: () => _apply(s),
                   ),
                 for (final f in _files)
                   ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    leading: const Icon(
-                      Icons.insert_drive_file_outlined,
-                      size: 15,
-                      color: OCColors.textTertiary,
-                    ),
+                    leading: LIcon(LI.folder, size: 15, color: t.mute),
                     title: Text(
                       baseName(f),
-                      style: OCTypography.caption.copyWith(
-                        color: OCColors.textPrimary,
-                      ),
+                      style: OCTypography.caption.copyWith(color: t.ink),
                     ),
                     subtitle: Text(
                       f,
-                      style: OCTypography.micro,
+                      style: OCTypography.micro.copyWith(color: t.mute),
                       overflow: TextOverflow.ellipsis,
                     ),
                     onTap: () => _apply(f),
@@ -1586,10 +1995,6 @@ class _SlashTextFieldState extends State<SlashTextField> {
       ],
     );
   }
-}
-
-extension _Let<T> on T {
-  R let<R>(R Function(T) f) => f(this);
 }
 
 class _FilePickerSheet extends StatefulWidget {

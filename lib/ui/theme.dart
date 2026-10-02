@@ -9,6 +9,13 @@ import 'package:flutter/material.dart';
 /// Semantic colour roles used across the app.
 /// All widgets should reference these, never hard-code colours.
 class OCColors {
+  // --- the single brand accent (design/clean-chat-ui.html) ------------
+  /// Accent orange. Used by the chat redesign for the send button, the
+  /// running tool dot and the active bottom-nav tab.
+  static const acc = Color(0xFFF26A1B);
+  static const accInk = Color(0xFFB9460C);
+  static const accSoft = Color(0xFFFFF0E6);
+
   // --- neutrals -------------------------------------------------------
   static const canvas = Color(0xFFF0F0F7);
   static const surface = Color(0xFFFFFFFF);
@@ -89,6 +96,178 @@ class OCColors {
   static const border = borderHairline;
   static const borderFocus = orange;
   static const selection = orange;
+}
+
+/// Brightness-aware palette taken straight from the visual reference
+/// (`design/clean-chat-ui.html`). [OCColors] is a set of compile-time light
+/// constants, so anything that must survive a dark theme reads from here
+/// instead.
+///
+/// ```
+/// :root                 {--bg:#f4f3f1;--card:#fff;--ink:#1c1b1a;--mute:#847f78;
+///                        --line:#e7e4df;--acc:#f26a1b;--accink:#b9460c;
+///                        --accsoft:#fff0e6;--ok:#2f9e44;--err:#c92a2a;
+///                        --errsoft:#fdecec;--code:#26241f}
+/// prefers-color-scheme  {--bg:#161517;--card:#212024;--ink:#f2efeb;--mute:#8e8993;
+///                         --line:#333138;--accsoft:#3b2616;--accink:#ff9a5c;
+///                         --errsoft:#3a1c1c;--code:#0f0e10}
+/// ```
+class OCTokens extends ThemeExtension<OCTokens> {
+  const OCTokens({
+    required this.bg,
+    required this.card,
+    required this.ink,
+    required this.mute,
+    required this.line,
+    required this.acc,
+    required this.accInk,
+    required this.accSoft,
+    required this.ok,
+    required this.err,
+    required this.errSoft,
+    required this.code,
+    required this.codeInk,
+  });
+
+  /// Screen background.
+  final Color bg;
+
+  /// Raised surfaces: composer box, suggestion cards, bottom sheet, nav bar.
+  final Color card;
+
+  /// Primary text.
+  final Color ink;
+
+  /// Secondary text (status line, timestamps, tool subtitles).
+  final Color mute;
+
+  /// Hairlines and the tool-timeline rail.
+  final Color line;
+
+  /// Accent fill (send button, running dot, active tab).
+  final Color acc;
+
+  /// Accent text/icon colour that stays readable on [accSoft] or on [card].
+  final Color accInk;
+
+  /// Tinted accent background (model pill, selected nav tab).
+  final Color accSoft;
+
+  /// "Tool finished" green.
+  final Color ok;
+
+  /// Failure red.
+  final Color err;
+
+  /// Tinted failure background.
+  final Color errSoft;
+
+  /// Terminal / tool-output surface. Always dark in both themes.
+  final Color code;
+
+  /// Foreground on [code].
+  final Color codeInk;
+
+  static const light = OCTokens(
+    bg: Color(0xFFF4F3F1),
+    card: Color(0xFFFFFFFF),
+    ink: Color(0xFF1C1B1A),
+    mute: Color(0xFF847F78),
+    line: Color(0xFFE7E4DF),
+    acc: OCColors.acc,
+    accInk: Color(0xFFB9460C),
+    accSoft: Color(0xFFFFF0E6),
+    ok: Color(0xFF2F9E44),
+    err: Color(0xFFC92A2A),
+    errSoft: Color(0xFFFDECEC),
+    code: Color(0xFF26241F),
+    codeInk: Color(0xFFE9E5DD),
+  );
+
+  static const dark = OCTokens(
+    bg: Color(0xFF161517),
+    card: Color(0xFF212024),
+    ink: Color(0xFFF2EFEB),
+    mute: Color(0xFF8E8993),
+    line: Color(0xFF333138),
+    acc: OCColors.acc,
+    accInk: Color(0xFFFF9A5C),
+    accSoft: Color(0xFF3B2616),
+    ok: Color(0xFF51CF66),
+    err: Color(0xFFFF8787),
+    errSoft: Color(0xFF3A1C1C),
+    code: Color(0xFF0F0E10),
+    codeInk: Color(0xFFE9E5DD),
+  );
+
+  /// Never throws: a missing extension falls back to the palette that matches
+  /// the ambient brightness.
+  static OCTokens of(BuildContext context) {
+    final t = Theme.of(context);
+    return t.extension<OCTokens>() ??
+        (t.brightness == Brightness.dark ? dark : light);
+  }
+
+  bool get isDark => ink.computeLuminance() > 0.5;
+
+  @override
+  OCTokens copyWith({
+    Color? bg,
+    Color? card,
+    Color? ink,
+    Color? mute,
+    Color? line,
+    Color? acc,
+    Color? accInk,
+    Color? accSoft,
+    Color? ok,
+    Color? err,
+    Color? errSoft,
+    Color? code,
+    Color? codeInk,
+  }) => OCTokens(
+    bg: bg ?? this.bg,
+    card: card ?? this.card,
+    ink: ink ?? this.ink,
+    mute: mute ?? this.mute,
+    line: line ?? this.line,
+    acc: acc ?? this.acc,
+    accInk: accInk ?? this.accInk,
+    accSoft: accSoft ?? this.accSoft,
+    ok: ok ?? this.ok,
+    err: err ?? this.err,
+    errSoft: errSoft ?? this.errSoft,
+    code: code ?? this.code,
+    codeInk: codeInk ?? this.codeInk,
+  );
+
+  @override
+  OCTokens lerp(covariant OCTokens? other, double t) {
+    if (other == null || t == 0) return this;
+    if (t == 1) return other;
+    Color c(Color a, Color b) => Color.lerp(a, b, t)!;
+    return OCTokens(
+      bg: c(bg, other.bg),
+      card: c(card, other.card),
+      ink: c(ink, other.ink),
+      mute: c(mute, other.mute),
+      line: c(line, other.line),
+      acc: c(acc, other.acc),
+      accInk: c(accInk, other.accInk),
+      accSoft: c(accSoft, other.accSoft),
+      ok: c(ok, other.ok),
+      err: c(err, other.err),
+      errSoft: c(errSoft, other.errSoft),
+      code: c(code, other.code),
+      codeInk: c(codeInk, other.codeInk),
+    );
+  }
+}
+
+/// Shortcut so widgets read `context.oc.ink` instead of digging for the
+/// extension by hand.
+extension OCTokensX on BuildContext {
+  OCTokens get oc => OCTokens.of(this);
 }
 
 /// Soft, low-opacity, slightly purple-tinted shadows. Prefer shadow over borders.
@@ -395,44 +574,45 @@ extension _TextStyleExt on TextStyle {
   TextStyle withColor(Color color) => copyWith(color: color);
 }
 
-/// Light theme — the design system's default. Pale lavender-grey canvas.
+/// Light theme — the design system's default. Pale warm-grey canvas, matching
+/// the visual reference (`--bg:#f4f3f1`).
 ThemeData buildLightTheme() {
   const cs = ColorScheme(
     brightness: Brightness.light,
     // One primary colour (ink) + one tonal secondary (orange family).
     primary: OCColors.ctaSolid,
     onPrimary: OCColors.textInverse,
-    primaryContainer: OCColors.surfaceMuted,
+    primaryContainer: Color(0xFFFAF9F8),
     onPrimaryContainer: OCColors.textPrimary,
-    secondary: OCColors.orange,
-    onSecondary: OCColors.textPrimary,
-    secondaryContainer: OCColors.orangeTint,
-    onSecondaryContainer: OCColors.orangeInk,
-    tertiary: OCColors.orangeDeep,
-    onTertiary: OCColors.textPrimary,
-    tertiaryContainer: OCColors.orangeTrack,
-    onTertiaryContainer: OCColors.orangeInk,
-    error: OCColors.danger,
+    secondary: OCColors.acc,
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: OCColors.accSoft,
+    onSecondaryContainer: Color(0xFFB9460C),
+    tertiary: OCColors.acc,
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFFFE6D2),
+    onTertiaryContainer: Color(0xFFB9460C),
+    error: OCTokens.light.err,
     onError: OCColors.textInverse,
-    errorContainer: OCColors.redTint,
-    onErrorContainer: OCColors.redInk,
-    surface: OCColors.surface,
-    onSurface: OCColors.textPrimary,
-    onSurfaceVariant: OCColors.textSecondary,
-    surfaceContainerLowest: OCColors.surface,
-    surfaceContainerLow: OCColors.surfaceSubtle,
-    surfaceContainer: OCColors.canvas,
-    surfaceContainerHigh: OCColors.surfaceMuted,
-    surfaceContainerHighest: OCColors.surfaceMuted,
-    surfaceBright: OCColors.surface,
-    surfaceDim: const Color(0xFFE3E3EC),
-    outline: OCColors.textSecondary,
-    outlineVariant: OCColors.borderHairline,
-    shadow: const Color(0xFF141432),
-    scrim: const Color(0xFF141432),
-    inverseSurface: OCColors.textPrimary,
-    onInverseSurface: OCColors.textInverse,
-    inversePrimary: OCColors.surfaceSubtle,
+    errorContainer: OCTokens.light.errSoft,
+    onErrorContainer: OCTokens.light.err,
+    surface: Color(0xFFFFFFFF),
+    onSurface: Color(0xFF1C1B1A),
+    onSurfaceVariant: Color(0xFF847F78),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFFAF9F8),
+    surfaceContainer: OCTokens.light.bg,
+    surfaceContainerHigh: Color(0xFFFAF9F8),
+    surfaceContainerHighest: Color(0xFFEFEDE9),
+    surfaceBright: Color(0xFFFFFFFF),
+    surfaceDim: Color(0xFFEAE7E2),
+    outline: Color(0xFF847F78),
+    outlineVariant: OCTokens.light.line,
+    shadow: const Color(0xFF1C1B1A),
+    scrim: const Color(0xFF1C1B1A),
+    inverseSurface: Color(0xFF1C1B1A),
+    onInverseSurface: Color(0xFFFFFFFF),
+    inversePrimary: Color(0xFFF4F3F1),
     surfaceTint: Colors.transparent,
   );
   return _baseTheme(cs);
@@ -450,43 +630,44 @@ extension OCColorSchemeX on ColorScheme {
   Color get hairline => outlineVariant;
 }
 
-/// Dark theme — same tokens, dimmed surfaces. Used when the OS asks for dark.
+/// Dark theme — the reference dark palette (`--bg:#161517`, `--card:#212024`).
+/// Picked automatically when the OS is in dark mode.
 ThemeData buildDarkTheme() {
   const cs = ColorScheme(
     brightness: Brightness.dark,
-    primary: Color(0xFFF5F5F7),
-    onPrimary: OCColors.textPrimary,
-    primaryContainer: Color(0xFF2E2440),
-    onPrimaryContainer: Color(0xFFE4D7FF),
-    secondary: OCColors.orange,
-    onSecondary: OCColors.textPrimary,
-    secondaryContainer: Color(0xFF3A2A18),
-    onSecondaryContainer: Color(0xFFFFE0BF),
-    tertiary: OCColors.pinkHot,
-    onTertiary: OCColors.textPrimary,
-    tertiaryContainer: Color(0xFF3B1F33),
-    onTertiaryContainer: Color(0xFFFFD6EC),
-    error: Color(0xFFFF6B6B),
-    onError: OCColors.textPrimary,
-    errorContainer: Color(0xFF3D1F1F),
-    onErrorContainer: Color(0xFFFFD5D5),
-    surface: Color(0xFF0D0D12),
-    onSurface: Color(0xFFF3F3F7),
-    onSurfaceVariant: Color(0xFFA9A9BA),
-    surfaceContainerLowest: Color(0xFF0D0D12),
-    surfaceContainerLow: Color(0xFF15161C),
-    surfaceContainer: Color(0xFF1A1B22),
-    surfaceContainerHigh: Color(0xFF22232B),
-    surfaceContainerHighest: Color(0xFF2A2C35),
-    surfaceBright: Color(0xFF34363F),
-    surfaceDim: Color(0xFF08080C),
-    outline: Color(0xFF9A9AAB),
-    outlineVariant: Color(0xFF2A2C35),
+    primary: Color(0xFFF2EFEB),
+    onPrimary: Color(0xFF161517),
+    primaryContainer: Color(0xFF2B2A2E),
+    onPrimaryContainer: Color(0xFFF2EFEB),
+    secondary: OCColors.acc,
+    onSecondary: Color(0xFF161517),
+    secondaryContainer: Color(0xFF3B2616),
+    onSecondaryContainer: Color(0xFFFF9A5C),
+    tertiary: OCColors.acc,
+    onTertiary: Color(0xFF161517),
+    tertiaryContainer: Color(0xFF3B2616),
+    onTertiaryContainer: Color(0xFFFF9A5C),
+    error: OCTokens.dark.err,
+    onError: Color(0xFF161517),
+    errorContainer: Color(0xFF3A1C1C),
+    onErrorContainer: Color(0xFFFF8787),
+    surface: Color(0xFF161517),
+    onSurface: Color(0xFFF2EFEB),
+    onSurfaceVariant: Color(0xFF8E8993),
+    surfaceContainerLowest: Color(0xFF100F11),
+    surfaceContainerLow: Color(0xFF1B1A1C),
+    surfaceContainer: Color(0xFF212024),
+    surfaceContainerHigh: Color(0xFF262527),
+    surfaceContainerHighest: Color(0xFF2E2D30),
+    surfaceBright: Color(0xFF3A383C),
+    surfaceDim: Color(0xFF0C0B0D),
+    outline: Color(0xFF8E8993),
+    outlineVariant: Color(0xFF333138),
     shadow: Colors.black,
     scrim: Colors.black,
-    inverseSurface: Color(0xFFF3F3F7),
-    onInverseSurface: Color(0xFF14141B),
-    inversePrimary: Color(0xFF1F1F27),
+    inverseSurface: Color(0xFFF2EFEB),
+    onInverseSurface: Color(0xFF161517),
+    inversePrimary: Color(0xFF262527),
     surfaceTint: Colors.transparent,
   );
   return _baseTheme(cs);
@@ -502,9 +683,13 @@ ThemeData _baseTheme(ColorScheme cs) {
   return ThemeData(
     useMaterial3: true,
     colorScheme: cs,
+    // The brightness-aware reference palette. Read it with `context.oc`.
+    extensions: <ThemeExtension<dynamic>>[
+      isLight ? OCTokens.light : OCTokens.dark,
+    ],
     // Design system: the screen background is the canvas tint, cards sit on top of it.
-    canvasColor: isLight ? OCColors.canvas : cs.surface,
-    scaffoldBackgroundColor: isLight ? OCColors.canvas : cs.surface,
+    canvasColor: isLight ? OCTokens.light.bg : cs.surface,
+    scaffoldBackgroundColor: isLight ? OCTokens.light.bg : cs.surface,
     fontFamily: OCTypography.fontFamily,
     fontFamilyFallback: OCTypography._fallback,
     splashFactory: InkSparkle.splashFactory,

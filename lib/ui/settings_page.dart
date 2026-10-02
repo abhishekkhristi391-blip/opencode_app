@@ -194,7 +194,19 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             },
           ),
-          const Divider(height: 26),
+          const Divider(height: OCSpace.xxl),
+
+          // ---------------- chat display ----------------
+          const SectionTitle('Chat'),
+          SwitchListTile(
+            dense: true,
+            title: Text('Show tokens in chat', style: OCTypography.caption),
+            subtitle: Text('Under each reply', style: OCTypography.micro),
+            value: store.showTokensInChat,
+            activeTrackColor: context.oc.acc,
+            onChanged: store.setShowTokensInChat,
+          ),
+          const Divider(height: OCSpace.xxl),
 
           // ---------------- providers ----------------
           const SectionTitle('Providers'),
