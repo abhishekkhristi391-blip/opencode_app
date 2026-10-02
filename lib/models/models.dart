@@ -100,7 +100,7 @@ class Session {
       agent: asStr(j['agent']),
       providerId: asStr(m['providerID']),
       modelId: asStr(m['id'], asStr(m['modelID'])),
-      shareUrl: asStr(j['share']['url']),
+      shareUrl: asStr(asMap(j['share'])['url']),
       raw: j,
     );
   }
