@@ -256,12 +256,6 @@ class Markdown extends StatelessWidget {
         } else {
           launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
         }
-      }
-      ..onLongPress = () {
-        Clipboard.setData(ClipboardData(text: url));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Link copy ho gaya'), duration: Duration(seconds: 1)),
-        );
       };
     return TextSpan(
       text: label,

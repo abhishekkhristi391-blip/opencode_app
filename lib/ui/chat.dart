@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
-import '../models/models.dart'
+import '../models/models.dart';
 import '../state/store.dart';
 import 'diff_page.dart';
 import 'markdown.dart';
@@ -770,6 +771,36 @@ class _TinyBtn extends StatelessWidget {
 // ---------------------------------------------------------------------
 // composer
 // ---------------------------------------------------------------------
+
+/// Rebuilds only when attachments/busy/modelId/agent/toolsEnabled changes
+class _ComposerWidget extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focus;
+  final VoidCallback onSend;
+
+  const _ComposerWidget({
+    required this.controller,
+    required this.focus,
+    required this.onSend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppScope.of(context),
+      builder: (context, _) {
+        final store = AppScope.of(context);
+        return _Composer(
+          store: store,
+          controller: controller,
+          focus: focus,
+          onSend: onSend,
+          onStop: store.abortSession,
+        );
+      },
+    );
+  }
+}
 
 class _Composer extends StatelessWidget {
   final OcStore store;

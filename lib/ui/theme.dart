@@ -77,76 +77,74 @@ class OCTypography {
   static const _uiFamily = 'Inter';
   static const _monoFamily = 'JetBrains Mono';
 
-  // TextStyle helpers that merge with theme.textTheme for scaling.
-  static TextStyle displayLarge(BuildContext context, {Color? color, FontWeight? weight}) =>
-      Theme.of(context).textTheme.displayLarge!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textPrimary,
-        fontWeight: weight ?? FontWeight.w700,
-        height: 1.2,
-        letterSpacing: -0.5,
-      );
+  // Base text styles that don't depend on BuildContext.
+  // These can be used in ThemeData construction.
+  static const displayLarge = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 57,
+    fontWeight: FontWeight.w700,
+    height: 1.2,
+    letterSpacing: -0.5,
+    color: OCColors.textPrimary,
+  );
 
-  static TextStyle headline(BuildContext context, {Color? color, FontWeight? weight}) =>
-      Theme.of(context).textTheme.headlineMedium!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textPrimary,
-        fontWeight: weight ?? FontWeight.w600,
-        height: 1.3,
-      );
+  static const headline = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 32,
+    fontWeight: FontWeight.w600,
+    height: 1.3,
+    color: OCColors.textPrimary,
+  );
 
-  static TextStyle title(BuildContext context, {Color? color, FontWeight? weight}) =>
-      Theme.of(context).textTheme.titleLarge!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textPrimary,
-        fontWeight: weight ?? FontWeight.w600,
-        height: 1.4,
-      );
+  static const title = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    height: 1.4,
+    color: OCColors.textPrimary,
+  );
 
-  static TextStyle bodyLarge(BuildContext context, {Color? color}) =>
-      Theme.of(context).textTheme.bodyLarge!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textPrimary,
-        fontSize: 15.5,
-        height: 1.55,
-      );
+  static const bodyLarge = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 15.5,
+    height: 1.55,
+    color: OCColors.textPrimary,
+  );
 
-  static TextStyle body(BuildContext context, {Color? color}) =>
-      Theme.of(context).textTheme.bodyMedium!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textPrimary,
-        fontSize: 14.5,
-        height: 1.55,
-      );
+  static const body = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 14.5,
+    height: 1.55,
+    color: OCColors.textPrimary,
+  );
 
-  static TextStyle bodySmall(BuildContext context, {Color? color}) =>
-      Theme.of(context).textTheme.bodySmall!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textSecondary,
-        fontSize: 12.5,
-        height: 1.5,
-      );
+  static const bodySmall = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 12.5,
+    height: 1.5,
+    color: OCColors.textSecondary,
+  );
 
-  static TextStyle label(BuildContext context, {Color? color}) =>
-      Theme.of(context).textTheme.labelLarge!.copyWith(
-        fontFamily: _uiFamily,
-        color: color ?? OCColors.textSecondary,
-        fontSize: 11.5,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.3,
-      );
+  static const label = TextStyle(
+    fontFamily: _uiFamily,
+    fontSize: 11.5,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.3,
+    color: OCColors.textSecondary,
+  );
 
-  static TextStyle mono(BuildContext context, {Color? color, double size = 12.5}) =>
-      TextStyle(
-        fontFamily: _monoFamily,
-        fontFamilyFallback: const ['monospace'],
-        fontSize: size,
-        height: 1.45,
-        color: color ?? OCColors.textPrimary,
-      );
+  static TextStyle mono({Color? color, double size = 12.5}) => TextStyle(
+    fontFamily: _monoFamily,
+    fontFamilyFallback: const ['monospace'],
+    fontSize: size,
+    height: 1.45,
+    color: color ?? OCColors.textPrimary,
+  );
 
-  static TextStyle monoSmall(BuildContext context, {Color? color}) =>
-      mono(context, color: color, size: 11.5);
+  static TextStyle monoSmall({Color? color}) => mono(color: color, size: 11.5);
+
+  // Helper to create a TextStyle with a specific color from the base style.
+  static TextStyle withColor(TextStyle base, Color color) => base.copyWith(color: color);
 }
 
 /// Light theme derived from dark (for completeness).
@@ -205,7 +203,7 @@ ThemeData _baseTheme(ColorScheme cs) {
       elevation: OCElevation.level0,
       scrolledUnderElevation: OCElevation.level1,
       centerTitle: false,
-      titleTextStyle: OCTypography.title(cs.surface, color: cs.onSurface),
+      titleTextStyle: OCTypography.title.withColor(cs.onSurface),
       iconTheme: IconThemeData(color: cs.onSurface, size: 22),
       actionsIconTheme: IconThemeData(color: cs.onSurface, size: 22),
     ),
@@ -252,7 +250,7 @@ ThemeData _baseTheme(ColorScheme cs) {
         foregroundColor: cs.onPrimary,
         padding: const EdgeInsets.symmetric(horizontal: OCSpace.lg, vertical: OCSpace.sm),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(OCRadius.sm)),
-        textStyle: OCTypography.label(cs.surface, color: cs.onPrimary),
+        textStyle: OCTypography.label.withColor(cs.onPrimary),
         minimumSize: const Size(0, 44), // accessibility
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
@@ -263,7 +261,7 @@ ThemeData _baseTheme(ColorScheme cs) {
         side: BorderSide(color: cs.outline),
         padding: const EdgeInsets.symmetric(horizontal: OCSpace.lg, vertical: OCSpace.sm),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(OCRadius.sm)),
-        textStyle: OCTypography.label(cs.surface, color: cs.primary),
+        textStyle: OCTypography.label.withColor(cs.primary),
         minimumSize: const Size(0, 44),
       ),
     ),
@@ -272,7 +270,7 @@ ThemeData _baseTheme(ColorScheme cs) {
         foregroundColor: cs.primary,
         padding: const EdgeInsets.symmetric(horizontal: OCSpace.md, vertical: OCSpace.xs),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(OCRadius.sm)),
-        textStyle: OCTypography.label(cs.surface, color: cs.primary),
+        textStyle: OCTypography.label.withColor(cs.primary),
         minimumSize: const Size(0, 44),
       ),
     ),
@@ -282,8 +280,8 @@ ThemeData _baseTheme(ColorScheme cs) {
       backgroundColor: cs.surfaceContainerHighest,
       selectedColor: cs.primaryContainer,
       disabledColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-      labelStyle: OCTypography.label(cs.surface),
-      secondaryLabelStyle: OCTypography.label(cs.surface, color: cs.onPrimaryContainer),
+      labelStyle: OCTypography.label,
+      secondaryLabelStyle: OCTypography.label.withColor(cs.onPrimaryContainer),
       padding: const EdgeInsets.symmetric(horizontal: OCSpace.xs, vertical: OCSpace.xxs),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(OCRadius.full)),
       side: BorderSide.none,
@@ -303,9 +301,9 @@ ThemeData _baseTheme(ColorScheme cs) {
     listTileTheme: ListTileThemeData(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: OCSpace.lg, vertical: OCSpace.xs),
-      titleTextStyle: OCTypography.body(cs.surface),
-      subtitleTextStyle: OCTypography.bodySmall(cs.surface),
-      leadingAndTrailingTextStyle: OCTypography.bodySmall(cs.surface),
+      titleTextStyle: OCTypography.body,
+      subtitleTextStyle: OCTypography.bodySmall,
+      leadingAndTrailingTextStyle: OCTypography.bodySmall,
       iconColor: cs.onSurfaceVariant,
       textColor: cs.onSurface,
       selectedTileColor: cs.primaryContainer.withValues(alpha: 0.3),
@@ -319,8 +317,8 @@ ThemeData _baseTheme(ColorScheme cs) {
       surfaceTintColor: Colors.transparent,
       elevation: OCElevation.level3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(OCRadius.lg)),
-      titleTextStyle: OCTypography.title(cs.surface),
-      contentTextStyle: OCTypography.body(cs.surface),
+      titleTextStyle: OCTypography.title,
+      contentTextStyle: OCTypography.body,
       insetPadding: const EdgeInsets.all(OCSpace.lg),
     ),
 
@@ -346,9 +344,9 @@ ThemeData _baseTheme(ColorScheme cs) {
       indicatorColor: cs.primaryContainer,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return OCTypography.label(cs.surface, color: cs.primary);
+          return OCTypography.label.withColor(cs.primary);
         }
-        return OCTypography.label(cs.surface, color: cs.onSurfaceVariant);
+        return OCTypography.label.withColor(cs.onSurfaceVariant);
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -364,7 +362,7 @@ ThemeData _baseTheme(ColorScheme cs) {
         color: cs.inverseSurface.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(OCRadius.sm),
       ),
-      textStyle: OCTypography.label(cs.surface, color: cs.onInverseSurface),
+      textStyle: OCTypography.label.withColor(cs.onInverseSurface),
       padding: const EdgeInsets.symmetric(horizontal: OCSpace.md, vertical: OCSpace.xs),
       verticalOffset: 8,
       preferBelow: true,
@@ -373,7 +371,7 @@ ThemeData _baseTheme(ColorScheme cs) {
     // --- SnackBar (replaced by custom toast, but keep sane defaults) ---
     snackBarTheme: SnackBarThemeData(
       backgroundColor: cs.inverseSurface,
-      contentTextStyle: OCTypography.body(cs.surface, color: cs.onInverseSurface),
+      contentTextStyle: OCTypography.body.withColor(cs.onInverseSurface),
       actionTextColor: cs.primary,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(OCRadius.md)),
