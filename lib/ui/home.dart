@@ -77,14 +77,6 @@ class HomeShellState extends State<HomeShell> {
           ],
         ),
       ),
-      floatingActionButton: index == 0 && store.busy
-          ? FloatingActionButton.small(
-              heroTag: 'abort',
-              tooltip: 'Stop (abort)',
-              onPressed: store.abortSession,
-              child: const Icon(Icons.stop_rounded),
-            )
-          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: goTo,

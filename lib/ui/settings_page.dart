@@ -135,6 +135,31 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             },
           ),
+          _ActionTile(
+            icon: Icons.folder_open,
+            title: 'External folder likhne ki permission do',
+            subtitle: 'Project ke bahar bhi files create karne allow karega',
+            onTap: () async {
+              final ok = await confirmDialog(context,
+                  title: 'External directory permission allow karein?',
+                  message: 'Ye opencode ko project folder ke bahar bhi files likhne dega (jaise /storage/emulated/0/).',
+                  confirm: 'Allow');
+              if (!ok) return;
+              try {
+                await store.api.patchConfig({
+                  'permission': {
+                    'edit': 'allow',
+                    'bash': 'allow',
+                    'external_directory': 'allow',
+                  }
+                });
+                await store.refreshConfig();
+                if (context.mounted) showSnack(context, 'External directory permission allow ho gaya');
+              } catch (e) {
+                if (context.mounted) showSnack(context, '$e', error: true);
+              }
+            },
+          ),
           const Divider(height: 26),
 
           // ---------------- providers ----------------
