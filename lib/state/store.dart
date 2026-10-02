@@ -457,9 +457,9 @@ class OcStore extends ChangeNotifier {
     );
     final userParts = parts.where((p) => p['type'] == 'text' || p['type'] == 'file').map((p) {
       if (p['type'] == 'text') {
-        return Part.fromJson({'id': 'part-${userMsgId}', 'messageID': userMsgId, 'sessionID': sid, 'type': 'text', 'text': p['text']});
+        return Part.fromJson({'id': 'part-$userMsgId', 'messageID': userMsgId, 'sessionID': sid, 'type': 'text', 'text': p['text']});
       } else {
-        return Part.fromJson({'id': 'part-${userMsgId}-${p['filename']}', 'messageID': userMsgId, 'sessionID': sid, 'type': 'file', 'filename': p['filename'], 'mime': p['mime'], 'url': p['url']});
+        return Part.fromJson({'id': 'part-$userMsgId-${p['filename']}', 'messageID': userMsgId, 'sessionID': sid, 'type': 'file', 'filename': p['filename'], 'mime': p['mime'], 'url': p['url']});
       }
     }).toList();
     messages.add(ChatMessage(userMsg, userParts));
@@ -918,7 +918,13 @@ class OcStore extends ChangeNotifier {
     var msg = _messageById(part.messageId);
     if (msg == null) {
       // Check if the message was an optimistic one that got replaced
-      final optimisticMsg = messages.firstWhereOrNull((m) => m.info.raw['optimistic'] == true && m.info.role == 'user');
+      ChatMessage? optimisticMsg;
+      for (final m in messages) {
+        if (m.info.raw['optimistic'] == true && m.info.role == 'user') {
+          optimisticMsg = m;
+          break;
+        }
+      }
       if (optimisticMsg != null && part.messageId.startsWith('local-')) {
         // Map the optimistic message ID to the real one
         // This is a heuristic - the server might send parts for the real message ID
@@ -945,11 +951,13 @@ class OcStore extends ChangeNotifier {
         messages.add(msg);
       }
     }
-    final i = msg.parts.indexWhere((p) => p.id == part.id);
-    if (i >= 0) {
-      msg.parts[i] = part;
-    } else {
-      msg.parts.add(part);
+    if (msg != null) {
+      final i = msg.parts.indexWhere((p) => p.id == part.id);
+      if (i >= 0) {
+        msg.parts[i] = part;
+      } else {
+        msg.parts.add(part);
+      }
     }
     notifyListeners();
   }
