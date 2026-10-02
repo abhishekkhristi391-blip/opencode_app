@@ -93,7 +93,7 @@ class HomeShellState extends State<HomeShell> {
           if (store.current != null)
             IconButton(
               tooltip: S.chatRenameTooltip,
-              icon: const Icon(Icons.drive_file_rename_outlined),
+              icon: const Icon(Icons.drive_file_rename),
               onPressed: _renameSession,
             ),
           IconButton(

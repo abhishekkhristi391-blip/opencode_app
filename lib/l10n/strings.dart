@@ -145,7 +145,8 @@ class S {
   static const chatLoading = 'Loading messages';
   static const chatLoadOlder = 'Load older messages';
   static const chatWelcomeTitle = 'What should we build?';
-  static const chatWelcomeSubtitle = '%s · agent %s';
+  static String chatWelcomeSubtitle(String model, String agent) =>
+      'Model $model · agent $agent';
   static const chatWelcomeEmptySubtitle = 'Pick a model to get started';
   static const chatLoadOlderFailed = 'Could not load older messages';
 
