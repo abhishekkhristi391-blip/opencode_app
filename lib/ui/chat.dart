@@ -238,6 +238,23 @@ class _ChatMessagesState extends State<_ChatMessages> {
     });
   }
 
+  void _loadOlderMessages(OcStore store) {
+    if (!store.hasMoreMessages || store.messagesLoading) return;
+    // Save current scroll position relative to the first item
+    final firstItemOffset = widget.scroll.position.pixels;
+    store.loadOlderMessages().then((_) {
+      if (mounted) {
+        // Restore scroll position by offsetting by the height of new items
+        // Since we prepend, we need to scroll down by the amount of new content
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (widget.scroll.hasClients) {
+            widget.scroll.jumpTo(widget.scroll.position.pixels + 100); // approximate
+          }
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -281,11 +298,18 @@ class _ChatMessagesState extends State<_ChatMessages> {
             ListView.builder(
               controller: widget.scroll,
               padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
-              itemCount: store.messages.length,
+              itemCount: store.messages.length + (store.hasMoreMessages ? 1 : 0),
               cacheExtent: 500,
               itemBuilder: (_, i) {
-                final m = store.messages[i];
-                final isLast = i + 1 >= store.messages.length;
+                if (i == 0 && store.hasMoreMessages) {
+                  return _LoadOlderButton(
+                    onTap: () => _loadOlderMessages(store),
+                    loading: store.messagesLoading,
+                  );
+                }
+                final msgIndex = store.hasMoreMessages ? i - 1 : i;
+                final m = store.messages[msgIndex];
+                final isLast = msgIndex + 1 >= store.messages.length;
                 return _MessageTile(
                   key: ValueKey(m.info.id),
                   msg: m,
@@ -312,6 +336,37 @@ class _ChatMessagesState extends State<_ChatMessages> {
           ],
         );
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------
+
+class _LoadOlderButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final bool loading;
+  const _LoadOlderButton({required this.onTap, required this.loading});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: loading
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            : OutlinedButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.keyboard_arrow_up, size: 18),
+                label: const Text('Purane messages load karo', style: TextStyle(fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: cs.primary,
+                  side: BorderSide(color: cs.outlineVariant),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+      ),
     );
   }
 }

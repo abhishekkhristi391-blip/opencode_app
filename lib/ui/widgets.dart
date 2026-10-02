@@ -3,20 +3,104 @@ import 'package:flutter/services.dart';
 
 import '../models/models.dart';
 
-void showSnack(BuildContext context, String msg, {bool error = false}) {
+/// Lightweight toast that doesn't steal focus like SnackBar.
+/// Uses an OverlayEntry so it works anywhere (dialogs, sheets, etc.)
+void showToast(BuildContext context, String msg, {bool error = false}) {
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text(msg, maxLines: 4, overflow: TextOverflow.ellipsis),
-      backgroundColor: error ? const Color(0xFF7F1D1D) : null,
-      duration: const Duration(seconds: 3),
-    ));
+  final overlay = Overlay.of(context);
+  final cs = Theme.of(context).colorScheme;
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => _ToastWidget(
+      message: msg,
+      error: error,
+      onDismiss: () => entry.remove(),
+    ),
+  );
+  overlay.insert(entry);
+  Future.delayed(const Duration(seconds: 3), () {
+    if (entry.mounted) entry.remove();
+  });
+}
+
+class _ToastWidget extends StatefulWidget {
+  final String message;
+  final bool error;
+  final VoidCallback onDismiss;
+  const _ToastWidget({required this.message, required this.error, required this.onDismiss});
+
+  @override
+  State<_ToastWidget> createState() => _ToastWidgetState();
+}
+
+class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
+    ..forward();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Positioned(
+      bottom: 24,
+      left: 16,
+      right: 16,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, __) => Transform.translate(
+          offset: Offset(0, 20 * (1 - _c.value)),
+          child: Opacity(
+            opacity: _c.value,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: widget.error ? cs.error : cs.inverseSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(widget.error ? Icons.error_outline : Icons.check_circle_outline,
+                        size: 18, color: widget.error ? cs.onError : cs.onInverseSurface),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(widget.message,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13.5, color: widget.error ? cs.onError : cs.onInverseSurface)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Back-compat: uses toast instead of SnackBar
+void showSnack(BuildContext context, String msg, {bool error = false}) {
+  showToast(context, msg, error: error);
 }
 
 void copyToClipboard(BuildContext context, String text, [String label = 'Copy ho gaya']) {
   Clipboard.setData(ClipboardData(text: text));
-  showSnack(context, label);
+  showToast(context, label);
 }
 
 class EmptyHint extends StatelessWidget {

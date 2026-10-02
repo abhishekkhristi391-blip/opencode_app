@@ -59,6 +59,8 @@ class OcStore extends ChangeNotifier {
   Session? current;
   List<ChatMessage> messages = [];
   bool messagesLoading = false;
+  bool hasMoreMessages = false;
+  String? _oldestMessageId;
   bool busy = false;
   String busyStatus = '';
   String? sessionError;
@@ -316,18 +318,24 @@ class OcStore extends ChangeNotifier {
     sessionError = null;
     liveDiff = [];
     todos = [];
+    _oldestMessageId = null;
+    hasMoreMessages = false;
     messagesLoading = true;
     notifyListeners();
     try {
-      messages = (await api.messages(id))
+      final fetched = (await api.messages(id, limit: 60))
           .map((e) => ChatMessage(e.info, e.parts))
           .where((m) => !m.info.summary)
           .toList();
+      messages = fetched;
+      if (fetched.isNotEmpty) {
+        _oldestMessageId = fetched.first.info.id;
+        hasMoreMessages = true; // assume there might be more, will verify on load
+      }
       final st = asMap(await api.sessionStatus())[id];
       busy = st != null && asStr(asMap(st)['type']) == 'busy';
       busyStatus = busy ? asStr(asMap(st)['message'], 'busy') : '';
       if (busy) _startBusyTimer();
-      // Todos / diff are secondary: don't block the chat on them.
       unawaited(refreshTodos());
       unawaited(refreshDiff());
     } on ApiException catch (e) {
@@ -432,6 +440,30 @@ class OcStore extends ChangeNotifier {
     try {
       liveDiff = await api.diff(id);
     } catch (_) {/* ignore */}
+    notifyListeners();
+  }
+
+  Future<void> loadOlderMessages() async {
+    final id = current?.id;
+    if (id == null || _oldestMessageId == null || messagesLoading) return;
+    messagesLoading = true;
+    notifyListeners();
+    try {
+      final fetched = (await api.messages(id, limit: 60, before: _oldestMessageId))
+          .map((e) => ChatMessage(e.info, e.parts))
+          .where((m) => !m.info.summary)
+          .toList();
+      if (fetched.isNotEmpty) {
+        _oldestMessageId = fetched.first.info.id;
+        hasMoreMessages = fetched.length >= 60;
+        messages = [...fetched, ...messages];
+      } else {
+        hasMoreMessages = false;
+      }
+    } catch (_) {
+      hasMoreMessages = false;
+    }
+    messagesLoading = false;
     notifyListeners();
   }
 

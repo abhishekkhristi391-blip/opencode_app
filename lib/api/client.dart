@@ -324,8 +324,11 @@ class OcClient {
   /// Returns a flat list of (message, parts) pairs.
   /// Default [limit] keeps payloads small; pass `limit: null`-style bigger
   /// value only when you really need full history.
-  Future<List<({Message info, List<Part> parts})>> messages(String id, {int? limit = 60}) async {
-    final raw = asList(await get('/session/$id/message', q: {'limit': limit}));
+  /// [before] loads messages older than the given message ID.
+  Future<List<({Message info, List<Part> parts})>> messages(String id, {int? limit = 60, String? before}) async {
+    final q = <String, dynamic>{'limit': limit};
+    if (before != null) q['before'] = before;
+    final raw = asList(await get('/session/$id/message', q: q));
     return raw.map((e) {
       final m = asMap(e);
       return (
