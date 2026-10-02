@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import 'primitives.dart';
 import 'theme.dart';
+
+/// Pushes a plain content screen with a token title bar. Used by every
+/// secondary screen so they share one title style and one back button.
+Future<void> pushScreen(
+  BuildContext context, {
+  required String title,
+  required Widget child,
+}) => Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (_) => Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: SafeArea(child: child),
+    ),
+  ),
+);
 
 /// Lightweight toast that doesn't steal focus like SnackBar.
 /// Uses an OverlayEntry so it works anywhere (dialogs, sheets, etc.)
@@ -120,7 +136,7 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
 void copyToClipboard(
   BuildContext context,
   String text, [
-  String label = 'Copy ho gaya',
+  String label = S.copied,
 ]) {
   Clipboard.setData(ClipboardData(text: text));
   showToast(context, label);
@@ -235,7 +251,7 @@ class ConnectionErrorView extends StatelessWidget {
             ),
             const SizedBox(height: OCSpace.lg),
             Text(
-              'Server se connect nahi ho raha',
+              S.connectionFailedTitle,
               textAlign: TextAlign.center,
               style: OCTypography.h3.copyWith(color: OCColors.textPrimary),
             ),
@@ -250,7 +266,7 @@ class ConnectionErrorView extends StatelessWidget {
             ),
             const SizedBox(height: OCSpace.xl),
             OCButton(
-              label: 'Retry',
+              label: S.retry,
               icon: Icons.refresh,
               variant: OCButtonVariant.primaryOrange,
               expand: false,
@@ -261,19 +277,13 @@ class ConnectionErrorView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Termux me server chalu karo:', style: OCTypography.h3),
+                  Text(S.serverSetupTitle, style: OCTypography.h3),
                   const SizedBox(height: OCSpace.md),
                   const OCInnerCell(
-                    child: Mono(
-                      'cd <project-folder>\nopencode serve --port 4096\n\n# background me:\nnohup opencode serve --port 4096 &',
-                      size: 12,
-                    ),
+                    child: Mono(S.serverSetupCommand, size: 12),
                   ),
                   const SizedBox(height: OCSpace.md),
-                  Text(
-                    'Server ko usi folder se start karna zaroori hai — file browser aur diff wahi chalti hai.',
-                    style: OCTypography.caption,
-                  ),
+                  Text(S.serverSetupNote, style: OCTypography.caption),
                 ],
               ),
             ),
@@ -290,7 +300,7 @@ Future<String?> promptText(
   String initial = '',
   String hint = '',
   int maxLines = 1,
-  String confirm = 'Save',
+  String confirm = S.save,
 }) async {
   final c = TextEditingController(text: initial);
   return showDialog<String>(
@@ -306,7 +316,7 @@ Future<String?> promptText(
       ),
       actions: [
         OCButton(
-          label: 'Cancel',
+          label: S.cancel,
           variant: OCButtonVariant.ghostOutline,
           expand: false,
           onPressed: () => Navigator.pop(context),
@@ -327,7 +337,7 @@ Future<bool> confirmDialog(
   BuildContext context, {
   required String title,
   required String message,
-  String confirm = 'Haan',
+  String confirm = S.yes,
   bool danger = false,
 }) async {
   final r = await showDialog<bool>(
@@ -337,7 +347,7 @@ Future<bool> confirmDialog(
       content: Text(message),
       actions: [
         OCButton(
-          label: 'Cancel',
+          label: S.cancel,
           variant: OCButtonVariant.ghostOutline,
           expand: false,
           onPressed: () => Navigator.pop(context, false),

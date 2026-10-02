@@ -16,9 +16,11 @@ class OCColors {
   static const surfaceMuted = Color(0xFFEFEFF5);
   static const borderHairline = Color(0xFFECECF2);
   static const divider = Color(0xFFF0F0F4);
+  // Contrast on the canvas (#F0F0F7) and on white:
+  // textPrimary 20.1:1 · textSecondary 6.3:1 · textTertiary 4.7:1 — all >= 4.5:1.
   static const textPrimary = Color(0xFF0D0D12);
-  static const textSecondary = Color(0xFF6B6B7B);
-  static const textTertiary = Color(0xFFA0A0B0);
+  static const textSecondary = Color(0xFF565667);
+  static const textTertiary = Color(0xFF6B6B7B);
   static const textInverse = Color(0xFFFFFFFF);
 
   // --- brand accents (base / soft / tint + accessible ink) -----------
@@ -42,7 +44,7 @@ class OCColors {
   static const yellow = Color(0xFFFFD23F);
   static const yellowSoft = Color(0xFFFFE48A);
   static const yellowTint = Color(0xFFFFF7D6);
-  static const yellowInk = Color(0xFFA16207);
+  static const yellowInk = Color(0xFF854D0E);
 
   static const blue = Color(0xFF4C9AFF);
   static const blueSky = Color(0xFFBFE3FF);
@@ -51,7 +53,7 @@ class OCColors {
 
   static const green = Color(0xFF34C759);
   static const greenTint = Color(0xFFE4F8E8);
-  static const greenInk = Color(0xFF15803D);
+  static const greenInk = Color(0xFF166534);
 
   static const red = Color(0xFFEF4444);
   static const redTint = Color(0xFFFEE8E8);
@@ -64,8 +66,11 @@ class OCColors {
   static const danger = red;
   static const warning = Color(0xFFFFB020);
   static const info = blue;
-  static const toggleOn = orange;
+  static const toggleOn = orangeDeep;
   static const toggleOff = Color(0xFFD9D9E3);
+
+  /// Tonal steps of the single secondary hue, used for tracks and fills.
+  static const orangeWash = Color(0xFFFFF7EC);
 
   // --- code surfaces --------------------------------------------------
   static const codeBg = surfaceSubtle;
@@ -74,7 +79,7 @@ class OCColors {
   // --- aliases kept so existing call sites keep compiling -------------
   static const accent = ctaSolid;
   static const accentHover = Color(0xFF2A2A35);
-  static const accentSoft = purple;
+  static const accentSoft = orange;
   static const error = danger;
   static const textOnAccent = textInverse;
   static const textMuted = textSecondary;
@@ -82,8 +87,8 @@ class OCColors {
   static const surfaceHigh = surfaceMuted;
   static const surfaceHighest = surfaceMuted;
   static const border = borderHairline;
-  static const borderFocus = purple;
-  static const selection = purple;
+  static const borderFocus = orange;
+  static const selection = orange;
 }
 
 /// Soft, low-opacity, slightly purple-tinted shadows. Prefer shadow over borders.
@@ -202,8 +207,11 @@ class OCSpace {
   static const ctaBottom = 24.0;
   static const safeBottom = 24.0;
 
-  /// Accessibility: never ship a tap target smaller than this.
-  static const tapTarget = 44.0;
+  /// Accessibility: every tappable element is at least 48x48dp.
+  static const tapTarget = 48.0;
+
+  /// Minimum gap between two tappable elements.
+  static const tapGap = 8.0;
 }
 
 /// Squircle-and-pills shape language. No sharp corners.
@@ -391,18 +399,19 @@ extension _TextStyleExt on TextStyle {
 ThemeData buildLightTheme() {
   const cs = ColorScheme(
     brightness: Brightness.light,
+    // One primary colour (ink) + one tonal secondary (orange family).
     primary: OCColors.ctaSolid,
     onPrimary: OCColors.textInverse,
-    primaryContainer: OCColors.purpleTint,
-    onPrimaryContainer: OCColors.purpleInk,
+    primaryContainer: OCColors.surfaceMuted,
+    onPrimaryContainer: OCColors.textPrimary,
     secondary: OCColors.orange,
-    onSecondary: OCColors.textInverse,
+    onSecondary: OCColors.textPrimary,
     secondaryContainer: OCColors.orangeTint,
     onSecondaryContainer: OCColors.orangeInk,
-    tertiary: OCColors.pink,
-    onTertiary: OCColors.textInverse,
-    tertiaryContainer: OCColors.pinkTint,
-    onTertiaryContainer: OCColors.pinkInk,
+    tertiary: OCColors.orangeDeep,
+    onTertiary: OCColors.textPrimary,
+    tertiaryContainer: OCColors.orangeTrack,
+    onTertiaryContainer: OCColors.orangeInk,
     error: OCColors.danger,
     onError: OCColors.textInverse,
     errorContainer: OCColors.redTint,
@@ -427,6 +436,18 @@ ThemeData buildLightTheme() {
     surfaceTint: Colors.transparent,
   );
   return _baseTheme(cs);
+}
+
+/// Semantic aliases so widgets read one vocabulary instead of raw colours.
+extension OCColorSchemeX on ColorScheme {
+  /// Tonal surface used behind selected rows, chips and menus.
+  Color get tonalSurface => secondaryContainer;
+
+  /// Text-safe colour for content placed on [tonalSurface].
+  Color get onTonalSurface => onSecondaryContainer;
+
+  /// Hairline that separates stacked rows on a card surface.
+  Color get hairline => outlineVariant;
 }
 
 /// Dark theme — same tokens, dimmed surfaces. Used when the OS asks for dark.
@@ -705,6 +726,7 @@ ThemeData _baseTheme(ColorScheme cs) {
     // --- Navigation -----------------------------------------------------
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: cs.surface,
+      // M3 destinations are already 48dp tall targets.
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       height: 66,
@@ -755,7 +777,7 @@ ThemeData _baseTheme(ColorScheme cs) {
     snackBarTheme: SnackBarThemeData(
       backgroundColor: cs.inverseSurface,
       contentTextStyle: OCTypography.body.withColor(cs.onInverseSurface),
-      actionTextColor: OCColors.orange,
+      actionTextColor: OCColors.orangeBright,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(OCRadius.inner),
@@ -765,16 +787,16 @@ ThemeData _baseTheme(ColorScheme cs) {
 
     // --- Progress --------------------------------------------------------
     progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: OCColors.orange,
-      linearTrackColor: const Color(0xFFFFF1D6),
-      circularTrackColor: const Color(0xFFFFF1D6),
+      color: OCColors.orangeDeep,
+      linearTrackColor: OCColors.orangeTrack,
+      circularTrackColor: OCColors.orangeTrack,
     ),
 
     // --- Selection -------------------------------------------------------
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: cs.onSurface,
-      selectionColor: OCColors.purple.withValues(alpha: 0.25),
-      selectionHandleColor: OCColors.purple,
+      selectionColor: OCColors.orange.withValues(alpha: 0.25),
+      selectionHandleColor: OCColors.orangeDeep,
     ),
 
     visualDensity: VisualDensity.standard,

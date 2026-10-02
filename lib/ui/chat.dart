@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/strings.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
@@ -83,11 +84,20 @@ class _ChatPageState extends State<ChatPage> {
             lastCount: _lastCount,
             onLastCountChange: (v) => _lastCount = v,
             onStickToBottom: _stickToBottom,
+            onPickSuggestion: _applySuggestion,
           ),
         ),
         _ComposerWidget(controller: input, focus: focus, onSend: _send),
       ],
     );
+  }
+
+  /// Suggested prompts drop straight into the composer.
+  void _applySuggestion(String text) {
+    input.text = text;
+    input.selection = TextSelection.collapsed(offset: text.length);
+    focus.requestFocus();
+    setState(() {});
   }
 
   Future<void> _send() async {
@@ -110,7 +120,7 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (store.providerId.isEmpty || store.modelId.isEmpty) {
-      if (mounted) showSnack(context, 'Pehle model choose karo', error: true);
+      if (mounted) showSnack(context, S.modelMissing, error: true);
       return;
     }
 
@@ -176,6 +186,7 @@ class _ChatMessages extends StatefulWidget {
   final int lastCount;
   final ValueChanged<int> onLastCountChange;
   final VoidCallback onStickToBottom;
+  final ValueChanged<String> onPickSuggestion;
 
   const _ChatMessages({
     required this.scroll,
@@ -187,6 +198,7 @@ class _ChatMessages extends StatefulWidget {
     required this.lastCount,
     required this.onLastCountChange,
     required this.onStickToBottom,
+    required this.onPickSuggestion,
   });
 
   @override
@@ -286,16 +298,10 @@ class _ChatMessagesState extends State<_ChatMessages> {
         if (justLoaded || grew || store.busy) _stickToBottom(twice: justLoaded);
 
         if (store.messagesLoading) {
-          return const LoadingView(label: 'Messages load ho rahe hain');
+          return const LoadingView(label: S.chatLoading);
         }
         if (store.messages.isEmpty) {
-          return _Welcome(
-            store,
-            onPick: (s) {
-              // We need access to input/focus from parent - use a callback approach
-              // For now, keep the welcome simple
-            },
-          );
+          return _Welcome(store, onPick: widget.onPickSuggestion);
         }
 
         return Stack(
@@ -366,7 +372,7 @@ class _LoadOlderButton extends StatelessWidget {
             : OCButton(
                 onPressed: onTap,
                 icon: Icons.keyboard_arrow_up,
-                label: 'Purane messages load karo',
+                label: S.chatLoadOlder,
                 variant: OCButtonVariant.secondaryPill,
                 expand: false,
               ),
@@ -437,66 +443,53 @@ class _Welcome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(OCSpace.xl),
+      padding: const EdgeInsets.all(OCSpace.lg),
       children: [
         const SizedBox(height: OCSpace.xl),
-        Center(
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(OCRadius.card),
-              gradient: OCGradient.ctaOrangeSoft,
-              boxShadow: OCShadow.card,
-            ),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.bolt,
-              size: 34,
-              color: OCColors.textInverse,
-            ),
+        const Center(
+          child: OCIconTile(
+            icon: Icons.bolt,
+            accent: OCAccent.orange,
+            size: 72,
+            iconSize: 34,
+            solid: true,
           ),
         ),
         const SizedBox(height: OCSpace.lg),
-        const Center(
+        Center(
           child: Text(
-            'Kya karna hai?',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: OCColors.textPrimary,
-            ),
+            S.chatWelcomeTitle,
+            textAlign: TextAlign.center,
+            style: OCTypography.h2.copyWith(color: OCColors.textPrimary),
           ),
         ),
         const SizedBox(height: OCSpace.xs),
         Center(
           child: Text(
-            'Model ${store.providerId}/${store.modelId} · agent ${store.agent}',
+            store.modelId.isEmpty
+                ? S.chatWelcomeEmptySubtitle
+                : S.chatWelcomeSubtitle(
+                    '${store.providerId}/${store.modelId}',
+                    store.agent,
+                  ),
             style: OCTypography.caption,
           ),
         ),
         const SizedBox(height: OCSpace.xl),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final s in const [
-              'Is project ka structure samjha aur short me bata',
-              'Tests chala kar failures explain kar',
-              'Sabse bada TODO file find kar',
-              'Ek naya feature plan bana',
-            ])
-              ActionChip(
-                label: Text(
-                  s,
-                  style: OCTypography.caption.copyWith(
-                    color: OCColors.textPrimary,
-                  ),
-                ),
-                onPressed: () => onPick(s),
-              ),
-          ],
-        ),
+        // Real suggestion cards: one row each, 8dp apart, 48dp tall.
+        for (final s in const [
+          S.chatSuggestionStructure,
+          S.chatSuggestionTests,
+          S.chatSuggestionTodo,
+          S.chatSuggestionPlan,
+        ])
+          OCListRow(
+            title: s,
+            titleStyle: OCTypography.body.copyWith(color: OCColors.textPrimary),
+            leadingIcon: Icons.auto_awesome_outlined,
+            accent: OCAccent.orange,
+            onTap: () => onPick(s),
+          ),
       ],
     );
   }
@@ -801,30 +794,34 @@ class _MessageActions extends StatelessWidget {
       padding: const EdgeInsets.only(left: OCSpace.xxs, top: OCSpace.xxs),
       child: Row(
         children: [
-          _TinyBtn(Icons.copy_all_outlined, 'Copy', () {
+          _TinyBtn(Icons.copy_all_outlined, S.copy, () {
             final text = msg.parts
                 .where((p) => p.type == 'text')
                 .map((p) => p.text)
                 .join('\n');
             copyToClipboard(context, text);
           }),
-          _TinyBtn(Icons.call_split, 'Fork yahan se', () async {
+          _TinyBtn(Icons.call_split, S.messageForkHere, () async {
             final s = await store.forkSession(
               store.current!.id,
               messageId: msg.info.id,
             );
             if (s != null && context.mounted) {
               await store.openSession(s.id);
-              if (context.mounted) showSnack(context, 'Fork ban gaya');
+              if (context.mounted) showSnack(context, S.messageForked);
             }
           }),
-          _TinyBtn(Icons.undo, 'Revert', () => store.revert(msg.info.id)),
-          _TinyBtn(Icons.delete_outline, 'Delete', () async {
+          _TinyBtn(
+            Icons.undo,
+            S.messageRevert,
+            () => store.revert(msg.info.id),
+          ),
+          _TinyBtn(Icons.delete_outline, S.delete, () async {
             final ok = await confirmDialog(
               context,
-              title: 'Message delete karein?',
-              message: 'Ye message aur uske saare parts hata jayenge.',
-              confirm: 'Delete',
+              title: S.messageDeleteTitle,
+              message: S.messageDeleteBody,
+              confirm: S.delete,
               danger: true,
             );
             if (!ok) return;
@@ -940,7 +937,7 @@ class _Composer extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Attach / slash command',
+                    tooltip: S.chatAttachTooltip,
                     onPressed: () => _showAttachSheet(context),
                   ),
                   Expanded(
@@ -955,25 +952,40 @@ class _Composer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: OCSpace.sm),
-                  if (store.busy)
-                    IconButton.filled(
-                      onPressed: onStop,
-                      style: IconButton.styleFrom(
-                        backgroundColor: OCColors.red,
-                      ),
-                      icon: const Icon(Icons.stop_rounded),
-                    )
-                  else
-                    IconButton.filled(
-                      onPressed: onSend,
-                      style: IconButton.styleFrom(
-                        backgroundColor: OCColors.orange,
-                      ),
-                      icon: const Icon(
-                        Icons.arrow_upward,
-                        color: OCColors.textInverse,
-                      ),
-                    ),
+                  // Send stays disabled until there is something to send;
+                  // while the agent is running the same slot becomes Stop.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (context, value, _) {
+                      if (store.busy) {
+                        return IconButton.filled(
+                          tooltip: S.chatStopTooltip,
+                          onPressed: onStop,
+                          style: IconButton.styleFrom(
+                            backgroundColor: OCColors.redInk,
+                            foregroundColor: OCColors.textInverse,
+                            minimumSize: const Size.square(OCSpace.tapTarget),
+                          ),
+                          icon: const Icon(Icons.stop_rounded),
+                        );
+                      }
+                      final canSend =
+                          value.text.trim().isNotEmpty ||
+                          store.attachments.isNotEmpty;
+                      return IconButton.filled(
+                        tooltip: S.chatSendTooltip,
+                        onPressed: canSend ? onSend : null,
+                        style: IconButton.styleFrom(
+                          backgroundColor: OCColors.ctaSolid,
+                          foregroundColor: OCColors.textInverse,
+                          disabledBackgroundColor: OCColors.surfaceMuted,
+                          disabledForegroundColor: OCColors.textTertiary,
+                          minimumSize: const Size.square(OCSpace.tapTarget),
+                        ),
+                        icon: const Icon(Icons.arrow_upward),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -993,7 +1005,7 @@ class _Composer extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.image_outlined),
-              title: const Text('Image attach karo'),
+              title: const Text(S.attachImage),
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _pickImage(context);
@@ -1001,8 +1013,8 @@ class _Composer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.file_present_outlined),
-              title: const Text('File ka content bhejo'),
-              subtitle: const Text('Project ke andar se ek file chuno'),
+              title: const Text(S.attachFile),
+              subtitle: const Text(S.attachFileHint),
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _pickProjectFile(context);
@@ -1010,7 +1022,7 @@ class _Composer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.code),
-              title: const Text('Slash command'),
+              title: const Text(S.attachSlash),
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _showCommands(context);
@@ -1096,16 +1108,16 @@ class _Composer extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                'COMMANDS',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-              ),
+              child: SectionTitle(S.pickerCommandsTitle),
             ),
             for (final n in names)
               ListTile(
                 dense: true,
                 leading: const Icon(Icons.code, size: 18),
-                title: Text('/$n', style: const TextStyle(fontSize: 13.5)),
+                title: Text(
+                  S.slashCommand(n),
+                  style: OCTypography.mono(size: 13),
+                ),
               ),
           ],
         ),
@@ -1161,78 +1173,88 @@ class _AttachmentStrip extends StatelessWidget {
   }
 }
 
-class _QuickBar extends StatelessWidget {
+/// Model / agent / tools row that sits above the composer. It scrolls
+/// horizontally when it overflows and can be collapsed to a single chip so it
+/// never squeezes the input field.
+class _QuickBar extends StatefulWidget {
   final OcStore store;
   const _QuickBar(this.store);
 
   @override
+  State<_QuickBar> createState() => _QuickBarState();
+}
+
+class _QuickBarState extends State<_QuickBar> {
+  bool collapsed = false;
+
+  OcStore get store => widget.store;
+
+  Widget _modelChip() => OCChip(
+    label: store.modelId.isEmpty ? S.chipPickModel : store.modelId,
+    icon: Icons.psychology_outlined,
+    accent: OCAccent.orange,
+    selected: store.modelId.isNotEmpty,
+    semanticLabel: store.modelId.isEmpty
+        ? S.chipPickModel
+        : S.label(S.chipModel, store.modelId),
+    onTap: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ModelsPage()),
+    ),
+  );
+
+  Widget _agentChip() => OCChip(
+    label: store.agent,
+    icon: Icons.smart_toy_outlined,
+    accent: OCAccent.orange,
+    semanticLabel: S.label(S.chipAgent, store.agent),
+    onTap: () => _pickAgent(context),
+  );
+
+  Widget _toolsChip() => OCChip(
+    label: '${S.chipTools} (${store.toolsEnabled.length})',
+    icon: Icons.build_outlined,
+    accent: OCAccent.orange,
+    selected: store.toolsEnabled.isNotEmpty,
+    semanticLabel: store.toolsEnabled.isEmpty
+        ? S.chipToolsAll
+        : S.label(S.chipTools, store.toolsEnabled.join(', ')),
+    onTap: () => _pickTools(context),
+  );
+
+  @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 38,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
+    final chips = <Widget>[_modelChip(), _agentChip(), _toolsChip()];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(OCSpace.sm, OCSpace.sm, OCSpace.sm, 0),
+      child: Row(
         children: [
-          ActionChip(
-            avatar: Icon(Icons.psychology, size: 15, color: cs.primary),
-            label: Text(
-              store.modelId.isEmpty ? 'Model chuno' : store.modelId,
-              style: const TextStyle(fontSize: 11.5),
-            ),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ModelsPage()),
-            ),
+          Expanded(
+            child: collapsed
+                ? Align(alignment: Alignment.centerLeft, child: _modelChip())
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final c in chips)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              right: OCSpace.tapGap,
+                            ),
+                            child: c,
+                          ),
+                      ],
+                    ),
+                  ),
           ),
-          const SizedBox(width: 6),
-          ActionChip(
-            avatar: Icon(
-              Icons.smart_toy_outlined,
-              size: 15,
-              color: cs.tertiary,
+          Tooltip(
+            message: collapsed ? S.chipShowRow : S.chipHideRow,
+            child: IconButton(
+              onPressed: () => setState(() => collapsed = !collapsed),
+              icon: Icon(collapsed ? Icons.expand_less : Icons.expand_more),
+              color: OCColors.textSecondary,
             ),
-            label: Text(store.agent, style: const TextStyle(fontSize: 11.5)),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => _pickAgent(context),
-          ),
-          const SizedBox(width: 6),
-          ActionChip(
-            avatar: const Icon(Icons.checklist, size: 15),
-            label: Text(
-              store.todos.isEmpty
-                  ? 'Tasks'
-                  : '${store.todos.where((t) => t.done).length}/${store.todos.length}',
-              style: const TextStyle(fontSize: 11.5),
-            ),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => store.refreshTodos(),
-          ),
-          if (store.liveDiff.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            ActionChip(
-              avatar: const Icon(Icons.difference_outlined, size: 15),
-              label: Text(
-                '${store.liveDiff.length} files',
-                style: const TextStyle(fontSize: 11.5),
-              ),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const DiffPage()),
-              ),
-            ),
-          ],
-          const SizedBox(width: 6),
-          ActionChip(
-            avatar: const Icon(Icons.build_outlined, size: 15),
-            label: Text(
-              'Tools (${store.toolsEnabled.length})',
-              style: const TextStyle(fontSize: 11.5),
-            ),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => _pickTools(context),
           ),
         ],
       ),
@@ -1257,22 +1279,19 @@ class _QuickBar extends StatelessWidget {
             children: [
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text(
-                  'AGENT',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                ),
+                child: SectionTitle(S.pickerAgentTitle),
               ),
               for (final a in agents)
                 RadioListTile<String>(
                   value: a.name,
                   dense: true,
-                  title: Text(a.name, style: const TextStyle(fontSize: 14)),
+                  title: Text(a.name, style: OCTypography.body),
                   subtitle: a.description.isEmpty
                       ? null
                       : Text(
                           a.description,
                           maxLines: 2,
-                          style: const TextStyle(fontSize: 11),
+                          style: OCTypography.micro,
                         ),
                 ),
             ],
@@ -1305,32 +1324,18 @@ class _QuickBar extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: Row(
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'TOOLS',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                    const Expanded(child: Text(S.toolsSheetTitle)),
                     TextButton(
                       onPressed: () {
                         store.toolsEnabled.clear();
                         setSheet(() {});
                       },
-                      child: const Text('Sab on'),
+                      child: Text(S.toolsEnableAll),
                     ),
                   ],
                 ),
               ),
-              Text(
-                'Koi select nahi = sab tools on (default)',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-              ),
+              Text(S.toolsSheetHint, style: OCTypography.micro),
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
@@ -1497,7 +1502,7 @@ class _SlashTextFieldState extends State<SlashTextField> {
           onSubmitted: (_) => widget.onSubmit(),
           style: OCTypography.body.copyWith(height: 1.4),
           decoration: InputDecoration(
-            hintText: 'Message likho…  (/command  @file)',
+            hintText: S.chatPlaceholder,
             hintStyle: OCTypography.body.copyWith(color: OCColors.textTertiary),
             filled: true,
             fillColor: OCColors.surfaceSubtle,
@@ -1649,7 +1654,7 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
                     onPressed: () => _load(dir == '.' ? '.' : dirName(dir)),
                   ),
                 Expanded(
-                  child: Mono(dir == '.' ? 'project root' : dir, size: 12),
+                  child: Mono(dir == '.' ? S.filesProjectRoot : dir, size: 12),
                 ),
               ],
             ),
@@ -1661,14 +1666,14 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
                 : err != null
                 ? EmptyHint(
                     icon: Icons.error_outline,
-                    title: 'Load nahi hua',
+                    title: S.filesLoadFailed,
                     message: err!,
                   )
                 : nodes.isEmpty
                 ? const EmptyHint(
                     icon: Icons.folder_off_outlined,
-                    title: 'Khaali',
-                    message: 'Yahan koi file nahi.',
+                    title: S.empty,
+                    message: S.filesEmptyBody,
                   )
                 : ListView.builder(
                     itemCount: nodes.length,

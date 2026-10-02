@@ -17,3 +17,4 @@ android/app/release/
 *.keystore
 .DS_Store
 *.log
+config.json

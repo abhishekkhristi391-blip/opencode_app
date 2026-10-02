@@ -2,13 +2,15 @@
 // Verified against opencode 1.18.27 /doc spec.
 import 'dart:convert';
 
-Map<String, dynamic> asMap(dynamic v) =>
-    v is Map ? v.map((k, val) => MapEntry(k.toString(), val)) : <String, dynamic>{};
+Map<String, dynamic> asMap(dynamic v) => v is Map
+    ? v.map((k, val) => MapEntry(k.toString(), val))
+    : <String, dynamic>{};
 
 List<dynamic> asList(dynamic v) => v is List ? v : const [];
 
-int asInt(dynamic v, [int d = 0]) =>
-    v is int ? v : (v is num ? v.toInt() : (v is String ? int.tryParse(v) ?? d : d));
+int asInt(dynamic v, [int d = 0]) => v is int
+    ? v
+    : (v is num ? v.toInt() : (v is String ? int.tryParse(v) ?? d : d));
 
 String asStr(dynamic v, [String d = '']) => v == null ? d : v.toString();
 
@@ -21,31 +23,40 @@ bool asBool(dynamic v, [bool d = false]) => v is bool ? v : d;
 
 class Tokens {
   final int input, output, reasoning, cacheRead, cacheWrite;
-  Tokens(this.input, this.output, this.reasoning, this.cacheRead, this.cacheWrite);
+  Tokens(
+    this.input,
+    this.output,
+    this.reasoning,
+    this.cacheRead,
+    this.cacheWrite,
+  );
 
   factory Tokens.from(Map<String, dynamic> j) => Tokens(
-        asInt(j['input']),
-        asInt(j['output']),
-        asInt(j['reasoning']),
-        asInt(asMap(j['cache'])['read']),
-        asInt(asMap(j['cache'])['write']),
-      );
+    asInt(j['input']),
+    asInt(j['output']),
+    asInt(j['reasoning']),
+    asInt(asMap(j['cache'])['read']),
+    asInt(asMap(j['cache'])['write']),
+  );
 
   int get total => input + output + reasoning;
 
   String get pretty => [
-        if (input > 0) 'in $input',
-        if (output > 0) 'out $output',
-        if (reasoning > 0) 'think $reasoning',
-        if (cacheRead > 0) 'cache ${cacheRead ~/ 1024}k',
-      ].join(' · ');
+    if (input > 0) 'in $input',
+    if (output > 0) 'out $output',
+    if (reasoning > 0) 'think $reasoning',
+    if (cacheRead > 0) 'cache ${cacheRead ~/ 1024}k',
+  ].join(' · ');
 }
 
 class SessionSummary {
   final int additions, deletions, files;
   SessionSummary(this.additions, this.deletions, this.files);
-  factory SessionSummary.from(Map<String, dynamic> j) =>
-      SessionSummary(asInt(j['additions']), asInt(j['deletions']), asInt(j['files']));
+  factory SessionSummary.from(Map<String, dynamic> j) => SessionSummary(
+    asInt(j['additions']),
+    asInt(j['deletions']),
+    asInt(j['files']),
+  );
   static final zero = SessionSummary(0, 0, 0);
 }
 
@@ -220,7 +231,10 @@ class Part {
       text: asStr(j['text']),
       toolName: asStr(j['tool']),
       toolCallId: asStr(j['callID']),
-      toolStatusRaw: asStr(st['status'], j['status'] == null ? '' : asStr(j['status'])),
+      toolStatusRaw: asStr(
+        st['status'],
+        j['status'] == null ? '' : asStr(j['status']),
+      ),
       title: asStr(st['title'], asStr(j['title'])),
       output: asStr(st['output'], asStr(meta['output'])),
       errorText: asStr(st['error']),
@@ -312,19 +326,19 @@ class Agent {
   });
 
   factory Agent.fromJson(Map<String, dynamic> j) => Agent(
-        name: asStr(j['name']),
-        description: asStr(j['description']),
-        mode: asStr(j['mode'], 'all'),
-        native: asBool(j['native']),
-        permission: asList(j['permission']).map(asMap).toList(),
-      );
+    name: asStr(j['name']),
+    description: asStr(j['description']),
+    mode: asStr(j['mode'], 'all'),
+    native: asBool(j['native']),
+    permission: asList(j['permission']).map(asMap).toList(),
+  );
 
   String get modeLabel => switch (mode) {
-        'primary' => 'primary',
-        'subagent' => 'subagent',
-        'all' => 'all',
-        _ => mode,
-      };
+    'primary' => 'primary',
+    'subagent' => 'subagent',
+    'all' => 'all',
+    _ => mode,
+  };
 }
 
 class ModelInfo {
@@ -344,7 +358,11 @@ class ModelInfo {
     required this.outputLimit,
   });
 
-  factory ModelInfo.fromJson(String providerId, String modelId, Map<String, dynamic> j) {
+  factory ModelInfo.fromJson(
+    String providerId,
+    String modelId,
+    Map<String, dynamic> j,
+  ) {
     final cap = asMap(j['capabilities']);
     final lim = asMap(j['limit']);
     return ModelInfo(
@@ -369,14 +387,19 @@ class ModelInfo {
 class Todo {
   final String id, content, status;
   final String priority;
-  Todo({required this.id, required this.content, required this.status, required this.priority});
+  Todo({
+    required this.id,
+    required this.content,
+    required this.status,
+    required this.priority,
+  });
 
   factory Todo.fromJson(Map<String, dynamic> j) => Todo(
-        id: asStr(j['id']),
-        content: asStr(j['content']),
-        status: asStr(j['status'], 'pending'),
-        priority: asStr(j['priority'], 'medium'),
-      );
+    id: asStr(j['id']),
+    content: asStr(j['content']),
+    status: asStr(j['status'], 'pending'),
+    priority: asStr(j['priority'], 'medium'),
+  );
 
   bool get done => status == 'completed';
   bool get active => status == 'in_progress' || status == 'running';
@@ -396,12 +419,12 @@ class FileNode {
   });
 
   factory FileNode.fromJson(Map<String, dynamic> j) => FileNode(
-        name: asStr(j['name']),
-        path: asStr(j['path']),
-        absolute: asStr(j['absolute']),
-        type: asStr(j['type'], 'file'),
-        ignored: asBool(j['ignored']),
-      );
+    name: asStr(j['name']),
+    path: asStr(j['path']),
+    absolute: asStr(j['absolute']),
+    type: asStr(j['type'], 'file'),
+    ignored: asBool(j['ignored']),
+  );
 
   bool get isDir => type == 'directory';
 }
@@ -418,13 +441,13 @@ class FileDiff {
   });
 
   factory FileDiff.fromJson(Map<String, dynamic> j) => FileDiff(
-        path: asStr(j['path']),
-        file: asStr(j['file'], asStr(j['path'])),
-        additions: asStr(j['additions']),
-        deletions: asStr(j['deletions']),
-        before: asStr(j['before']),
-        after: asStr(j['after']),
-      );
+    path: asStr(j['path']),
+    file: asStr(j['file'], asStr(j['path'])),
+    additions: asStr(j['additions']),
+    deletions: asStr(j['deletions']),
+    before: asStr(j['before']),
+    after: asStr(j['after']),
+  );
 
   int get addCount => asInt(additions);
   int get delCount => asInt(deletions);
@@ -444,24 +467,28 @@ class CommandInfo {
   });
 
   factory CommandInfo.fromJson(Map<String, dynamic> j) => CommandInfo(
-        name: asStr(j['name']),
-        description: asStr(j['description']),
-        template: asStr(j['template']),
-        source: asStr(j['source'], 'command'),
-        agent: asStr(j['agent']),
-        model: asStr(j['model']),
-      );
+    name: asStr(j['name']),
+    description: asStr(j['description']),
+    template: asStr(j['template']),
+    source: asStr(j['source'], 'command'),
+    agent: asStr(j['agent']),
+    model: asStr(j['model']),
+  );
 }
 
 class SkillInfo {
   final String name, description, path;
-  SkillInfo({required this.name, required this.description, required this.path});
+  SkillInfo({
+    required this.name,
+    required this.description,
+    required this.path,
+  });
 
   factory SkillInfo.fromJson(Map<String, dynamic> j) => SkillInfo(
-        name: asStr(j['name']),
-        description: asStr(j['description']),
-        path: asStr(j['path']),
-      );
+    name: asStr(j['name']),
+    description: asStr(j['description']),
+    path: asStr(j['path']),
+  );
 }
 
 class NamedStatus {
@@ -474,9 +501,11 @@ class NamedStatus {
     required this.detail,
   });
 
-  bool get healthy => status == 'connected' || status == 'ready' || status == 'running';
+  bool get healthy =>
+      status == 'connected' || status == 'ready' || status == 'running';
 
-  factory NamedStatus.fromJson(String key, Map<String, dynamic> j) => NamedStatus(
+  factory NamedStatus.fromJson(String key, Map<String, dynamic> j) =>
+      NamedStatus(
         id: asStr(j['id'], key),
         name: asStr(j['name'], key),
         status: asStr(j['status']),
@@ -489,8 +518,10 @@ class VcsInfo {
   final String branch, defaultBranch;
   const VcsInfo({required this.branch, required this.defaultBranch});
 
-  factory VcsInfo.fromJson(Map<String, dynamic> j) =>
-      VcsInfo(branch: asStr(j['branch']), defaultBranch: asStr(j['default_branch']));
+  factory VcsInfo.fromJson(Map<String, dynamic> j) => VcsInfo(
+    branch: asStr(j['branch']),
+    defaultBranch: asStr(j['default_branch']),
+  );
 
   bool get isRepo => branch.isNotEmpty;
 }
@@ -506,12 +537,12 @@ class ServerPaths {
   });
 
   factory ServerPaths.fromJson(Map<String, dynamic> j) => ServerPaths(
-        directory: asStr(j['directory']),
-        worktree: asStr(j['worktree']),
-        home: asStr(j['home']),
-        config: asStr(j['config']),
-        state: asStr(j['state']),
-      );
+    directory: asStr(j['directory']),
+    worktree: asStr(j['worktree']),
+    home: asStr(j['home']),
+    config: asStr(j['config']),
+    state: asStr(j['state']),
+  );
 }
 
 // ---------- permission / question ----------
@@ -577,8 +608,11 @@ class PermissionReq {
     return [if (pat.isNotEmpty) pat, if (md.isNotEmpty) md].join('\n');
   }
 
-  static String _fmt(dynamic v) =>
-      v is String ? v : v is List ? v.join(', ') : jsonEncode(v);
+  static String _fmt(dynamic v) => v is String
+      ? v
+      : v is List
+      ? v.join(', ')
+      : jsonEncode(v);
 }
 
 class QuestionOption {
@@ -601,12 +635,14 @@ class QuestionItem {
   });
 
   factory QuestionItem.fromJson(Map<String, dynamic> j) => QuestionItem(
-        header: asStr(j['header']),
-        question: asStr(j['question']),
-        options: asList(j['options']).map((e) => QuestionOption.fromJson(asMap(e))).toList(),
-        multiple: asBool(j['multiple']),
-        custom: asBool(j['custom']),
-      );
+    header: asStr(j['header']),
+    question: asStr(j['question']),
+    options: asList(j['options'])
+        .map((e) => QuestionOption.fromJson(asMap(e)))
+        .toList(),
+    multiple: asBool(j['multiple']),
+    custom: asBool(j['custom']),
+  );
 }
 
 class QuestionReq {

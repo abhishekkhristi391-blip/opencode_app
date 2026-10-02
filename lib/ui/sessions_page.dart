@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
@@ -16,78 +17,128 @@ class SessionsPage extends StatefulWidget {
 }
 
 class _SessionsPageState extends State<SessionsPage> {
+  /// Single source of truth for the Main/All filter so the header count and
+  /// the list can never disagree.
+  final filter = ValueNotifier<bool>(true);
+
+  @override
+  void dispose() {
+    filter.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: AppScope.read(context).refreshSessions,
-      child: Column(children: [const _SessionsHeader(), const _SessionsList()]),
+      child: Column(
+        children: [
+          _SessionsHeader(filter: filter),
+          _SessionsList(filter: filter),
+        ],
+      ),
     );
   }
 }
 
 class _SessionsHeader extends StatelessWidget {
-  const _SessionsHeader();
+  final ValueListenable<bool> filter;
+  const _SessionsHeader({required this.filter});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: AppScope.of(context),
+      listenable: Listenable.merge([AppScope.of(context), filter]),
       builder: (context, _) {
-        final store = AppScope.of(context);
-        final all = store.sessions
-            .where((s) => s.title != OcStore.utilSessionTitle)
-            .toList();
-        return SectionTitle('${all.length} sessions');
+        // Counts exactly what the list below is about to show.
+        final list = visibleSessions(context, filter.value);
+        return SectionTitle(
+          list.length == 1
+              ? S.sessionsCountOne(list.length)
+              : S.sessionsCount(list.length),
+        );
       },
     );
   }
 }
 
+/// The one filter used by both the header count and the list.
+List<Session> visibleSessions(BuildContext context, bool parentsOnly) {
+  final store = AppScope.of(context);
+  final all = store.sessions
+      .where((s) => s.title != OcStore.utilSessionTitle)
+      .toList();
+  return parentsOnly ? all.where((s) => !s.isChild).toList() : all;
+}
+
 class _SessionsList extends StatefulWidget {
-  const _SessionsList();
+  final ValueListenable<bool> filter;
+  const _SessionsList({required this.filter});
 
   @override
   State<_SessionsList> createState() => _SessionsListState();
 }
 
 class _SessionsListState extends State<_SessionsList> {
-  bool parentsOnly = true;
+  ValueListenable<bool> get filter => widget.filter;
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: AppScope.of(context),
+      listenable: Listenable.merge([AppScope.of(context), filter]),
       builder: (context, _) {
         final store = AppScope.of(context);
-        final all = store.sessions
-            .where((s) => s.title != OcStore.utilSessionTitle)
-            .toList();
-        final list = parentsOnly ? all.where((s) => !s.isChild).toList() : all;
+        final parentsOnly = filter.value;
+        final list = visibleSessions(context, parentsOnly);
 
         return Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                OCSpace.lg,
-                OCSpace.sm,
-                OCSpace.lg,
+                OCSpace.screenX,
+                OCSpace.xs,
+                OCSpace.screenX,
                 OCSpace.md,
               ),
               child: OCSegmentedControl<bool>(
                 segments: const [
-                  OCSegment(true, 'Main', icon: Icons.account_tree_outlined),
-                  OCSegment(false, 'Sab', icon: Icons.list),
+                  OCSegment(true, S.sessionsFilterMain, icon: Icons.list),
+                  OCSegment(
+                    false,
+                    S.sessionsFilterAll,
+                    icon: Icons.account_tree_outlined,
+                  ),
                 ],
-                value: parentsOnly,
-                onChanged: (v) => setState(() => parentsOnly = v),
+                value: filter.value,
+                onChanged: (v) => filter.value = v,
               ),
             ),
             Expanded(
-              child: list.isEmpty
+              // 1. loading skeleton, 2. error, 3. filtered-empty, 4. list
+              child: store.sessionsLoading
+                  ? const OCSkeletonList(semanticLabel: S.sessionsLoading)
+                  : store.sessionsError != null
+                  ? EmptyHint(
+                      icon: Icons.error_outline,
+                      title: S.sessionsErrorTitle,
+                      message: store.sessionsError!,
+                      action: OCButton(
+                        onPressed: store.refreshSessions,
+                        icon: Icons.refresh,
+                        label: S.retry,
+                        variant: OCButtonVariant.primaryBlack,
+                        expand: false,
+                      ),
+                    )
+                  : list.isEmpty
                   ? EmptyHint(
                       icon: Icons.history,
-                      title: 'Koi session nahi',
-                      message: 'Naya chat start karo.',
+                      title: parentsOnly && store.sessions.isNotEmpty
+                          ? S.sessionsFilteredEmptyTitle
+                          : S.sessionsEmptyTitle,
+                      message: parentsOnly && store.sessions.isNotEmpty
+                          ? S.sessionsFilteredEmptyBody
+                          : S.sessionsEmptyBody,
                       action: OCButton(
                         onPressed: () async {
                           await store.newSession();
@@ -100,13 +151,13 @@ class _SessionsListState extends State<_SessionsList> {
                             );
                         },
                         icon: Icons.add,
-                        label: 'New chat',
+                        label: S.newChat,
                         variant: OCButtonVariant.primaryBlack,
                         expand: false,
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(vertical: OCSpace.xs),
                       itemCount: list.length,
                       itemBuilder: (_, i) => _SessionTile(s: list[i]),
                     ),
@@ -139,74 +190,50 @@ class _SessionTile extends StatelessWidget {
       confirmDismiss: (_) async {
         final ok = await confirmDialog(
           context,
-          title: 'Session delete karein?',
-          message:
-              '"${s.label}" aur uski saari history permanently delete ho jayegi.',
-          confirm: 'Delete',
+          title: S.sessionsDeleteTitle,
+          message: S.sessionsDeleteBody(s.label),
+          confirm: S.delete,
           danger: true,
         );
         if (ok) await store.deleteSession(s.id);
         return ok;
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-          horizontal: OCSpace.lg,
-          vertical: OCSpace.xxs,
-        ),
-        decoration: BoxDecoration(
-          color: active ? OCColors.orangeTint : OCColors.surface,
-          borderRadius: BorderRadius.circular(OCRadius.inner),
-        ),
-        child: ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(OCRadius.inner),
-          ),
-          selected: active,
-          selectedTileColor: Colors.transparent,
-          leading: OCIconTile(
-            icon: active ? Icons.forum : Icons.forum_outlined,
-            accent: active ? OCAccent.orange : OCAccent.neutral,
-            size: 32,
-            iconSize: 17,
-          ),
-          title: Text(
-            s.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: OCTypography.body,
-          ),
-          subtitle: Row(
-            children: [
-              Text(fmtAge(s.updated), style: OCTypography.micro),
-              if (s.cost > 0) ...[
-                Text(
-                  ' · \$${s.cost.toStringAsFixed(2)}',
-                  style: OCTypography.micro,
-                ),
-              ],
-              if (s.summary.files > 0) ...[
-                Text(' · ${s.summary.files}f', style: OCTypography.micro),
-              ],
-              if (s.isChild) ...[Text(' · child', style: OCTypography.micro)],
-              if (s.isShared) ...[
-                const SizedBox(width: OCSpace.sm),
-                const Icon(Icons.public, size: 12, color: OCColors.orange),
-              ],
+      child: OCListRow(
+        title: s.label,
+        leadingIcon: active ? Icons.forum : Icons.forum_outlined,
+        accent: active ? OCAccent.orange : OCAccent.neutral,
+        selected: active,
+        titleStyle: OCTypography.body.copyWith(color: OCColors.textPrimary),
+        subtitle: Row(
+          children: [
+            Text(fmtAge(s.updated), style: OCTypography.micro),
+            if (s.cost > 0)
+              Text(
+                ' · \$${s.cost.toStringAsFixed(2)}',
+                style: OCTypography.micro,
+              ),
+            if (s.summary.files > 0)
+              Text(' · ${s.summary.files}f', style: OCTypography.micro),
+            if (s.isChild)
+              Text(' · ${S.sessionsChild}', style: OCTypography.micro),
+            if (s.isShared) ...[
+              const SizedBox(width: OCSpace.sm),
+              const Icon(Icons.public, size: 14, color: OCColors.orangeInk),
             ],
-          ),
-          trailing: store.busy && active
-              ? const OCProgressRing(value: 0.7, size: 18, stroke: 2.5)
-              : null,
-          onTap: () async {
-            await store.openSession(s.id);
-            if (context.mounted)
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ChatPage()),
-              );
-          },
-          onLongPress: () => _showActions(context),
+          ],
         ),
+        trailing: store.busy && active
+            ? const OCProgressRing(value: 0.7, size: 18, stroke: 2.5)
+            : null,
+        onTap: () async {
+          await store.openSession(s.id);
+          if (context.mounted)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatPage()),
+            );
+        },
+        onLongPress: () => _showActions(context),
       ),
     );
   }
@@ -222,13 +249,14 @@ class _SessionTile extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.drive_file_rename_outline),
-              title: const Text('Naam badlo'),
+              title: const Text(S.sessionsRename),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 final n = await promptText(
                   context,
-                  title: 'Naam badlo',
+                  title: S.sessionsRename,
                   initial: s.label,
+                  confirm: S.save,
                 );
                 if (n != null && n.trim().isNotEmpty)
                   await store.renameSession(s.id, n.trim());
@@ -236,20 +264,21 @@ class _SessionTile extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.call_split),
-              title: const Text('Fork banao'),
-              subtitle: const Text('Naya session, same history'),
+              title: const Text(S.sessionsFork),
+              subtitle: const Text(S.sessionsForkHint),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 final f = await store.forkSession(s.id);
                 if (f != null && context.mounted) {
                   await store.openSession(f.id);
-                  if (context.mounted) showSnack(context, 'Fork: ${f.label}');
+                  if (context.mounted)
+                    showSnack(context, S.forkCreated(f.label));
                 }
               },
             ),
             ListTile(
               leading: const Icon(Icons.account_tree_outlined),
-              title: const Text('Child sessions dekho'),
+              title: const Text(S.sessionsChildren),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 await _showChildren(context);
@@ -258,7 +287,7 @@ class _SessionTile extends StatelessWidget {
             if (s.isShared)
               ListTile(
                 leading: const Icon(Icons.link_off),
-                title: const Text('Share hatao'),
+                title: const Text(S.sessionsUnshare),
                 onTap: () {
                   Navigator.pop(sheetCtx);
                   store.unshareSession(s.id);
@@ -267,7 +296,7 @@ class _SessionTile extends StatelessWidget {
             else
               ListTile(
                 leading: const Icon(Icons.ios_share),
-                title: const Text('Share link banao'),
+                title: const Text(S.sessionsShare),
                 onTap: () {
                   Navigator.pop(sheetCtx);
                   store.shareSession(s.id);
@@ -276,25 +305,22 @@ class _SessionTile extends StatelessWidget {
             if (s.shareUrl.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.copy),
-                title: const Text('Share link copy karo'),
+                title: const Text(S.sessionsShareCopy),
                 onTap: () {
                   Navigator.pop(sheetCtx);
-                  copyToClipboard(context, s.shareUrl, 'Link copy ho gaya');
+                  copyToClipboard(context, s.shareUrl, S.shareCopied);
                 },
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: OCColors.red),
-              title: const Text(
-                'Delete',
-                style: TextStyle(color: OCColors.red),
-              ),
+              title: Text(S.delete, style: TextStyle(color: OCColors.redInk)),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 final ok = await confirmDialog(
                   context,
-                  title: 'Session delete karein?',
-                  message: '"${s.label}" permanently delete ho jayegi.',
-                  confirm: 'Delete',
+                  title: S.sessionsDeleteTitle,
+                  message: S.sessionsDeleteBody(s.label),
+                  confirm: S.delete,
                   danger: true,
                 );
                 if (ok) await store.deleteSession(s.id);
@@ -326,8 +352,8 @@ class _SessionTile extends StatelessWidget {
         child: kids.isEmpty
             ? const EmptyHint(
                 icon: Icons.account_tree_outlined,
-                title: 'Koi child nahi',
-                message: 'Is session me koi subagent session nahi bana.',
+                title: S.sessionsChildrenEmptyTitle,
+                message: S.sessionsChildrenEmptyBody,
               )
             : ListView.builder(
                 itemCount: kids.length,

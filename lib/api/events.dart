@@ -19,12 +19,16 @@ class OcEvent {
     return OcEvent(asStr(j['type']), props, j);
   }
 
-  String get sessionId => asStr(properties['sessionID'], asStr(properties['session']));
+  String get sessionId =>
+      asStr(properties['sessionID'], asStr(properties['session']));
 
   bool get isPermission =>
-      type == 'permission.asked' || type == 'permission.updated' || type == 'permission.v2.asked';
+      type == 'permission.asked' ||
+      type == 'permission.updated' ||
+      type == 'permission.v2.asked';
 
-  bool get isQuestion => type == 'question.asked' || type == 'question.v2.asked';
+  bool get isQuestion =>
+      type == 'question.asked' || type == 'question.v2.asked';
 
   bool get isError => type == 'session.error' || type == 'error';
 }
@@ -67,7 +71,9 @@ class EventStream {
 
   bool get connected => _connected;
 
-  String get root => baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+  String get root => baseUrl.endsWith('/')
+      ? baseUrl.substring(0, baseUrl.length - 1)
+      : baseUrl;
 
   Future<void> start() async {
     _stopped = false;
@@ -93,7 +99,8 @@ class EventStream {
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
       if (password.isNotEmpty)
-        'Authorization': 'Basic ${base64Encode(utf8.encode('$username:$password'))}',
+        'Authorization':
+            'Basic ${base64Encode(utf8.encode('$username:$password'))}',
     };
 
     try {
@@ -112,32 +119,35 @@ class EventStream {
 
       _watchdog = Timer.periodic(const Duration(seconds: 15), (_) {
         if (gen != _gen) return;
-        if (DateTime.now().difference(_lastData) > _staleAfter) _scheduleRetry();
+        if (DateTime.now().difference(_lastData) > _staleAfter)
+          _scheduleRetry();
       });
 
       var pending = '';
-      _sub = res.stream.transform(utf8.decoder).listen(
-        (chunk) {
-          if (gen != _gen) return;
-          _lastData = DateTime.now();
-          pending = (pending + chunk).replaceAll('\r\n', '\n');
-          // SSE frames end at a blank line.
-          while (true) {
-            final idx = pending.indexOf('\n\n');
-            if (idx == -1) break;
-            final frame = pending.substring(0, idx);
-            pending = pending.substring(idx + 2);
-            _handleFrame(frame);
-          }
-        },
-        onError: (_) {
-          if (gen == _gen) _scheduleRetry();
-        },
-        onDone: () {
-          if (gen == _gen) _scheduleRetry();
-        },
-        cancelOnError: true,
-      );
+      _sub = res.stream
+          .transform(utf8.decoder)
+          .listen(
+            (chunk) {
+              if (gen != _gen) return;
+              _lastData = DateTime.now();
+              pending = (pending + chunk).replaceAll('\r\n', '\n');
+              // SSE frames end at a blank line.
+              while (true) {
+                final idx = pending.indexOf('\n\n');
+                if (idx == -1) break;
+                final frame = pending.substring(0, idx);
+                pending = pending.substring(idx + 2);
+                _handleFrame(frame);
+              }
+            },
+            onError: (_) {
+              if (gen == _gen) _scheduleRetry();
+            },
+            onDone: () {
+              if (gen == _gen) _scheduleRetry();
+            },
+            cancelOnError: true,
+          );
     } catch (_) {
       if (gen == _gen) _scheduleRetry();
     }
@@ -177,7 +187,10 @@ class EventStream {
     _client?.close();
     _client = null;
     _attempt++;
-    final delayMs = (1000 * (1 << (_attempt.clamp(1, 5) - 1))).clamp(1000, 15000);
+    final delayMs = (1000 * (1 << (_attempt.clamp(1, 5) - 1))).clamp(
+      1000,
+      15000,
+    );
     _retry?.cancel();
     _retry = Timer(Duration(milliseconds: delayMs), _connect);
   }

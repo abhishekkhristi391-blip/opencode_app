@@ -16,9 +16,13 @@ class ChatMessage {
 
   // FIX: always copy into a *growable* list. Passing `const []` used to make
   // parts.add() throw, so streamed parts never showed up.
-  ChatMessage(this.info, List<Part> parts, {this.errorText}) : parts = List<Part>.of(parts);
+  ChatMessage(this.info, List<Part> parts, {this.errorText})
+    : parts = List<Part>.of(parts);
 
-  bool get streaming => info.finishReason.isEmpty && info.role == 'assistant' && errorText == null;
+  bool get streaming =>
+      info.finishReason.isEmpty &&
+      info.role == 'assistant' &&
+      errorText == null;
 }
 
 class PendingAttachment {
@@ -56,6 +60,8 @@ class OcStore extends ChangeNotifier {
 
   // ---- session ----
   List<Session> sessions = [];
+  bool sessionsLoading = false;
+  String? sessionsError;
   Session? current;
   List<ChatMessage> messages = [];
   bool messagesLoading = false;
@@ -216,14 +222,18 @@ class OcStore extends ChangeNotifier {
         messages = fresh;
         notifyListeners();
       }
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   Future<void> refreshServerInfo() async {
     try {
       paths = await api.paths();
       vcs = await api.vcs();
-    } catch (_) {/* non fatal */}
+    } catch (_) {
+      /* non fatal */
+    }
     notifyListeners();
   }
 
@@ -231,18 +241,24 @@ class OcStore extends ChangeNotifier {
     try {
       agents = await api.agents();
       providerInfo = await api.providers();
-    } catch (_) {/* non fatal */}
+    } catch (_) {
+      /* non fatal */
+    }
 
     if (providerId.isEmpty || modelId.isEmpty) {
       final p = providerInfo;
       if (p != null) {
-        final conn = p.connected.isNotEmpty ? p.connected : p.ordered.map((e) => e.id).toList();
+        final conn = p.connected.isNotEmpty
+            ? p.connected
+            : p.ordered.map((e) => e.id).toList();
         for (final pid in conn) {
           final prov = p.all.where((e) => e.id == pid).firstOrNull;
           if (prov == null || prov.models.isEmpty) continue;
           final def = p.defaults[pid];
-          final pick = prov.models.firstWhere((m) => m.id == def,
-              orElse: () => prov.models.first);
+          final pick = prov.models.firstWhere(
+            (m) => m.id == def,
+            orElse: () => prov.models.first,
+          );
           providerId = prov.id;
           modelId = pick.id;
           break;
@@ -276,13 +292,17 @@ class OcStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Map<String, bool>? get toolMap => toolsEnabled.isEmpty ? null : {for (final t in toolsEnabled) t: true};
+  Map<String, bool>? get toolMap =>
+      toolsEnabled.isEmpty ? null : {for (final t in toolsEnabled) t: true};
 
   // =====================================================================
   // sessions
   // =====================================================================
 
   Future<void> refreshSessions() async {
+    sessionsLoading = true;
+    sessionsError = null;
+    notifyListeners();
     try {
       final list = await api.sessions();
       sessions = list..sort((a, b) => b.updated.compareTo(a.updated));
@@ -291,9 +311,14 @@ class OcStore extends ChangeNotifier {
         if (i >= 0) current = sessions[i];
       }
     } on ApiException catch (e) {
+      sessionsError = e.message;
       fatalError = e.message;
+    } catch (e) {
+      sessionsError = e.toString();
+    } finally {
+      sessionsLoading = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<Session?> newSession({String? title}) async {
@@ -301,7 +326,9 @@ class OcStore extends ChangeNotifier {
       final s = await api.createSession(
         title: title,
         agent: agent,
-        model: providerId.isEmpty ? null : {'providerID': providerId, 'id': modelId},
+        model: providerId.isEmpty
+            ? null
+            : {'providerID': providerId, 'id': modelId},
       );
       await refreshSessions();
       await openSession(s.id);
@@ -313,7 +340,8 @@ class OcStore extends ChangeNotifier {
   }
 
   Future<void> openSession(String id) async {
-    current = sessions.where((s) => s.id == id).firstOrNull ?? await _safeSession(id);
+    current =
+        sessions.where((s) => s.id == id).firstOrNull ?? await _safeSession(id);
     messages = [];
     sessionError = null;
     liveDiff = [];
@@ -330,7 +358,8 @@ class OcStore extends ChangeNotifier {
       messages = fetched;
       if (fetched.isNotEmpty) {
         _oldestMessageId = fetched.first.info.id;
-        hasMoreMessages = true; // assume there might be more, will verify on load
+        hasMoreMessages =
+            true; // assume there might be more, will verify on load
       }
       final st = asMap(await api.sessionStatus())[id];
       busy = st != null && asStr(asMap(st)['type']) == 'busy';
@@ -430,7 +459,9 @@ class OcStore extends ChangeNotifier {
     if (id == null) return;
     try {
       todos = await api.todos(id);
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
     notifyListeners();
   }
 
@@ -439,7 +470,9 @@ class OcStore extends ChangeNotifier {
     if (id == null) return;
     try {
       liveDiff = await api.diff(id);
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
     notifyListeners();
   }
 
@@ -449,10 +482,11 @@ class OcStore extends ChangeNotifier {
     messagesLoading = true;
     notifyListeners();
     try {
-      final fetched = (await api.messages(id, limit: 60, before: _oldestMessageId))
-          .map((e) => ChatMessage(e.info, e.parts))
-          .where((m) => !m.info.summary)
-          .toList();
+      final fetched =
+          (await api.messages(id, limit: 60, before: _oldestMessageId))
+              .map((e) => ChatMessage(e.info, e.parts))
+              .where((m) => !m.info.summary)
+              .toList();
       if (fetched.isNotEmpty) {
         _oldestMessageId = fetched.first.info.id;
         hasMoreMessages = fetched.length >= 60;
@@ -500,7 +534,10 @@ class OcStore extends ChangeNotifier {
   }
 
   /// Send a chat message. Returns immediately; output streams in via SSE.
-  Future<void> send(String text, {List<Map<String, dynamic>> extraParts = const []}) async {
+  Future<void> send(
+    String text, {
+    List<Map<String, dynamic>> extraParts = const [],
+  }) async {
     var sid = current?.id;
     if (sid == null) {
       final s = await newSession();
@@ -532,13 +569,30 @@ class OcStore extends ChangeNotifier {
       summary: false,
       raw: {'optimistic': true},
     );
-    final userParts = parts.where((p) => p['type'] == 'text' || p['type'] == 'file').map((p) {
-      if (p['type'] == 'text') {
-        return Part.fromJson({'id': 'part-$userMsgId', 'messageID': userMsgId, 'sessionID': sid, 'type': 'text', 'text': p['text']});
-      } else {
-        return Part.fromJson({'id': 'part-$userMsgId-${p['filename']}', 'messageID': userMsgId, 'sessionID': sid, 'type': 'file', 'filename': p['filename'], 'mime': p['mime'], 'url': p['url']});
-      }
-    }).toList();
+    final userParts = parts
+        .where((p) => p['type'] == 'text' || p['type'] == 'file')
+        .map((p) {
+          if (p['type'] == 'text') {
+            return Part.fromJson({
+              'id': 'part-$userMsgId',
+              'messageID': userMsgId,
+              'sessionID': sid,
+              'type': 'text',
+              'text': p['text'],
+            });
+          } else {
+            return Part.fromJson({
+              'id': 'part-$userMsgId-${p['filename']}',
+              'messageID': userMsgId,
+              'sessionID': sid,
+              'type': 'file',
+              'filename': p['filename'],
+              'mime': p['mime'],
+              'url': p['url'],
+            });
+          }
+        })
+        .toList();
     messages.add(ChatMessage(userMsg, userParts));
     notifyListeners();
 
@@ -563,7 +617,8 @@ class OcStore extends ChangeNotifier {
         _busyTimer = null;
         return;
       }
-      if (DateTime.now().difference(_lastActivity) > const Duration(minutes: 5)) {
+      if (DateTime.now().difference(_lastActivity) >
+          const Duration(minutes: 5)) {
         t.cancel();
         _busyTimer = null;
         busy = false;
@@ -615,13 +670,18 @@ class OcStore extends ChangeNotifier {
       sid = s.id;
     }
     try {
-      await api.post('/session/$sid/command', body: {
-        'command': name,
-        'arguments': args,
-        if (agent.isNotEmpty) 'agent': agent,
-        if (providerId.isNotEmpty) 'model': {'providerID': providerId, 'modelID': modelId},
-        if (toolMap != null) 'tools': toolMap,
-      }, timeout: const Duration(minutes: 30));
+      await api.post(
+        '/session/$sid/command',
+        body: {
+          'command': name,
+          'arguments': args,
+          if (agent.isNotEmpty) 'agent': agent,
+          if (providerId.isNotEmpty)
+            'model': {'providerID': providerId, 'modelID': modelId},
+          if (toolMap != null) 'tools': toolMap,
+        },
+        timeout: const Duration(minutes: 30),
+      );
     } on ApiException catch (e) {
       sessionError = e.message;
       notifyListeners();
@@ -667,11 +727,20 @@ class OcStore extends ChangeNotifier {
       _toast('Pehle kuch message bhejo');
       return;
     }
-    final lastUser = messages.lastWhere((m) => m.info.isUser,
-        orElse: () => messages.firstWhere((m) => m.info.isUser, orElse: () => messages.first));
+    final lastUser = messages.lastWhere(
+      (m) => m.info.isUser,
+      orElse: () => messages.firstWhere(
+        (m) => m.info.isUser,
+        orElse: () => messages.first,
+      ),
+    );
     try {
-      await api.init(id,
-          messageId: lastUser.info.id, providerId: providerId, modelId: modelId);
+      await api.init(
+        id,
+        messageId: lastUser.info.id,
+        providerId: providerId,
+        modelId: modelId,
+      );
       await openSession(id);
     } on ApiException catch (e) {
       _toast(e.message);
@@ -694,7 +763,9 @@ class OcStore extends ChangeNotifier {
         _utilSessionId = null;
       }
     }
-    final existing = sessions.where((s) => s.title == utilSessionTitle).firstOrNull;
+    final existing = sessions
+        .where((s) => s.title == utilSessionTitle)
+        .firstOrNull;
     if (existing != null) {
       _utilSessionId = existing.id;
       return existing.id;
@@ -735,7 +806,12 @@ class OcStore extends ChangeNotifier {
     }
     cmd += ' && base64 -d $q.b64tmp > $q && rm -f $q.b64tmp';
     final r = await runShell(cmd);
-    if (r.exit != 0) throw ApiException(1, 'WriteFailed', r.output.isEmpty ? 'Write fail' : r.output);
+    if (r.exit != 0)
+      throw ApiException(
+        1,
+        'WriteFailed',
+        r.output.isEmpty ? 'Write fail' : r.output,
+      );
   }
 
   static String _shellQuote(String s) {
@@ -763,7 +839,9 @@ class OcStore extends ChangeNotifier {
     try {
       commands = await api.commands();
       skills = await api.skills();
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
     notifyListeners();
   }
 
@@ -773,7 +851,9 @@ class OcStore extends ChangeNotifier {
       mcp = await api.mcp();
       lsp = await api.lsp();
       formatters = await api.formatters();
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
     notifyListeners();
   }
 
@@ -787,11 +867,20 @@ class OcStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addMcp(String name, String type, String value, List<String> args) async {
+  Future<void> addMcp(
+    String name,
+    String type,
+    String value,
+    List<String> args,
+  ) async {
     try {
       final cfg = type == 'remote'
           ? {'type': 'remote', 'url': value, 'enabled': true}
-          : {'type': 'local', 'command': [value, ...args], 'enabled': true};
+          : {
+              'type': 'local',
+              'command': [value, ...args],
+              'enabled': true,
+            };
       await api.mcpAdd(name, cfg);
       mcp = await api.mcp();
       _toast('$name add ho gaya');
@@ -814,7 +903,9 @@ class OcStore extends ChangeNotifier {
           .map(QuestionReq.fromJson)
           .where((q) => q.id.isNotEmpty)
           .toList();
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
     notifyListeners();
   }
 
@@ -927,7 +1018,10 @@ class OcStore extends ChangeNotifier {
         break;
       case 'session.deleted':
         final info = p['info'];
-        final delId = asStr(p['sessionID'], info != null ? asStr(asMap(info)['id']) : '');
+        final delId = asStr(
+          p['sessionID'],
+          info != null ? asStr(asMap(info)['id']) : '',
+        );
         sessions.removeWhere((s) => s.id == delId);
         if (current?.id == delId) {
           current = null;
@@ -937,7 +1031,9 @@ class OcStore extends ChangeNotifier {
         break;
       case 'session.diff':
         if (_isCurrent(asStr(p['sessionID']))) {
-          liveDiff = asList(p['diff']).map((e) => FileDiff.fromJson(asMap(e))).toList();
+          liveDiff = asList(p['diff'])
+              .map((e) => FileDiff.fromJson(asMap(e)))
+              .toList();
           notifyListeners();
         }
         break;
@@ -969,7 +1065,9 @@ class OcStore extends ChangeNotifier {
       case 'question.replied':
       case 'question.rejected':
       case 'question.v2.replied':
-        questions.removeWhere((x) => x.id == asStr(p['questionID'], asStr(p['id'])));
+        questions.removeWhere(
+          (x) => x.id == asStr(p['questionID'], asStr(p['id'])),
+        );
         notifyListeners();
         break;
       case 'todo.updated':
@@ -994,7 +1092,8 @@ class OcStore extends ChangeNotifier {
 
   // FIX: with no open session, events from other sessions no longer leak into
   // the current message list.
-  bool _isCurrent(String sid) => current != null && (sid.isEmpty || current!.id == sid);
+  bool _isCurrent(String sid) =>
+      current != null && (sid.isEmpty || current!.id == sid);
 
   ChatMessage? _messageById(String id) {
     // Newest messages are at the end, and streaming targets them: search backwards.
@@ -1004,8 +1103,9 @@ class OcStore extends ChangeNotifier {
     return null;
   }
 
-  int _optimisticIndex() =>
-      messages.indexWhere((m) => m.info.raw['optimistic'] == true && m.info.role == 'user');
+  int _optimisticIndex() => messages.indexWhere(
+    (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
+  );
 
   void _upsertMessage(Message info) {
     if (!_isCurrent(info.sessionId)) return;
