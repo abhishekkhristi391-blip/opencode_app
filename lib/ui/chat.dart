@@ -25,7 +25,7 @@ class _ChatPageState extends State<ChatPage> {
   final focus = FocusNode();
 
   int _lastCount = 0;
-  bool _showJump = false;
+  final _showJump = false;
 
   @override
   void dispose() {
@@ -240,7 +240,7 @@ class _MessageTile extends StatefulWidget {
   final ChatMessage msg;
   final bool isLast;
   final VoidCallback onChanged;
-  const _MessageTile({required this.msg, required this.isLast, required this.onChanged});
+  const _MessageTile({super.key, required this.msg, required this.isLast, required this.onChanged});
 
   @override
   State<_MessageTile> createState() => _MessageTileState();

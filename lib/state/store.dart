@@ -582,7 +582,7 @@ class OcStore extends ChangeNotifier {
     final q = _shellQuote(path);
     var cmd = ': > $q';
     for (final c in chunks) {
-      cmd += " && printf '%s' '${c}' >> $q.b64tmp";
+      cmd += " && printf '%s' '$c' >> $q.b64tmp";
     }
     cmd += ' && base64 -d $q.b64tmp > $q && rm -f $q.b64tmp';
     final r = await runShell(cmd);
