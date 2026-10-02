@@ -951,13 +951,11 @@ class OcStore extends ChangeNotifier {
         messages.add(msg);
       }
     }
-    if (msg != null) {
-      final i = msg.parts.indexWhere((p) => p.id == part.id);
-      if (i >= 0) {
-        msg.parts[i] = part;
-      } else {
-        msg.parts.add(part);
-      }
+    final i = msg.parts.indexWhere((p) => p.id == part.id);
+    if (i >= 0) {
+      msg.parts[i] = part;
+    } else {
+      msg.parts.add(part);
     }
     notifyListeners();
   }

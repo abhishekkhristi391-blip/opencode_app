@@ -85,6 +85,7 @@ class _ChatPageState extends State<ChatPage> {
                           controller: scroll,
                           padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
                           itemCount: store.messages.length,
+                          cacheExtent: 500,
                           itemBuilder: (_, i) {
                             final m = store.messages[i];
                             final next = i + 1 < store.messages.length ? store.messages[i + 1] : null;
@@ -1185,4 +1186,4 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
     };
   }
 }
-                                            
+
