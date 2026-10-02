@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../api/client.dart';
 import '../main.dart';
 import '../models/models.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 class ModelsPage extends StatefulWidget {
@@ -41,12 +43,16 @@ class _ModelsPageState extends State<ModelsPage> {
     final visible = <({ProviderEntry p, List<ModelInfo> models})>[];
     for (final p in providers) {
       if (providerFilter.isNotEmpty && p.id != providerFilter) continue;
-      if (onlyConnected && info != null && !info.connected.contains(p.id)) continue;
-      final ms = p.models.where((m) {
-        if (q.isEmpty) return true;
-        return m.id.toLowerCase().contains(q) || m.name.toLowerCase().contains(q);
-      }).toList()
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      if (onlyConnected && info != null && !info.connected.contains(p.id))
+        continue;
+      final ms =
+          p.models.where((m) {
+            if (q.isEmpty) return true;
+            return m.id.toLowerCase().contains(q) ||
+                m.name.toLowerCase().contains(q);
+          }).toList()..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
       if (ms.isNotEmpty) visible.add((p: p, models: ms));
     }
 
@@ -64,38 +70,80 @@ class _ModelsPageState extends State<ModelsPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.screenX,
+              OCSpace.md,
+              OCSpace.screenX,
+              OCSpace.sm,
+            ),
             child: TextField(
               controller: search,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Model search karo…',
-                prefixIcon: Icon(Icons.search, size: 19),
+                hintStyle: OCTypography.caption,
+                prefixIcon: const Icon(
+                  Icons.search,
+                  size: 19,
+                  color: OCColors.textTertiary,
+                ),
                 isDense: true,
+                filled: true,
+                fillColor: OCColors.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: OCSpace.lg,
+                  vertical: OCSpace.md,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.full),
+                  borderSide: const BorderSide(color: OCColors.borderHairline),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.full),
+                  borderSide: const BorderSide(color: OCColors.borderHairline),
+                ),
               ),
             ),
           ),
           SizedBox(
-            height: 44,
+            height: OCSpace.tapTarget,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: OCSpace.screenX),
               children: [
                 FilterChip(
-                  label: const Text('Sab', style: TextStyle(fontSize: 12)),
+                  label: Text(
+                    'Sab',
+                    style: OCTypography.caption.copyWith(
+                      color: OCColors.textPrimary,
+                    ),
+                  ),
                   selected: providerFilter.isEmpty,
                   onSelected: (_) => setState(() => providerFilter = ''),
                 ),
-                for (final p in providers.where((e) => e.models.isNotEmpty).take(30))
+                for (final p
+                    in providers.where((e) => e.models.isNotEmpty).take(30))
                   Padding(
-                    padding: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.only(left: OCSpace.sm),
                     child: FilterChip(
                       avatar: info != null && info.connected.contains(p.id)
-                          ? const Icon(Icons.check_circle, size: 13, color: Color(0xFF3DDC84))
+                          ? const Icon(
+                              Icons.check_circle,
+                              size: 13,
+                              color: OCColors.greenInk,
+                            )
                           : null,
-                      label: Text(p.id, style: const TextStyle(fontSize: 12)),
+                      label: Text(
+                        p.id,
+                        style: OCTypography.caption.copyWith(
+                          color: OCColors.textPrimary,
+                        ),
+                      ),
                       selected: providerFilter == p.id,
-                      onSelected: (_) => setState(() => providerFilter = providerFilter == p.id ? '' : p.id),
+                      onSelected: (_) => setState(
+                        () =>
+                            providerFilter = providerFilter == p.id ? '' : p.id,
+                      ),
                     ),
                   ),
               ],
@@ -103,7 +151,7 @@ class _ModelsPageState extends State<ModelsPage> {
           ),
           if (info != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: const EdgeInsets.symmetric(horizontal: OCSpace.lg),
               child: Row(
                 children: [
                   Checkbox(
@@ -111,7 +159,10 @@ class _ModelsPageState extends State<ModelsPage> {
                     onChanged: (v) => setState(() => onlyConnected = v ?? true),
                     visualDensity: VisualDensity.compact,
                   ),
-                  const Text('Sirf connected providers', style: TextStyle(fontSize: 12)),
+                  const Text(
+                    'Sirf connected providers',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -120,39 +171,57 @@ class _ModelsPageState extends State<ModelsPage> {
             child: info == null
                 ? const LoadingView(label: 'Providers load ho rahe hain')
                 : visible.isEmpty
-                    ? EmptyHint(
-                        icon: Icons.search_off,
-                        title: 'Koi model nahi mila',
-                        message: onlyConnected && info.connected.isEmpty
-                            ? 'Koi provider connected nahi hai. Settings me API key daal do.'
-                            : 'Filter badal ke dekho.',
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        itemCount: visible.length,
-                        itemBuilder: (_, i) {
-                          final e = visible[i];
-                          final connected = info.connected.contains(e.p.id);
-                          return _ProviderBlock(
-                            entry: e.p,
-                            models: e.models,
-                            connected: connected,
-                            selected: '${store.providerId}/${store.modelId}',
-                          );
-                        },
-                      ),
+                ? EmptyHint(
+                    icon: Icons.search_off,
+                    title: 'Koi model nahi mila',
+                    message: onlyConnected && info.connected.isEmpty
+                        ? 'Koi provider connected nahi hai. Settings me API key daal do.'
+                        : 'Filter badal ke dekho.',
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: OCSpace.lg),
+                    itemCount: visible.length,
+                    itemBuilder: (_, i) {
+                      final e = visible[i];
+                      final connected = info.connected.contains(e.p.id);
+                      return _ProviderBlock(
+                        entry: e.p,
+                        models: e.models,
+                        connected: connected,
+                        selected: '${store.providerId}/${store.modelId}',
+                      );
+                    },
+                  ),
           ),
           SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: OCColors.surface,
+                border: Border(top: BorderSide(color: OCColors.borderHairline)),
+              ),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                OCSpace.sm,
+                OCSpace.screenX,
+                OCSpace.sm,
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.smart_toy_outlined, size: 17),
-                  const SizedBox(width: 8),
+                  const OCIconTile(
+                    icon: Icons.smart_toy_outlined,
+                    accent: OCAccent.purple,
+                    size: 32,
+                  ),
+                  const SizedBox(width: OCSpace.md),
                   const Text('Agent', style: TextStyle(fontSize: 13)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _AgentDropdown(agents: store.agents, value: store.agent)),
+                  const SizedBox(width: OCSpace.md),
+                  Expanded(
+                    child: _AgentDropdown(
+                      agents: store.agents,
+                      value: store.agent,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -172,7 +241,7 @@ class _AgentDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     if (agents.isEmpty) {
-      return Text(value, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline));
+      return Text(value, style: OCTypography.micro);
     }
     return DropdownButtonHideUnderline(
       child: DropdownButton<String>(
@@ -183,7 +252,13 @@ class _AgentDropdown extends StatelessWidget {
           for (final a in agents)
             DropdownMenuItem(
               value: a.name,
-              child: Text('${a.name}  ·  ${a.modeLabel}', style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+              child: Text(
+                '${a.name}  ·  ${a.modeLabel}',
+                style: OCTypography.caption.copyWith(
+                  color: OCColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
         ],
         onChanged: (v) => v == null ? null : store.setAgent(v),
@@ -206,49 +281,82 @@ class _ProviderBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final store = AppScope.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+          padding: const EdgeInsets.fromLTRB(
+            OCSpace.screenX,
+            OCSpace.md,
+            OCSpace.screenX,
+            OCSpace.sm,
+          ),
           child: Row(
             children: [
-              Icon(connected ? Icons.check_circle : Icons.cloud_off, size: 14, color: connected ? const Color(0xFF3DDC84) : cs.outline),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(entry.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              OCIconTile(
+                icon: connected ? Icons.check_circle : Icons.cloud_off,
+                accent: connected ? OCAccent.green : OCAccent.neutral,
+                size: 26,
+                iconSize: 14,
               ),
-              Text('${models.length}', style: TextStyle(fontSize: 11, color: cs.outline)),
+              const SizedBox(width: OCSpace.sm),
+              Expanded(child: Text(entry.name, style: OCTypography.bodyStrong)),
+              Text('${models.length}', style: OCTypography.micro),
             ],
           ),
         ),
         for (final m in models)
           ListTile(
             dense: true,
-            contentPadding: const EdgeInsets.only(left: 34, right: 12),
-            title: Text(m.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(OCRadius.inner),
+            ),
+            tileColor: selected == m.key ? OCColors.orangeTint : null,
+            contentPadding: const EdgeInsets.only(
+              left: OCSpace.xxxl,
+              right: OCSpace.md,
+            ),
+            title: Text(
+              m.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: OCTypography.caption,
+            ),
             subtitle: Row(
               children: [
                 if (m.reasoning)
                   const Padding(
-                      padding: EdgeInsets.only(right: 6),
-                      child: Icon(Icons.psychology, size: 11, color: Color(0xFFB388FF))),
+                    padding: EdgeInsets.only(right: OCSpace.sm),
+                    child: Icon(
+                      Icons.psychology,
+                      size: 12,
+                      color: OCColors.purple,
+                    ),
+                  ),
                 if (m.toolcall)
                   const Padding(
-                      padding: EdgeInsets.only(right: 6),
-                      child: Icon(Icons.build, size: 11, color: Color(0xFF64B5F6))),
+                    padding: EdgeInsets.only(right: OCSpace.sm),
+                    child: Icon(Icons.build, size: 12, color: OCColors.blue),
+                  ),
                 if (m.attachment)
                   const Padding(
-                      padding: EdgeInsets.only(right: 6),
-                      child: Icon(Icons.image, size: 11, color: Color(0xFF4DB6AC))),
+                    padding: EdgeInsets.only(right: OCSpace.sm),
+                    child: Icon(Icons.image, size: 12, color: OCColors.green),
+                  ),
                 if (m.contextLimit > 0)
-                  Text('${(m.contextLimit / 1000).round()}k ctx', style: TextStyle(fontSize: 10.5, color: cs.outline)),
+                  Text(
+                    '${(m.contextLimit / 1000).round()}k ctx',
+                    style: OCTypography.micro,
+                  ),
               ],
             ),
             trailing: selected == m.key
-                ? Icon(Icons.check_circle, size: 18, color: cs.primary)
+                ? const Icon(
+                    Icons.check_circle,
+                    size: 20,
+                    color: OCColors.orange,
+                  )
                 : null,
             onTap: () {
               store.setModel(entry.id, m.id);

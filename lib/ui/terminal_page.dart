@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../main.dart';
+import 'primitives.dart';
+import 'theme.dart';
 
 class TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
@@ -76,22 +78,33 @@ class _TerminalPageState extends State<TerminalPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final store = AppScope.of(context);
 
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          color: cs.surfaceContainerHigh,
+          padding: const EdgeInsets.fromLTRB(
+            OCSpace.md,
+            OCSpace.sm,
+            OCSpace.md,
+            OCSpace.sm,
+          ),
+          color: OCColors.surfaceMuted,
           child: Row(
             children: [
-              Icon(Icons.terminal, size: 16, color: cs.outline),
-              const SizedBox(width: 6),
+              const OCIconTile(
+                icon: Icons.terminal,
+                accent: OCAccent.neutral,
+                size: 26,
+                iconSize: 15,
+              ),
+              const SizedBox(width: OCSpace.sm),
               Expanded(
-                child: Text(store.paths?.directory ?? store.baseUrl,
-                    style: TextStyle(fontSize: 11, color: cs.outline),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  store.paths?.directory ?? store.baseUrl,
+                  style: OCTypography.micro,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               IconButton(
                 tooltip: 'Output clear',
@@ -109,83 +122,118 @@ class _TerminalPageState extends State<TerminalPage> {
           ),
         ),
         SizedBox(
-          height: 40,
+          height: OCSpace.tapTarget,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: OCSpace.sm),
             children: [
               for (final e in shortcuts.entries) ...[
                 ActionChip(
-                  label: Text(e.key, style: const TextStyle(fontSize: 11)),
+                  label: Text(
+                    e.key,
+                    style: OCTypography.micro.copyWith(
+                      color: OCColors.textSecondary,
+                    ),
+                  ),
                   visualDensity: VisualDensity.compact,
                   onPressed: running ? null : () => _run(e.value),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: OCSpace.sm),
               ],
             ],
           ),
         ),
-        const Divider(height: 1),
-Expanded(
+        const Divider(height: 1, color: OCColors.borderHairline),
+        Expanded(
           child: Container(
             width: double.infinity,
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            color: OCColors.surfaceSubtle,
             child: out.text.isEmpty
                 ? Center(
-                    child: Text('Command likho aur Enter dabao.\nShortcut upar diye hain.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.7), fontSize: 12.5, height: 1.6)),
+                    child: Text(
+                      'Command likho aur Enter dabao.\nShortcut upar diye hain.',
+                      textAlign: TextAlign.center,
+                      style: OCTypography.caption.copyWith(
+                        height: 1.6,
+                        color: OCColors.textTertiary,
+                      ),
+                    ),
                   )
                 : SingleChildScrollView(
                     controller: scroll,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(OCSpace.md),
                     child: wrap
                         ? Text(out.text, style: _terminalStyle(context))
                         : SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
-                            child: Text(out.text, style: _terminalStyle(context)),
+                            child: Text(
+                              out.text,
+                              style: _terminalStyle(context),
+                            ),
                           ),
                   ),
+          ),
         ),
-        ),
-        if (running)
-          const LinearProgressIndicator(minHeight: 2),
+        if (running) const OCProgressBar(value: 1, height: 4, animate: false),
         Container(
-          decoration: BoxDecoration(
-            color: cs.surface,
-            border: Border(top: BorderSide(color: cs.outlineVariant)),
+          decoration: const BoxDecoration(
+            color: OCColors.surface,
+            border: Border(top: BorderSide(color: OCColors.borderHairline)),
           ),
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.md,
+                OCSpace.sm,
+                OCSpace.sm,
+                OCSpace.sm,
+              ),
               child: Row(
                 children: [
-                  Text('\$', style: TextStyle(color: cs.primary, fontFamily: 'monospace', fontSize: 15)),
-                  const SizedBox(width: 8),
+                  Text(
+                    '\$',
+                    style: OCTypography.mono(color: OCColors.orange, size: 15),
+                  ),
                   Expanded(
                     child: Focus(
                       onKeyEvent: (node, event) {
-                        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                        if (event is! KeyDownEvent)
+                          return KeyEventResult.ignored;
                         if (event.logicalKey != LogicalKeyboardKey.arrowUp &&
                             event.logicalKey != LogicalKeyboardKey.arrowDown) {
                           return KeyEventResult.ignored;
                         }
                         if (history.isEmpty) return KeyEventResult.ignored;
                         if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                          setState(() => historyIndex = (historyIndex + 1).clamp(0, history.length - 1));
+                          setState(
+                            () => historyIndex = (historyIndex + 1).clamp(
+                              0,
+                              history.length - 1,
+                            ),
+                          );
                         } else {
-                          setState(() => historyIndex = (historyIndex - 1).clamp(-1, history.length - 1));
+                          setState(
+                            () => historyIndex = (historyIndex - 1).clamp(
+                              -1,
+                              history.length - 1,
+                            ),
+                          );
                         }
                         final v = historyIndex < 0 ? '' : history[historyIndex];
                         input.text = v;
-                        input.selection = TextSelection.collapsed(offset: v.length);
+                        input.selection = TextSelection.collapsed(
+                          offset: v.length,
+                        );
                         return KeyEventResult.handled;
                       },
                       child: TextField(
                         controller: input,
                         enabled: !running,
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 13.5),
+                        style: OCTypography.mono(
+                          size: 13.5,
+                          color: OCColors.textPrimary,
+                        ),
                         decoration: const InputDecoration(
                           isDense: true,
                           hintText: 'command',
@@ -199,9 +247,16 @@ Expanded(
                       ),
                     ),
                   ),
-                  IconButton(
+                  IconButton.filled(
                     onPressed: running ? null : () => _run(),
-                    icon: const Icon(Icons.send, size: 19),
+                    style: IconButton.styleFrom(
+                      backgroundColor: OCColors.orange,
+                    ),
+                    icon: const Icon(
+                      Icons.send,
+                      size: 18,
+                      color: OCColors.textInverse,
+                    ),
                   ),
                 ],
               ),
@@ -212,11 +267,8 @@ Expanded(
     );
   }
 
-  static TextStyle _terminalStyle(BuildContext context) => TextStyle(
-    fontFamily: 'monospace',
-    fontFamilyFallback: const ['monospace'],
-    fontSize: 12,
-    height: 1.45,
+  static TextStyle _terminalStyle(BuildContext context) => OCTypography.mono(
+    size: 12,
     color: Theme.of(context).colorScheme.onSurface,
   );
 }

@@ -5,6 +5,8 @@ import '../main.dart';
 import '../models/models.dart';
 import 'chat.dart';
 import 'markdown.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 class CommandsPage extends StatelessWidget {
@@ -13,26 +15,25 @@ class CommandsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final cs = Theme.of(context).colorScheme;
     final cmds = store.commands;
 
     return RefreshIndicator(
       onRefresh: store.refreshCommands,
       child: cmds.isEmpty
-          ? ListView(children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-              const EmptyHint(
+          ? ListView(
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                const EmptyHint(
                   icon: Icons.code,
                   title: 'Koi command nahi',
-                  message: 'Project me .opencode/command/ ya ~/.config/opencode/command/ me markdown command files daalo.'),
-            ])
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 20),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                  child: Text('${cmds.length} commands', style: TextStyle(fontSize: 12, color: cs.outline)),
+                  message: 'Project me .opencode/command/ ya ~/.config/opencode/command/ me markdown command files daalo.',
                 ),
+              ],
+            )
+          : ListView(
+              padding: const EdgeInsets.only(bottom: OCSpace.xl),
+              children: [
+                SectionTitle('${cmds.length} commands'),
                 for (final c in cmds) _CommandTile(cmd: c),
               ],
             ),
@@ -47,61 +48,99 @@ class _CommandTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final cs = Theme.of(context).colorScheme;
-    return ExpansionTile(
-      leading: const Icon(Icons.code, size: 19),
-      title: Text(cmd.name, style: const TextStyle(fontSize: 14)),
-      subtitle: Text(cmd.description.isEmpty ? cmd.source : cmd.description,
-          maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5)),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (cmd.template.isNotEmpty)
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 260),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SingleChildScrollView(
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: OCSpace.screenX,
+        vertical: OCSpace.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: OCColors.surface,
+        borderRadius: BorderRadius.circular(OCRadius.card),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        backgroundColor: OCColors.surface,
+        collapsedBackgroundColor: OCColors.surface,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        leading: const OCIconTile(
+          icon: Icons.code,
+          accent: OCAccent.purple,
+          size: 32,
+        ),
+        title: Text(cmd.name, style: OCTypography.h3),
+        subtitle: Text(
+          cmd.description.isEmpty ? cmd.source : cmd.description,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: OCTypography.caption,
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.screenX,
+              0,
+              OCSpace.screenX,
+              OCSpace.md,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (cmd.template.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 260),
+                    padding: const EdgeInsets.all(OCSpace.md),
+                    decoration: BoxDecoration(
+                      color: OCColors.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(OCRadius.inner),
+                    ),
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text(cmd.template,
-                          style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, height: 1.45)),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Text(
+                          cmd.template,
+                          style: OCTypography.mono(size: 11.5),
+                        ),
+                      ),
                     ),
                   ),
+                const SizedBox(height: OCSpace.md),
+                Row(
+                  children: [
+                    if (cmd.agent.isNotEmpty)
+                      Expanded(child: InfoRow('agent', cmd.agent)),
+                    if (cmd.model.isNotEmpty)
+                      Expanded(child: InfoRow('model', cmd.model)),
+                  ],
                 ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (cmd.agent.isNotEmpty)
-                    Expanded(child: InfoRow('agent', cmd.agent)),
-                  if (cmd.model.isNotEmpty) Expanded(child: InfoRow('model', cmd.model)),
-                ],
-              ),
-              FilledButton.icon(
-                onPressed: () async {
-                  final args = await promptText(context,
+                OCButton(
+                  onPressed: () async {
+                    final args = await promptText(
+                      context,
                       title: '/${cmd.name} ke arguments',
-                      hint: cmd.template.contains(r'$ARGUMENTS') ? 'arguments likho' : 'optional');
-                  if (args == null) return;
-                  Navigator.pop(context);
-                  await store.runCommand(cmd.name, args);
-                  if (context.mounted) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatPage()));
-                  }
-                },
-                icon: const Icon(Icons.play_arrow, size: 17),
-                label: Text('/${cmd.name} chalao', style: const TextStyle(fontSize: 13)),
-              ),
-            ],
+                      hint: cmd.template.contains(r'$ARGUMENTS')
+                          ? 'arguments likho'
+                          : 'optional',
+                    );
+                    if (args == null) return;
+                    Navigator.pop(context);
+                    await store.runCommand(cmd.name, args);
+                    if (context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ChatPage()),
+                      );
+                    }
+                  },
+                  icon: Icons.play_arrow,
+                  label: '/${cmd.name} chalao',
+                  variant: OCButtonVariant.primaryOrange,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -113,7 +152,6 @@ class SkillsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final cs = Theme.of(context).colorScheme;
     if (store.skills.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,26 +160,56 @@ class SkillsSection extends StatelessWidget {
         for (final s in store.skills)
           ExpansionTile(
             dense: true,
-            leading: const Icon(Icons.auto_awesome_outlined, size: 18),
-            title: Text(s.name, style: const TextStyle(fontSize: 13.5)),
-            subtitle: s.path.isEmpty ? null : Text(s.path, style: TextStyle(fontSize: 10.5, color: cs.outline)),
+            leading: const OCIconTile(
+              icon: Icons.auto_awesome_outlined,
+              accent: OCAccent.yellow,
+              size: 30,
+              iconSize: 16,
+            ),
+            title: Text(
+              s.name,
+              style: OCTypography.caption.copyWith(color: OCColors.textPrimary),
+            ),
+            subtitle: s.path.isEmpty
+                ? null
+                : Text(s.path, style: OCTypography.micro),
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                padding: const EdgeInsets.fromLTRB(
+                  OCSpace.screenX,
+                  0,
+                  OCSpace.screenX,
+                  OCSpace.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Markdown(s.description, base: Theme.of(context).textTheme.bodySmall, onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
-                    const SizedBox(height: 8),
-                    FilledButton.tonalIcon(
+                    Markdown(
+                      s.description,
+                      base: OCTypography.caption.copyWith(
+                        color: OCColors.textSecondary,
+                      ),
+                      onLink: (url) => launchUrl(
+                        Uri.parse(url),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                    ),
+                    const SizedBox(height: OCSpace.sm),
+                    OCButton(
                       onPressed: () async {
-                        await store.send('Skill "${s.name}" use karke kaam karo.');
+                        await store.send(
+                          'Skill "${s.name}" use karke kaam karo.',
+                        );
                         if (context.mounted) {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatPage()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ChatPage()),
+                          );
                         }
                       },
-                      icon: const Icon(Icons.bolt, size: 16),
-                      label: Text('${s.name} use karo', style: const TextStyle(fontSize: 12.5)),
+                      icon: Icons.bolt,
+                      label: '${s.name} use karo',
+                      variant: OCButtonVariant.primaryGradient,
                     ),
                   ],
                 ),

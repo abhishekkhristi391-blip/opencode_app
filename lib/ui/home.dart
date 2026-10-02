@@ -6,10 +6,12 @@ import 'commands_page.dart';
 import 'diff_page.dart';
 import 'files_page.dart';
 import 'models_page.dart';
+import 'primitives.dart';
 import 'prompts.dart';
 import 'sessions_page.dart';
 import 'settings_page.dart';
 import 'terminal_page.dart';
+import 'theme.dart';
 import 'todos_page.dart';
 import 'widgets.dart';
 
@@ -35,7 +37,12 @@ class HomeShellState extends State<HomeShell> {
     NavItem('Chat', Icons.forum_outlined, const ChatPage()),
     NavItem('Sessions', Icons.history, const SessionsPage()),
     NavItem('Files', Icons.folder_outlined, const FilesPage()),
-    NavItem('Diff', Icons.difference_outlined, const DiffPage(), needsSession: true),
+    NavItem(
+      'Diff',
+      Icons.difference_outlined,
+      const DiffPage(),
+      needsSession: true,
+    ),
     NavItem('Tasks', Icons.checklist, const TodosPage(), needsSession: true),
     NavItem('Terminal', Icons.terminal, const TerminalPage()),
     NavItem('Commands', Icons.code, const CommandsPage()),
@@ -50,14 +57,21 @@ class HomeShellState extends State<HomeShell> {
     final store = AppScope.of(context);
 
     return Scaffold(
-      drawer: _Drawer(current: index, onSelect: (i) {
-        Navigator.pop(context);
-        goTo(i);
-      }),
+      drawer: _Drawer(
+        current: index,
+        onSelect: (i) {
+          Navigator.pop(context);
+          goTo(i);
+        },
+      ),
       appBar: AppBar(
         title: _Title(store: store, onRename: _renameSession),
         actions: [
-          _ConnectionDot(online: store.online, version: store.serverVersion, onTap: () => goTo(8)),
+          _ConnectionDot(
+            online: store.online,
+            version: store.serverVersion,
+            onTap: () => goTo(8),
+          ),
           IconButton(
             tooltip: 'New chat',
             icon: const Icon(Icons.add_comment_outlined),
@@ -80,7 +94,6 @@ class HomeShellState extends State<HomeShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: goTo,
-        height: 62,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           for (final n in navs.take(5))
@@ -92,7 +105,9 @@ class HomeShellState extends State<HomeShell> {
 
   Widget _body(BuildContext context, store) {
     if (!store.booted) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingView(
+        label: 'OpenCode server se connect ho rahe hain',
+      );
     }
     if (store.fatalError != null) {
       return ConnectionErrorView(
@@ -106,17 +121,21 @@ class HomeShellState extends State<HomeShell> {
         icon: Icons.forum_outlined,
         title: 'Koi session nahi',
         message: 'Pehle ek chat start karo.',
-        action: FilledButton.icon(
+        action: OCButton(
           onPressed: () async {
             await store.newSession();
             goTo(0);
           },
-          icon: const Icon(Icons.add),
-          label: const Text('New chat'),
+          icon: Icons.add,
+          label: 'New chat',
+          variant: OCButtonVariant.primaryBlack,
         ),
       );
     }
-    return IndexedStack(index: index.clamp(0, navs.length - 1), children: [for (final n in navs) n.page]);
+    return IndexedStack(
+      index: index.clamp(0, navs.length - 1),
+      children: [for (final n in navs) n.page],
+    );
   }
 
   Future<void> _renameSession() async {
@@ -124,7 +143,11 @@ class HomeShellState extends State<HomeShell> {
     final s = store.current;
     if (s == null) return;
     final c = TextEditingController(text: s.label);
-    final name = await promptText(context, title: 'Session naam', initial: c.text);
+    final name = await promptText(
+      context,
+      title: 'Session naam',
+      initial: c.text,
+    );
     if (name != null && name.trim().isNotEmpty) {
       await store.renameSession(s.id, name.trim());
     }
@@ -149,10 +172,16 @@ class _Title extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(s?.label ?? 'OpenCode', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(
+            s?.label ?? 'OpenCode',
+            style: OCTypography.h3.copyWith(color: OCColors.textPrimary),
+          ),
           if (sub.isNotEmpty)
-            Text(sub,
-                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline), overflow: TextOverflow.ellipsis),
+            Text(
+              sub,
+              style: OCTypography.micro.copyWith(color: OCColors.textSecondary),
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       ),
     );
@@ -163,30 +192,45 @@ class _ConnectionDot extends StatelessWidget {
   final bool online;
   final String version;
   final VoidCallback onTap;
-  const _ConnectionDot({required this.online, required this.version, required this.onTap});
+  const _ConnectionDot({
+    required this.online,
+    required this.version,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: online ? const Color(0xFF3DDC84) : const Color(0xFFFF5F57),
+    return Semantics(
+      button: true,
+      label: online ? 'Server online, version $version' : 'Server offline',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          // 44px tap target around a small status dot.
+          constraints: const BoxConstraints(minHeight: OCSpace.tapTarget),
+          padding: const EdgeInsets.symmetric(horizontal: OCSpace.sm + 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: online ? OCColors.green : OCColors.red,
+                  border: Border.all(color: OCColors.surface, width: 2),
+                ),
               ),
-            ),
-            const SizedBox(width: 5),
-            Text(online ? (version.isEmpty ? 'live' : 'v$version') : 'offline',
-                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline)),
-          ],
+              const SizedBox(width: OCSpace.sm),
+              Text(
+                online ? (version.isEmpty ? 'live' : 'v$version') : 'offline',
+                style: OCTypography.micro.copyWith(
+                  color: OCColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -207,27 +251,40 @@ class _Drawer extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                OCSpace.lg,
+                OCSpace.screenX,
+                OCSpace.sm,
+              ),
               child: Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF00C2A8)]),
+                      borderRadius: BorderRadius.circular(OCRadius.tile),
+                      gradient: OCGradient.ctaOrangeSoft,
                     ),
-                    child: const Icon(Icons.bolt, color: Colors.white),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.bolt, color: OCColors.textInverse),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: OCSpace.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('OpenCode', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        Text(
+                          'OpenCode',
+                          style: OCTypography.h3.copyWith(
+                            color: OCColors.textPrimary,
+                          ),
+                        ),
                         Text(
                           store.paths?.directory ?? store.baseUrl,
-                          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline),
+                          style: OCTypography.micro.copyWith(
+                            color: OCColors.textSecondary,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -238,47 +295,125 @@ class _Drawer extends StatelessWidget {
             ),
             if (s != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Card(
-                  child: ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.forum, size: 20),
-                    title: Text(s.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
-                    subtitle: Text('${store.messages.length} messages', style: const TextStyle(fontSize: 11)),
-                    trailing: store.busy
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                        : null,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: OCSpace.screenX,
+                ),
+                child: OCInnerCell(
+                  child: Row(
+                    children: [
+                      const OCIconTile(
+                        icon: Icons.forum_outlined,
+                        accent: OCAccent.purple,
+                        size: 32,
+                        iconSize: 17,
+                      ),
+                      const SizedBox(width: OCSpace.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              s.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: OCTypography.bodyStrong.copyWith(
+                                color: OCColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '${store.messages.length} messages',
+                              style: OCTypography.micro.copyWith(
+                                color: OCColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (store.busy)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: OCProgressRing(
+                            value: 0.6,
+                            size: 16,
+                            stroke: 2,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-            const Divider(height: 20),
+            const SizedBox(height: OCSpace.sm),
+            const Divider(height: OCSpace.lg),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
                   for (var i = 0; i < HomeShellState.navs.length; i++)
-                    ListTile(
-                      dense: true,
-                      selected: i == current,
-                      leading: Icon(HomeShellState.navs[i].icon, size: 20),
-                      title: Text(HomeShellState.navs[i].label, style: const TextStyle(fontSize: 14)),
-                      onTap: () => onSelect(i),
+                    Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: OCSpace.md,
+                        vertical: OCSpace.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: i == current ? OCColors.orangeTint : null,
+                        borderRadius: BorderRadius.circular(OCRadius.inner),
+                      ),
+                      child: ListTile(
+                        dense: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(OCRadius.inner),
+                        ),
+                        selected: i == current,
+                        selectedTileColor: Colors.transparent,
+                        leading: OCIconTile(
+                          icon: HomeShellState.navs[i].icon,
+                          accent: i == current
+                              ? OCAccent.orange
+                              : OCAccent.neutral,
+                          size: 32,
+                          iconSize: 17,
+                        ),
+                        title: Text(
+                          HomeShellState.navs[i].label,
+                          style: OCTypography.body.copyWith(
+                            color: OCColors.textPrimary,
+                            fontWeight: i == current
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                        onTap: () => onSelect(i),
+                      ),
                     ),
                 ],
               ),
             ),
-            const Divider(height: 12),
+            const Divider(height: OCSpace.md),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                0,
+                OCSpace.screenX,
+                OCSpace.md,
+              ),
               child: Row(
                 children: [
-                  Icon(store.vcs?.isRepo == true ? Icons.commit : Icons.code_off,
-                      size: 14, color: Theme.of(context).colorScheme.outline),
-                  const SizedBox(width: 6),
+                  Icon(
+                    store.vcs?.isRepo == true ? Icons.commit : Icons.code_off,
+                    size: 14,
+                    color: OCColors.textTertiary,
+                  ),
+                  const SizedBox(width: OCSpace.sm),
                   Expanded(
                     child: Text(
-                      store.vcs?.isRepo == true ? 'git: ${store.vcs!.branch}' : 'git: nahi',
-                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline),
+                      store.vcs?.isRepo == true
+                          ? 'git: ${store.vcs!.branch}'
+                          : 'git: nahi',
+                      style: OCTypography.micro.copyWith(
+                        color: OCColors.textSecondary,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

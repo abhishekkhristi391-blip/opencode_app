@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/models.dart';
+import 'primitives.dart';
+import 'theme.dart';
 
 /// Lightweight toast that doesn't steal focus like SnackBar.
 /// Uses an OverlayEntry so it works anywhere (dialogs, sheets, etc.)
 void showToast(BuildContext context, String msg, {bool error = false}) {
   if (!context.mounted) return;
   final overlay = Overlay.of(context);
-  final cs = Theme.of(context).colorScheme;
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (_) => _ToastWidget(
@@ -27,15 +28,21 @@ class _ToastWidget extends StatefulWidget {
   final String message;
   final bool error;
   final VoidCallback onDismiss;
-  const _ToastWidget({required this.message, required this.error, required this.onDismiss});
+  const _ToastWidget({
+    required this.message,
+    required this.error,
+    required this.onDismiss,
+  });
 
   @override
   State<_ToastWidget> createState() => _ToastWidgetState();
 }
 
-class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
-    ..forward();
+class _ToastWidgetState extends State<_ToastWidget> {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: OCMotion.base,
+  )..forward();
 
   @override
   void dispose() {
@@ -46,10 +53,11 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final accent = widget.error ? OCAccent.red : OCAccent.green;
     return Positioned(
-      bottom: 24,
-      left: 16,
-      right: 16,
+      bottom: OCSpace.ctaBottom,
+      left: OCSpace.screenX,
+      right: OCSpace.screenX,
       child: AnimatedBuilder(
         animation: _c,
         builder: (_, __) => Transform.translate(
@@ -57,30 +65,40 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
           child: Opacity(
             opacity: _c.value,
             child: Material(
-              color: Colors.transparent,
+              type: MaterialType.transparency,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: OCSpace.lg,
+                  vertical: OCSpace.md,
+                ),
                 decoration: BoxDecoration(
-                  color: widget.error ? cs.error : cs.inverseSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: widget.error ? accent.tint : cs.surface,
+                  borderRadius: BorderRadius.circular(OCRadius.inner),
+                  boxShadow: OCShadow.cardHover,
                 ),
                 child: Row(
                   children: [
-                    Icon(widget.error ? Icons.error_outline : Icons.check_circle_outline,
-                        size: 18, color: widget.error ? cs.onError : cs.onInverseSurface),
-                    const SizedBox(width: 10),
+                    // Status is icon + colour, never colour alone.
+                    OCIconTile(
+                      icon: widget.error
+                          ? Icons.error_outline
+                          : Icons.check_circle_outline,
+                      accent: accent,
+                      size: 28,
+                      iconSize: 16,
+                    ),
+                    const SizedBox(width: OCSpace.md),
                     Expanded(
-                      child: Text(widget.message,
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 13.5, color: widget.error ? cs.onError : cs.onInverseSurface)),
+                      child: Text(
+                        widget.message,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.body.copyWith(
+                          color: widget.error
+                              ? accent.ink
+                              : OCColors.textPrimary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -98,32 +116,69 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
   showToast(context, msg, error: error);
 }
 
-void copyToClipboard(BuildContext context, String text, [String label = 'Copy ho gaya']) {
+void copyToClipboard(
+  BuildContext context,
+  String text, [
+  String label = 'Copy ho gaya',
+]) {
   Clipboard.setData(ClipboardData(text: text));
   showToast(context, label);
 }
 
+/// Empty / error state: big tinted squircle, bold headline, grey support text,
+/// optional single action. Everything centred, per the design system.
 class EmptyHint extends StatelessWidget {
   final IconData icon;
   final String title, message;
   final Widget? action;
-  const EmptyHint({super.key, required this.icon, required this.title, required this.message, this.action});
+  const EmptyHint({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(OCSpace.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 46, color: cs.outlineVariant),
-            const SizedBox(height: 14),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Text(message, textAlign: TextAlign.center, style: TextStyle(color: cs.outline, fontSize: 13)),
-            if (action != null) ...[const SizedBox(height: 18), action!],
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: OCColors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(OCRadius.xl),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 30, color: OCColors.textTertiary),
+            ),
+            const SizedBox(height: OCSpace.lg),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: OCTypography.h3.copyWith(color: OCColors.textPrimary),
+            ),
+            const SizedBox(height: OCSpace.xs),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: OCTypography.caption.copyWith(
+                color: OCColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            if (action != null) ...[
+              const SizedBox(height: OCSpace.lg),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 260),
+                child: action!,
+              ),
+            ],
           ],
         ),
       ),
@@ -137,73 +192,88 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            if (label != null) ...[
-              const SizedBox(height: 12),
-              Text(label!, style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 12)),
-            ],
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const OCProgressRing(value: 0.7, size: 32, animate: true),
+        if (label != null) ...[
+          const SizedBox(height: OCSpace.md),
+          Text(
+            label!,
+            style: OCTypography.caption.copyWith(color: OCColors.textSecondary),
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 class ConnectionErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const ConnectionErrorView({super.key, required this.message, required this.onRetry});
+  const ConnectionErrorView({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(OCSpace.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, size: 52, color: cs.error),
-            const SizedBox(height: 14),
-            const Text('Server se connect nahi ho raha', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 10),
-            SelectableText(message,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: cs.outline, fontSize: 12.5, height: 1.5)),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+            const SizedBox(height: OCSpace.xl),
+            const OCIconTile(
+              icon: Icons.cloud_off,
+              accent: OCAccent.red,
+              size: 72,
+              iconSize: 30,
             ),
-            const SizedBox(height: 22),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Termux me server chalu karo:',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const SelectableText(
-                        'cd <project-folder>\nopencode serve --port 4096\n\n# background me:\nnohup opencode serve --port 4096 &',
-                        style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-                      ),
+            const SizedBox(height: OCSpace.lg),
+            Text(
+              'Server se connect nahi ho raha',
+              textAlign: TextAlign.center,
+              style: OCTypography.h3.copyWith(color: OCColors.textPrimary),
+            ),
+            const SizedBox(height: OCSpace.sm),
+            SelectableText(
+              message,
+              textAlign: TextAlign.center,
+              style: OCTypography.caption.copyWith(
+                color: OCColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: OCSpace.xl),
+            OCButton(
+              label: 'Retry',
+              icon: Icons.refresh,
+              variant: OCButtonVariant.primaryOrange,
+              expand: false,
+              onPressed: onRetry,
+            ),
+            const SizedBox(height: OCSpace.xxl),
+            OCCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Termux me server chalu karo:', style: OCTypography.h3),
+                  const SizedBox(height: OCSpace.md),
+                  const OCInnerCell(
+                    child: Mono(
+                      'cd <project-folder>\nopencode serve --port 4096\n\n# background me:\nnohup opencode serve --port 4096 &',
+                      size: 12,
                     ),
-                    const SizedBox(height: 8),
-                    Text('Server ko usi folder se start karna zaroori hai — file browser aur diff wahi chalti hai.',
-                        style: TextStyle(color: cs.outline, fontSize: 11.5)),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: OCSpace.md),
+                  Text(
+                    'Server ko usi folder se start karna zaroori hai — file browser aur diff wahi chalti hai.',
+                    style: OCTypography.caption,
+                  ),
+                ],
               ),
             ),
           ],
@@ -234,8 +304,19 @@ Future<String?> promptText(
         onSubmitted: (v) => Navigator.pop(context, v),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(context, c.text), child: Text(confirm)),
+        OCButton(
+          label: 'Cancel',
+          variant: OCButtonVariant.ghostOutline,
+          expand: false,
+          onPressed: () => Navigator.pop(context),
+        ),
+        const SizedBox(width: OCSpace.sm),
+        OCButton(
+          label: confirm,
+          variant: OCButtonVariant.primaryOrange,
+          expand: false,
+          onPressed: () => Navigator.pop(context, c.text),
+        ),
       ],
     ),
   );
@@ -254,13 +335,20 @@ Future<bool> confirmDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-        FilledButton(
-          style: danger
-              ? FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error)
-              : null,
+        OCButton(
+          label: 'Cancel',
+          variant: OCButtonVariant.ghostOutline,
+          expand: false,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        const SizedBox(width: OCSpace.sm),
+        OCButton(
+          label: confirm,
+          variant: danger
+              ? OCButtonVariant.danger
+              : OCButtonVariant.primaryOrange,
+          expand: false,
           onPressed: () => Navigator.pop(context, true),
-          child: Text(confirm),
         ),
       ],
     ),
@@ -268,6 +356,7 @@ Future<bool> confirmDialog(
   return r ?? false;
 }
 
+/// Tiny uppercase section label. All-caps is allowed here and nowhere else.
 class SectionTitle extends StatelessWidget {
   final String text;
   final Widget? trailing;
@@ -275,24 +364,28 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                text.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-              ),
+    padding: const EdgeInsets.fromLTRB(
+      OCSpace.screenX,
+      OCSpace.lg,
+      OCSpace.screenX,
+      OCSpace.sm,
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            text.toUpperCase(),
+            style: OCTypography.micro.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: OCColors.textTertiary,
             ),
-            if (trailing != null) trailing!,
-          ],
+          ),
         ),
-      );
+        if (trailing != null) trailing!,
+      ],
+    ),
+  );
 }
 
 class Mono extends StatelessWidget {
@@ -300,18 +393,28 @@ class Mono extends StatelessWidget {
   final double size;
   final Color? color;
   final bool wrap;
-  const Mono(this.text, {super.key, this.size = 12, this.color, this.wrap = true});
+  const Mono(
+    this.text, {
+    super.key,
+    this.size = 12,
+    this.color,
+    this.wrap = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = Text(
       text,
-      style: TextStyle(fontFamily: 'monospace', fontFamilyFallback: const ['monospace'], fontSize: size, color: color),
+      style: OCTypography.mono(color: color, size: size),
     );
-    return wrap ? t : SingleChildScrollView(scrollDirection: Axis.horizontal, child: t);
+    return wrap
+        ? t
+        : SingleChildScrollView(scrollDirection: Axis.horizontal, child: t);
   }
 }
 
+/// Tinted rounded cell (radius 16) that pairs an icon with a label, so status
+/// is never communicated by colour alone.
 class StatusPill extends StatelessWidget {
   final String text;
   final Color color;
@@ -319,66 +422,99 @@ class StatusPill extends StatelessWidget {
   const StatusPill(this.text, this.color, {super.key, this.icon});
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[Icon(icon, size: 11, color: color), const SizedBox(width: 4)],
-            Text(text, style: TextStyle(fontSize: 10.5, color: color, fontWeight: FontWeight.w600)),
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: OCSpace.sm + 2,
+        vertical: OCSpace.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(OCRadius.inner),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: OCSpace.xs),
+          ] else ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: OCSpace.xs + 2),
           ],
-        ),
-      );
+          Text(
+            text,
+            style: OCTypography.micro.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class InfoRow extends StatelessWidget {
   final String label, value;
   final bool mono;
   final Widget? trailing;
-  const InfoRow(this.label, this.value, {super.key, this.mono = false, this.trailing});
+  const InfoRow(
+    this.label,
+    this.value, {
+    super.key,
+    this.mono = false,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 108,
-              child: Text(label, style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.outline)),
-            ),
-            Expanded(
-              child: mono ? Mono(value) : SelectableText(value, style: const TextStyle(fontSize: 12.5)),
-            ),
-            if (trailing != null) trailing!,
-          ],
+    padding: const EdgeInsets.symmetric(
+      horizontal: OCSpace.screenX,
+      vertical: OCSpace.sm,
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 108, child: Text(label, style: OCTypography.caption)),
+        Expanded(
+          child: mono
+              ? Mono(value)
+              : SelectableText(
+                  value,
+                  style: OCTypography.body.copyWith(
+                    color: OCColors.textPrimary,
+                  ),
+                ),
         ),
-      );
+        if (trailing != null) trailing!,
+      ],
+    ),
+  );
 }
 
 IconData toolIcon(String name) => switch (name) {
-      'bash' || 'shell' => Icons.terminal,
-      'read' => Icons.menu_book_outlined,
-      'write' || 'edit' || 'patch' || 'multiedit' => Icons.edit_note,
-      'grep' || 'search' => Icons.manage_search,
-      'glob' || 'list' => Icons.folder_outlined,
-      'webfetch' => Icons.cloud_download_outlined,
-      'websearch' => Icons.travel_explore,
-      'task' || 'agent' => Icons.smart_toy_outlined,
-      'todowrite' || 'todoread' => Icons.checklist,
-      'invalid' => Icons.block,
-      _ => Icons.build_outlined,
-    };
+  'bash' || 'shell' => Icons.terminal,
+  'read' => Icons.menu_book_outlined,
+  'write' || 'edit' || 'patch' || 'multiedit' => Icons.edit_note,
+  'grep' || 'search' => Icons.manage_search,
+  'glob' || 'list' => Icons.folder_outlined,
+  'webfetch' => Icons.cloud_download_outlined,
+  'websearch' => Icons.travel_explore,
+  'task' || 'agent' => Icons.smart_toy_outlined,
+  'todowrite' || 'todoread' => Icons.checklist,
+  'invalid' => Icons.block,
+  _ => Icons.build_outlined,
+};
 
 Color toolColor(ToolStatus s, ColorScheme cs) => switch (s) {
-      ToolStatus.completed => const Color(0xFF3DDC84),
-      ToolStatus.error => cs.error,
-      ToolStatus.running => const Color(0xFFFFB020),
-      ToolStatus.pending => cs.outline,
-      ToolStatus.unknown => cs.outline,
-    };
+  ToolStatus.completed => OCColors.green,
+  ToolStatus.error => cs.error,
+  ToolStatus.running => OCColors.warning,
+  ToolStatus.pending => cs.outline,
+  ToolStatus.unknown => cs.outline,
+};

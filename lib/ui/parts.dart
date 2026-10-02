@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import 'markdown.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 class PartTile extends StatelessWidget {
@@ -15,73 +17,105 @@ class PartTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (part.type) {
-        'text' => part.text.trim().isEmpty
-            ? const SizedBox.shrink()
-            : Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Markdown(part.text, base: Theme.of(context).textTheme.bodyMedium, onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
-              ),
-        'reasoning' => _Collapsible(
-            icon: Icons.psychology_alt_outlined,
-            title: 'Thinking',
-            subtitle: _firstLine(part.text),
-            color: Theme.of(context).colorScheme.tertiary,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-              child: Text(
+    'text' =>
+      part.text.trim().isEmpty
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Markdown(
                 part.text,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.5,
-                  fontStyle: FontStyle.italic,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                base: Theme.of(context).textTheme.bodyMedium,
+                onLink: (url) => launchUrl(
+                  Uri.parse(url),
+                  mode: LaunchMode.externalApplication,
                 ),
               ),
             ),
+    'reasoning' => _Collapsible(
+      icon: Icons.psychology_alt_outlined,
+      title: 'Thinking',
+      subtitle: _firstLine(part.text),
+      color: Theme.of(context).colorScheme.tertiary,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          OCSpace.md,
+          0,
+          OCSpace.md,
+          OCSpace.md,
+        ),
+        child: Text(
+          part.text,
+          style: OCTypography.caption.copyWith(
+            height: 1.5,
+            fontStyle: FontStyle.italic,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-        'tool' => ToolTile(part),
-        'file' => _FilePart(part),
-        'patch' => _Collapsible(
-            icon: Icons.difference_outlined,
-            title: 'Patch',
-            subtitle: '${part.patchText.split('\n').where((l) => l.startsWith('+') || l.startsWith('-')).length} lines',
-            color: Theme.of(context).colorScheme.tertiary,
-            child: DiffText(part.patchText),
+        ),
+      ),
+    ),
+    'tool' => ToolTile(part),
+    'file' => _FilePart(part),
+    'patch' => _Collapsible(
+      icon: Icons.difference_outlined,
+      title: 'Patch',
+      subtitle:
+          '${part.patchText.split('\n').where((l) => l.startsWith('+') || l.startsWith('-')).length} lines',
+      color: Theme.of(context).colorScheme.tertiary,
+      child: DiffText(part.patchText),
+    ),
+    'subtask' => _Collapsible(
+      icon: Icons.account_tree_outlined,
+      title:
+          'Subtask${part.subtaskAgent.isEmpty ? '' : ' · ${part.subtaskAgent}'}',
+      subtitle: _firstLine(part.text),
+      color: Theme.of(context).colorScheme.secondary,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          OCSpace.md,
+          0,
+          OCSpace.md,
+          OCSpace.md,
+        ),
+        child: Mono(part.text.isEmpty ? part.raw.toString() : part.text),
+      ),
+    ),
+    'agent' => _AgentPart(part),
+    'retry' => _RetryPart(part),
+    'compaction' => Container(
+      margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
+      padding: const EdgeInsets.all(OCSpace.md),
+      decoration: BoxDecoration(
+        color: OCColors.orangeTint,
+        borderRadius: BorderRadius.circular(OCRadius.inner),
+      ),
+      child: Row(
+        children: [
+          const OCIconTile(
+            icon: Icons.compress,
+            accent: OCAccent.orange,
+            size: 28,
+            iconSize: 15,
           ),
-        'subtask' => _Collapsible(
-            icon: Icons.account_tree_outlined,
-            title: 'Subtask${part.subtaskAgent.isEmpty ? '' : ' · ${part.subtaskAgent}'}',
-            subtitle: _firstLine(part.text),
-            color: Theme.of(context).colorScheme.secondary,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-              child: Mono(part.text.isEmpty ? part.raw.toString() : part.text),
+          const SizedBox(width: OCSpace.md),
+          Expanded(
+            child: Text(
+              'Context compact kiya gaya',
+              style: OCTypography.caption.copyWith(color: OCColors.orangeInk),
             ),
           ),
-        'agent' => _AgentPart(part),
-        'retry' => _RetryPart(part),
-        'compaction' => Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(children: [
-              Icon(Icons.compress, size: 15, color: Theme.of(context).colorScheme.onSecondaryContainer),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Text('Context compact kiya gaya',
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSecondaryContainer))),
-            ]),
-          ),
-        'snapshot' => const SizedBox.shrink(),
-        _ => _UnknownPart(part),
-      };
+        ],
+      ),
+    ),
+    'snapshot' => const SizedBox.shrink(),
+    _ => _UnknownPart(part),
+  };
 }
 
 String _firstLine(String s) {
-  final l = s.trim().split('\n').firstWhere((e) => e.trim().isNotEmpty, orElse: () => '');
+  final l = s
+      .trim()
+      .split('\n')
+      .firstWhere((e) => e.trim().isNotEmpty, orElse: () => '');
   return l.length > 70 ? '${l.substring(0, 70)}…' : l;
 }
 
@@ -108,47 +142,71 @@ class _CollapsibleState extends State<_Collapsible> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final shape = BorderRadius.circular(OCRadius.inner);
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
+      margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: cs.outlineVariant),
+        color: OCColors.surfaceSubtle,
+        borderRadius: shape,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(9),
-            onTap: () => setState(() => open = !open),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(widget.icon, size: 15, color: widget.color),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(widget.title,
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: widget.color)),
-                        if (widget.subtitle.isNotEmpty)
-                          Text(widget.subtitle,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              borderRadius: shape,
+              onTap: () => setState(() => open = !open),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: OCSpace.md,
+                  vertical: OCSpace.md,
+                ),
+                child: Row(
+                  children: [
+                    OCIconTile(
+                      icon: widget.icon,
+                      accent: OCAccent.neutral,
+                      size: 28,
+                      iconSize: 15,
+                      color: widget.color,
+                    ),
+                    const SizedBox(width: OCSpace.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: OCTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: widget.color,
+                            ),
+                          ),
+                          if (widget.subtitle.isNotEmpty)
+                            Text(
+                              widget.subtitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11, color: cs.outline)),
-                      ],
+                              style: OCTypography.micro.copyWith(
+                                color: OCColors.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(open ? Icons.expand_less : Icons.expand_more, size: 17, color: cs.outline),
-                ],
+                    Icon(
+                      open ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                      color: OCColors.textTertiary,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (open) ...[const Divider(height: 1), widget.child],
-        ],
+            if (open) ...[const Divider(height: 1), widget.child],
+          ],
+        ),
       ),
     );
   }
@@ -163,13 +221,17 @@ class ToolTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final st = part.status;
     final color = toolColor(st, cs);
-    final dur = part.toolEnd > 0 ? fmtDuration(part.toolEnd - part.toolStart) : '';
+    final dur = part.toolEnd > 0
+        ? fmtDuration(part.toolEnd - part.toolStart)
+        : '';
     final exit = part.exitCode;
 
     final title = part.summaryLine.isEmpty ? part.toolName : part.summaryLine;
     final out = part.output.isNotEmpty
         ? part.output
-        : (part.errorText.isNotEmpty ? part.errorText : part.toolMeta['output']?.toString() ?? '');
+        : (part.errorText.isNotEmpty
+              ? part.errorText
+              : part.toolMeta['output']?.toString() ?? '');
 
     return _Collapsible(
       icon: toolIcon(part.toolName),
@@ -184,9 +246,16 @@ class ToolTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (part.toolInput.isNotEmpty && part.toolInput.keys.any((k) => k != 'command' || part.toolName != 'bash'))
+          if (part.toolInput.isNotEmpty &&
+              part.toolInput.keys.any(
+                (k) => k != 'command' || part.toolName != 'bash',
+              ))
             _InputBlock(json: part.toolInput),
-          if (out.isNotEmpty) _OutputBlock(text: out, isError: st == ToolStatus.error || (exit != null && exit != 0)),
+          if (out.isNotEmpty)
+            _OutputBlock(
+              text: out,
+              isError: st == ToolStatus.error || (exit != null && exit != 0),
+            ),
         ],
       ),
     );
@@ -200,13 +269,18 @@ class _InputBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = json.entries
-        .map((e) => '${e.key}: ${e.value is String ? e.value : _pretty(e.value)}')
+        .map(
+          (e) => '${e.key}: ${e.value is String ? e.value : _pretty(e.value)}',
+        )
         .join('\n');
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      child: Text(text,
-          style: TextStyle(
-              fontFamily: 'monospace', fontSize: 11.5, height: 1.4, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      padding: const EdgeInsets.fromLTRB(OCSpace.md, OCSpace.sm, OCSpace.md, 0),
+      child: Text(
+        text,
+        style: OCTypography.monoSmall(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 
@@ -237,35 +311,44 @@ class _OutputBlockState extends State<_OutputBlock> {
     final cs = Theme.of(context).colorScheme;
     final lines = widget.text.split('\n');
     final truncated = lines.length > _maxLines;
-    final shown = _expanded || !truncated ? widget.text : lines.take(_maxLines).join('\n');
+    final shown = _expanded || !truncated
+        ? widget.text
+        : lines.take(_maxLines).join('\n');
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-      padding: const EdgeInsets.all(9),
+      margin: const EdgeInsets.fromLTRB(
+        OCSpace.md,
+        OCSpace.sm,
+        OCSpace.md,
+        OCSpace.md,
+      ),
+      padding: const EdgeInsets.all(OCSpace.sm + 2),
       decoration: BoxDecoration(
-        color: widget.isError ? cs.errorContainer.withValues(alpha: 0.4) : cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(7),
+        color: widget.isError ? OCColors.redTint : OCColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(OCRadius.inner),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Text(shown,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11.5,
-                  height: 1.45,
-                  color: widget.isError ? cs.onErrorContainer : cs.onSurface,
-                )),
+            child: Text(
+              shown,
+              style: OCTypography.mono(
+                size: 11.5,
+                color: widget.isError ? OCColors.redInk : cs.onSurface,
+              ),
+            ),
           ),
           if (truncated)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Row(
                 children: [
-                  Text('... ${widget.text.length} chars (${lines.length} lines)',
-                      style: TextStyle(fontSize: 10.5, color: cs.outline)),
+                  Text(
+                    '... ${widget.text.length} chars (${lines.length} lines)',
+                    style: OCTypography.micro,
+                  ),
                   const Spacer(),
                   TextButton(
                     onPressed: () => setState(() => _expanded = !_expanded),
@@ -280,7 +363,8 @@ class _OutputBlockState extends State<_OutputBlock> {
               visualDensity: VisualDensity.compact,
               iconSize: 15,
               icon: const Icon(Icons.copy, size: 15),
-              onPressed: () => Clipboard.setData(ClipboardData(text: widget.text)),
+              onPressed: () =>
+                  Clipboard.setData(ClipboardData(text: widget.text)),
             ),
           ),
         ],
@@ -295,27 +379,35 @@ class _FilePart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final isImage = part.mime.startsWith('image/');
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      padding: const EdgeInsets.all(9),
+      margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
+      padding: const EdgeInsets.all(OCSpace.sm + 2),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: cs.outlineVariant),
+        color: OCColors.surfaceSubtle,
+        borderRadius: BorderRadius.circular(OCRadius.inner),
       ),
       child: Row(
         children: [
-          Icon(isImage ? Icons.image_outlined : Icons.attach_file, size: 17, color: cs.primary),
-          const SizedBox(width: 8),
+          OCIconTile(
+            icon: isImage ? Icons.image_outlined : Icons.attach_file,
+            accent: OCAccent.blue,
+            size: 28,
+            iconSize: 15,
+          ),
+          const SizedBox(width: OCSpace.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(part.filename.isEmpty ? baseName(part.url) : part.filename,
-                    style: const TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis),
-                Text(part.mime, style: TextStyle(fontSize: 10.5, color: cs.outline)),
+                Text(
+                  part.filename.isEmpty ? baseName(part.url) : part.filename,
+                  style: OCTypography.body.copyWith(
+                    color: OCColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(part.mime, style: OCTypography.micro),
               ],
             ),
           ),
@@ -331,15 +423,20 @@ class _AgentPart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _Collapsible(
-        icon: Icons.bolt,
-        title: 'Agent · ${part.subtaskAgent.isEmpty ? '?' : part.subtaskAgent}',
-        subtitle: part.text.isEmpty ? '' : part.text,
-        color: Theme.of(context).colorScheme.primary,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-          child: Text(part.text, style: const TextStyle(fontSize: 12)),
-        ),
-      );
+    icon: Icons.bolt,
+    title: 'Agent · ${part.subtaskAgent.isEmpty ? '?' : part.subtaskAgent}',
+    subtitle: part.text.isEmpty ? '' : part.text,
+    color: Theme.of(context).colorScheme.primary,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(
+        OCSpace.md,
+        OCSpace.sm,
+        OCSpace.md,
+        OCSpace.md,
+      ),
+      child: Text(part.text, style: OCTypography.caption),
+    ),
+  );
 }
 
 class _RetryPart extends StatelessWidget {
@@ -348,18 +445,30 @@ class _RetryPart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+    margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
+    padding: const EdgeInsets.all(OCSpace.sm + 2),
+    decoration: BoxDecoration(
+      color: OCColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(OCRadius.inner),
+    ),
+    child: Row(
+      children: [
+        const OCIconTile(
+          icon: Icons.refresh,
+          accent: OCAccent.orange,
+          size: 28,
+          iconSize: 15,
         ),
-        child: Row(children: [
-          const Icon(Icons.refresh, size: 15),
-          const SizedBox(width: 8),
-          Expanded(child: Text(part.reason.isEmpty ? 'Retrying…' : part.reason, style: const TextStyle(fontSize: 12))),
-        ]),
-      );
+        const SizedBox(width: OCSpace.md),
+        Expanded(
+          child: Text(
+            part.reason.isEmpty ? 'Retrying…' : part.reason,
+            style: OCTypography.caption.copyWith(color: OCColors.textPrimary),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _UnknownPart extends StatelessWidget {
@@ -368,21 +477,30 @@ class _UnknownPart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.symmetric(vertical: 3),
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+    margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
+    padding: const EdgeInsets.all(OCSpace.sm + 2),
+    decoration: BoxDecoration(
+      color: OCColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(OCRadius.inner),
+    ),
+    child: Row(
+      children: [
+        const OCIconTile(
+          icon: Icons.extension_outlined,
+          accent: OCAccent.neutral,
+          size: 28,
+          iconSize: 15,
         ),
-        child: Row(children: [
-          Icon(Icons.extension_outlined, size: 14, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text('${part.type}: ${part.text.isEmpty ? part.raw.toString() : part.text}',
-                style: const TextStyle(fontSize: 11.5)),
+        const SizedBox(width: OCSpace.md),
+        Expanded(
+          child: Text(
+            '${part.type}: ${part.text.isEmpty ? part.raw.toString() : part.text}',
+            style: OCTypography.monoSmall(color: OCColors.textPrimary),
           ),
-        ]),
-      );
+        ),
+      ],
+    ),
+  );
 }
 
 class DiffText extends StatelessWidget {
@@ -391,12 +509,12 @@ class DiffText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final add = const Color(0xFF3DDC84);
-    final del = const Color(0xFFFF5F57);
+    final add = OCColors.greenInk;
+    final del = OCColors.redInk;
     final lines = diff.split('\n');
     return Container(
       constraints: const BoxConstraints(maxHeight: 420),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: OCColors.surfaceSubtle,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: ListView.builder(
@@ -408,22 +526,20 @@ class DiffText extends StatelessWidget {
             return Container(
               width: double.infinity,
               color: l.startsWith('+')
-                  ? add.withValues(alpha: 0.12)
+                  ? OCColors.greenTint
                   : l.startsWith('-')
-                      ? del.withValues(alpha: 0.12)
-                      : null,
+                  ? OCColors.redTint
+                  : null,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
               child: Text(
                 l.isEmpty ? ' ' : l,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 11.5,
-                  height: 1.4,
+                style: OCTypography.mono(
+                  size: 11.5,
                   color: l.startsWith('+')
                       ? add
                       : l.startsWith('-')
-                          ? del
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ? del
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             );

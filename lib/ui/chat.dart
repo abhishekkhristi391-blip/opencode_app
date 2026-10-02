@@ -12,6 +12,8 @@ import 'diff_page.dart';
 import 'markdown.dart';
 import 'models_page.dart';
 import 'parts.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 class ChatPage extends StatefulWidget {
@@ -83,11 +85,7 @@ class _ChatPageState extends State<ChatPage> {
             onStickToBottom: _stickToBottom,
           ),
         ),
-        _ComposerWidget(
-          controller: input,
-          focus: focus,
-          onSend: _send,
-        ),
+        _ComposerWidget(controller: input, focus: focus, onSend: _send),
       ],
     );
   }
@@ -141,7 +139,10 @@ class _ErrorBarWidget extends StatelessWidget {
       builder: (context, _) {
         final store = AppScope.of(context);
         if (store.sessionError == null) return const SizedBox.shrink();
-        return _ErrorBar(store.sessionError!, () => store.openSession(store.current!.id));
+        return _ErrorBar(
+          store.sessionError!,
+          () => store.openSession(store.current!.id),
+        );
       },
     );
   }
@@ -216,7 +217,8 @@ class _ChatMessagesState extends State<_ChatMessages> {
 
   void _onScroll() {
     if (!widget.scroll.hasClients) return;
-    final gap = widget.scroll.position.maxScrollExtent - widget.scroll.position.pixels;
+    final gap =
+        widget.scroll.position.maxScrollExtent - widget.scroll.position.pixels;
     final stick = gap < 120;
     if (stick != _stick) {
       _stick = stick;
@@ -249,7 +251,9 @@ class _ChatMessagesState extends State<_ChatMessages> {
         // Since we prepend, we need to scroll down by the amount of new content
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (widget.scroll.hasClients) {
-            widget.scroll.jumpTo(widget.scroll.position.pixels + 100); // approximate
+            widget.scroll.jumpTo(
+              widget.scroll.position.pixels + 100,
+            ); // approximate
           }
         });
       }
@@ -266,7 +270,9 @@ class _ChatMessagesState extends State<_ChatMessages> {
         final grew = store.messages.length > _lastCount;
         _lastCount = store.messages.length;
         widget.onLastCountChange(_lastCount);
-        if (grew && store.messages.isNotEmpty && store.messages.last.info.isUser) {
+        if (grew &&
+            store.messages.isNotEmpty &&
+            store.messages.last.info.isUser) {
           _stick = true;
           widget.onStickChange(true);
         }
@@ -299,7 +305,8 @@ class _ChatMessagesState extends State<_ChatMessages> {
             ListView.builder(
               controller: widget.scroll,
               padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
-              itemCount: store.messages.length + (store.hasMoreMessages ? 1 : 0),
+              itemCount:
+                  store.messages.length + (store.hasMoreMessages ? 1 : 0),
               cacheExtent: 500,
               itemBuilder: (_, i) {
                 if (i == 0 && store.hasMoreMessages) {
@@ -328,8 +335,11 @@ class _ChatMessagesState extends State<_ChatMessages> {
                   onPressed: () {
                     _stick = true;
                     widget.onStickChange(true);
-                    widget.scroll.animateTo(widget.scroll.position.maxScrollExtent,
-                        duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+                    widget.scroll.animateTo(
+                      widget.scroll.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                    );
                   },
                   child: const Icon(Icons.arrow_downward),
                 ),
@@ -350,22 +360,17 @@ class _LoadOlderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: OCSpace.sm),
       child: Center(
         child: loading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            : OutlinedButton.icon(
+            ? const OCProgressRing(value: 0.65, size: 22, stroke: 3)
+            : OCButton(
                 onPressed: onTap,
-                icon: const Icon(Icons.keyboard_arrow_up, size: 18),
-                label: const Text('Purane messages load karo', style: TextStyle(fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: cs.primary,
-                  side: BorderSide(color: cs.outlineVariant),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
+                icon: Icons.keyboard_arrow_up,
+                label: 'Purane messages load karo',
+                variant: OCButtonVariant.secondaryPill,
+                expand: false,
               ),
       ),
     );
@@ -381,25 +386,31 @@ class _ErrorBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      color: cs.errorContainer,
-      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+      color: OCColors.redTint,
+      padding: const EdgeInsets.fromLTRB(
+        OCSpace.md,
+        OCSpace.sm,
+        OCSpace.xs,
+        OCSpace.sm,
+      ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, size: 17, color: cs.onErrorContainer),
-          const SizedBox(width: 9),
+          const Icon(Icons.error_outline, size: 17, color: OCColors.redInk),
+          const SizedBox(width: OCSpace.sm),
           Expanded(
-            child: Text(msg,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: cs.onErrorContainer)),
+            child: Text(
+              msg,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: OCTypography.caption.copyWith(color: OCColors.redInk),
+            ),
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
             iconSize: 17,
-            color: cs.onErrorContainer,
+            color: OCColors.redInk,
             icon: const Icon(Icons.close),
             onPressed: onRetry,
           ),
@@ -414,13 +425,10 @@ class _BusyBar extends StatelessWidget {
   const _BusyBar(this.status);
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: LinearProgressIndicator(
-          minHeight: 2,
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        ),
-      );
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.symmetric(vertical: OCSpace.xs),
+    child: OCProgressBar(value: 1, height: 6, animate: false),
+  );
 }
 
 class _Welcome extends StatelessWidget {
@@ -430,30 +438,46 @@ class _Welcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(OCSpace.xl),
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: OCSpace.xl),
         Center(
           child: Container(
-            width: 62,
-            height: 62,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF00C2A8)]),
+              borderRadius: BorderRadius.circular(OCRadius.card),
+              gradient: OCGradient.ctaOrangeSoft,
+              boxShadow: OCShadow.card,
             ),
-            child: const Icon(Icons.bolt, size: 32, color: Colors.white),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.bolt,
+              size: 34,
+              color: OCColors.textInverse,
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-        const Center(child: Text('Kya karna hai?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700))),
-        const SizedBox(height: 6),
-        Center(
-          child: Text('Model ${store.providerId}/${store.modelId} · agent ${store.agent}',
-              style: TextStyle(fontSize: 12, color: cs.outline)),
+        const SizedBox(height: OCSpace.lg),
+        const Center(
+          child: Text(
+            'Kya karna hai?',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: OCColors.textPrimary,
+            ),
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: OCSpace.xs),
+        Center(
+          child: Text(
+            'Model ${store.providerId}/${store.modelId} · agent ${store.agent}',
+            style: OCTypography.caption,
+          ),
+        ),
+        const SizedBox(height: OCSpace.xl),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -465,7 +489,12 @@ class _Welcome extends StatelessWidget {
               'Ek naya feature plan bana',
             ])
               ActionChip(
-                label: Text(s, style: const TextStyle(fontSize: 12)),
+                label: Text(
+                  s,
+                  style: OCTypography.caption.copyWith(
+                    color: OCColors.textPrimary,
+                  ),
+                ),
                 onPressed: () => onPick(s),
               ),
           ],
@@ -483,7 +512,12 @@ class _MessageTile extends StatefulWidget {
   final ChatMessage msg;
   final bool isLast;
   final VoidCallback onChanged;
-  const _MessageTile({super.key, required this.msg, required this.isLast, required this.onChanged});
+  const _MessageTile({
+    super.key,
+    required this.msg,
+    required this.isLast,
+    required this.onChanged,
+  });
 
   @override
   State<_MessageTile> createState() => _MessageTileState();
@@ -524,15 +558,26 @@ class _MessageTileState extends State<_MessageTile> {
 
   Widget _buildContent(BuildContext context) {
     final m = widget.msg;
-    final cs = Theme.of(context).colorScheme;
     final user = m.info.isUser;
 
-    final text = m.parts.where((p) => p.type == 'text').map((p) => p.text).join('\n').trim();
+    final text = m.parts
+        .where((p) => p.type == 'text')
+        .map((p) => p.text)
+        .join('\n')
+        .trim();
     final files = m.parts.where((p) => p.type == 'file').toList();
-    final others = m.parts.where((p) => p.type != 'text' && p.type != 'file' && p.type != 'step-start' && p.type != 'step-finish').toList();
+    final others = m.parts
+        .where(
+          (p) =>
+              p.type != 'text' &&
+              p.type != 'file' &&
+              p.type != 'step-start' &&
+              p.type != 'step-finish',
+        )
+        .toList();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: OCSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -540,23 +585,34 @@ class _MessageTileState extends State<_MessageTile> {
             Align(
               alignment: Alignment.centerRight,
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.86),
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.86,
+                ),
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(13, 10, 13, 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: OCSpace.lg,
+                    vertical: OCSpace.md,
+                  ),
                   decoration: BoxDecoration(
-                    color: cs.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
+                    color: OCColors.ctaSolid,
+                    borderRadius: BorderRadius.circular(OCRadius.card),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       for (final f in files) _IncomingFileChip(f),
                       if (text.isNotEmpty)
-                        Markdown(text, base: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: cs.onPrimaryContainer,
-                              fontSize: 14.5,
-                              height: 1.45,
-                            ), onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
+                        Markdown(
+                          text,
+                          base: OCTypography.body.copyWith(
+                            color: OCColors.textInverse,
+                            height: 1.45,
+                          ),
+                          onLink: (url) => launchUrl(
+                            Uri.parse(url),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -565,16 +621,28 @@ class _MessageTileState extends State<_MessageTile> {
           else
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(4, 2, 4, 6),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.xs,
+                OCSpace.xxs,
+                OCSpace.xs,
+                OCSpace.sm,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   for (final p in others) PartTile(p),
-if (text.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Markdown(text, base: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14.5, height: 1.5), onLink: (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)),
+                  if (text.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: OCSpace.xs),
+                      child: Markdown(
+                        text,
+                        base: OCTypography.body.copyWith(height: 1.5),
+                        onLink: (url) => launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        ),
                       ),
+                    ),
                   if (m.streaming && text.isEmpty && others.isEmpty)
                     const _TypingDots(),
                   if (m.errorText != null) _InlineError(m.errorText!),
@@ -597,15 +665,22 @@ class _IncomingFileChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isImg = part.mime.startsWith('image/');
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: OCSpace.sm),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isImg ? Icons.image_outlined : Icons.attach_file, size: 15),
-          const SizedBox(width: 6),
+          Icon(
+            isImg ? Icons.image_outlined : Icons.attach_file,
+            size: 15,
+            color: OCColors.textInverse,
+          ),
+          const SizedBox(width: OCSpace.sm),
           Flexible(
-            child: Text(part.filename.isEmpty ? baseName(part.url) : part.filename,
-                style: const TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis),
+            child: Text(
+              part.filename.isEmpty ? baseName(part.url) : part.filename,
+              style: OCTypography.caption.copyWith(color: OCColors.textInverse),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -619,18 +694,27 @@ class _InlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: cs.errorContainer, borderRadius: BorderRadius.circular(8)),
-      child: Row(children: [
-        Icon(Icons.warning_amber, size: 15, color: cs.onErrorContainer),
-        const SizedBox(width: 8),
-        Expanded(
-            child: Text(text,
-                style: TextStyle(fontSize: 12, color: cs.onErrorContainer), maxLines: 6, overflow: TextOverflow.ellipsis)),
-      ]),
+      margin: const EdgeInsets.only(top: OCSpace.sm),
+      padding: const EdgeInsets.all(OCSpace.md),
+      decoration: BoxDecoration(
+        color: OCColors.redTint,
+        borderRadius: BorderRadius.circular(OCRadius.inner),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber, size: 15, color: OCColors.redInk),
+          const SizedBox(width: OCSpace.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: OCTypography.caption.copyWith(color: OCColors.redInk),
+              maxLines: 6,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -642,9 +726,12 @@ class _TypingDots extends StatefulWidget {
   State<_TypingDots> createState() => _TypingDotsState();
 }
 
-class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderStateMixin {
-  late final AnimationController c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))
-    ..repeat();
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat();
 
   @override
   void dispose() {
@@ -654,23 +741,25 @@ class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: c,
       builder: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: OCSpace.sm),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             for (var i = 0; i < 3; i++)
               Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.only(right: OCSpace.xs),
                 child: Opacity(
                   opacity: 0.35 + 0.65 * ((c.value * 3 - i).clamp(0.0, 1.0)),
                   child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: OCColors.orange,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
               ),
@@ -696,9 +785,8 @@ class _MessageFooter extends StatelessWidget {
     ];
     if (bits.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: 4, left: 2),
-      child: Text(bits.join(' · '),
-          style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.outline)),
+      padding: const EdgeInsets.only(top: OCSpace.xs, left: OCSpace.xxs),
+      child: Text(bits.join(' · '), style: OCTypography.micro),
     );
   }
 }
@@ -712,15 +800,21 @@ class _MessageActions extends StatelessWidget {
     // FIX: read(), not of(): these buttons don't need to rebuild on every store update.
     final store = AppScope.read(context);
     return Padding(
-      padding: const EdgeInsets.only(left: 2, top: 2),
+      padding: const EdgeInsets.only(left: OCSpace.xxs, top: OCSpace.xxs),
       child: Row(
         children: [
           _TinyBtn(Icons.copy_all_outlined, 'Copy', () {
-            final text = msg.parts.where((p) => p.type == 'text').map((p) => p.text).join('\n');
+            final text = msg.parts
+                .where((p) => p.type == 'text')
+                .map((p) => p.text)
+                .join('\n');
             copyToClipboard(context, text);
           }),
           _TinyBtn(Icons.call_split, 'Fork yahan se', () async {
-            final s = await store.forkSession(store.current!.id, messageId: msg.info.id);
+            final s = await store.forkSession(
+              store.current!.id,
+              messageId: msg.info.id,
+            );
             if (s != null && context.mounted) {
               await store.openSession(s.id);
               if (context.mounted) showSnack(context, 'Fork ban gaya');
@@ -728,11 +822,13 @@ class _MessageActions extends StatelessWidget {
           }),
           _TinyBtn(Icons.undo, 'Revert', () => store.revert(msg.info.id)),
           _TinyBtn(Icons.delete_outline, 'Delete', () async {
-            final ok = await confirmDialog(context,
-                title: 'Message delete karein?',
-                message: 'Ye message aur uske saare parts hata jayenge.',
-                confirm: 'Delete',
-                danger: true);
+            final ok = await confirmDialog(
+              context,
+              title: 'Message delete karein?',
+              message: 'Ye message aur uske saare parts hata jayenge.',
+              confirm: 'Delete',
+              danger: true,
+            );
             if (!ok) return;
             try {
               await store.api.deleteMessage(store.current!.id, msg.info.id);
@@ -756,16 +852,20 @@ class _TinyBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: tip,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.all(5),
-            child: Icon(icon, size: 15, color: Theme.of(context).colorScheme.outline),
-          ),
+    message: tip,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.all(5),
+        child: Icon(
+          icon,
+          size: 15,
+          color: Theme.of(context).colorScheme.outline,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------
@@ -818,11 +918,10 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border(top: BorderSide(color: cs.outlineVariant)),
+      decoration: const BoxDecoration(
+        color: OCColors.surface,
+        border: Border(top: BorderSide(color: OCColors.borderHairline)),
       ),
       child: SafeArea(
         top: false,
@@ -832,7 +931,12 @@ class _Composer extends StatelessWidget {
             if (store.attachments.isNotEmpty) _AttachmentStrip(store),
             _QuickBar(store),
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.sm,
+                OCSpace.sm,
+                OCSpace.sm,
+                OCSpace.md,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -852,17 +956,25 @@ class _Composer extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: OCSpace.sm),
                   if (store.busy)
                     IconButton.filled(
                       onPressed: onStop,
-                      style: IconButton.styleFrom(backgroundColor: cs.error),
+                      style: IconButton.styleFrom(
+                        backgroundColor: OCColors.red,
+                      ),
                       icon: const Icon(Icons.stop_rounded),
                     )
                   else
                     IconButton.filled(
                       onPressed: onSend,
-                      icon: const Icon(Icons.arrow_upward),
+                      style: IconButton.styleFrom(
+                        backgroundColor: OCColors.orange,
+                      ),
+                      icon: const Icon(
+                        Icons.arrow_upward,
+                        color: OCColors.textInverse,
+                      ),
                     ),
                 ],
               ),
@@ -914,17 +1026,22 @@ class _Composer extends StatelessWidget {
 
   Future<void> _pickImage(BuildContext context) async {
     final picker = ImagePicker();
-    final x = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final x = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (x == null) return;
     final bytes = await x.readAsBytes();
     final b64 = base64Encode(bytes);
-    store.addAttachment(PendingAttachment(
-      path: x.path,
-      mime: x.mimeType ?? 'image/jpeg',
-      name: x.name,
-      size: bytes.length,
-      dataUrl: 'data:${x.mimeType ?? 'image/jpeg'};base64,$b64',
-    ));
+    store.addAttachment(
+      PendingAttachment(
+        path: x.path,
+        mime: x.mimeType ?? 'image/jpeg',
+        name: x.name,
+        size: bytes.length,
+        dataUrl: 'data:${x.mimeType ?? 'image/jpeg'};base64,$b64',
+      ),
+    );
   }
 
   Future<void> _pickProjectFile(BuildContext context) async {
@@ -937,13 +1054,16 @@ class _Composer extends StatelessWidget {
     if (picked == null) return;
     try {
       final content = await store.api.readFile(picked.path);
-      store.addAttachment(PendingAttachment(
-        path: picked.path,
-        mime: _mimeFor(picked.name),
-        name: picked.name,
-        size: content.length,
-        dataUrl: 'data:${_mimeFor(picked.name)};base64,${base64Encode(utf8.encode(content))}',
-      ));
+      store.addAttachment(
+        PendingAttachment(
+          path: picked.path,
+          mime: _mimeFor(picked.name),
+          name: picked.name,
+          size: content.length,
+          dataUrl:
+              'data:${_mimeFor(picked.name)};base64,${base64Encode(utf8.encode(content))}',
+        ),
+      );
     } catch (e) {
       if (context.mounted) showSnack(context, '$e', error: true);
     }
@@ -966,7 +1086,8 @@ class _Composer extends StatelessWidget {
 
   Future<void> _showCommands(BuildContext context) async {
     final builtins = const ['init', 'compact', 'undo', 'redo', 'share'];
-    final names = {...store.commands.map((c) => c.name), ...builtins}.toList()..sort();
+    final names = {...store.commands.map((c) => c.name), ...builtins}.toList()
+      ..sort();
     final picked = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -977,9 +1098,17 @@ class _Composer extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('COMMANDS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+              child: Text(
+                'COMMANDS',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              ),
             ),
-            for (final n in names) ListTile(dense: true, leading: const Icon(Icons.code, size: 18), title: Text('/$n', style: const TextStyle(fontSize: 13.5))),
+            for (final n in names)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.code, size: 18),
+                title: Text('/$n', style: const TextStyle(fontSize: 13.5)),
+              ),
           ],
         ),
       ),
@@ -987,7 +1116,9 @@ class _Composer extends StatelessWidget {
     if (picked != null) {
       final t = controller.text;
       controller.text = t.isEmpty ? '/$picked ' : '$t /$picked ';
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+      controller.selection = TextSelection.collapsed(
+        offset: controller.text.length,
+      );
     }
   }
 }
@@ -1009,10 +1140,19 @@ class _AttachmentStrip extends StatelessWidget {
         itemBuilder: (_, i) {
           final a = store.attachments[i];
           return InputChip(
-            avatar: Icon(a.mime.startsWith('image/') ? Icons.image_outlined : Icons.description_outlined, size: 17),
+            avatar: Icon(
+              a.mime.startsWith('image/')
+                  ? Icons.image_outlined
+                  : Icons.description_outlined,
+              size: 17,
+            ),
             label: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 150),
-              child: Text('${a.name} · ${fmtBytes(a.size)}', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5)),
+              child: Text(
+                '${a.name} · ${fmtBytes(a.size)}',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11.5),
+              ),
             ),
             backgroundColor: cs.surfaceContainerHighest,
             onDeleted: () => store.removeAttachment(i),
@@ -1038,13 +1178,23 @@ class _QuickBar extends StatelessWidget {
         children: [
           ActionChip(
             avatar: Icon(Icons.psychology, size: 15, color: cs.primary),
-            label: Text(store.modelId.isEmpty ? 'Model chuno' : store.modelId, style: const TextStyle(fontSize: 11.5)),
+            label: Text(
+              store.modelId.isEmpty ? 'Model chuno' : store.modelId,
+              style: const TextStyle(fontSize: 11.5),
+            ),
             visualDensity: VisualDensity.compact,
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelsPage())),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ModelsPage()),
+            ),
           ),
           const SizedBox(width: 6),
           ActionChip(
-            avatar: Icon(Icons.smart_toy_outlined, size: 15, color: cs.tertiary),
+            avatar: Icon(
+              Icons.smart_toy_outlined,
+              size: 15,
+              color: cs.tertiary,
+            ),
             label: Text(store.agent, style: const TextStyle(fontSize: 11.5)),
             visualDensity: VisualDensity.compact,
             onPressed: () => _pickAgent(context),
@@ -1065,15 +1215,24 @@ class _QuickBar extends StatelessWidget {
             const SizedBox(width: 6),
             ActionChip(
               avatar: const Icon(Icons.difference_outlined, size: 15),
-              label: Text('${store.liveDiff.length} files', style: const TextStyle(fontSize: 11.5)),
+              label: Text(
+                '${store.liveDiff.length} files',
+                style: const TextStyle(fontSize: 11.5),
+              ),
               visualDensity: VisualDensity.compact,
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DiffPage())),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DiffPage()),
+              ),
             ),
           ],
           const SizedBox(width: 6),
           ActionChip(
             avatar: const Icon(Icons.build_outlined, size: 15),
-            label: Text('Tools (${store.toolsEnabled.length})', style: const TextStyle(fontSize: 11.5)),
+            label: Text(
+              'Tools (${store.toolsEnabled.length})',
+              style: const TextStyle(fontSize: 11.5),
+            ),
             visualDensity: VisualDensity.compact,
             onPressed: () => _pickTools(context),
           ),
@@ -1100,15 +1259,23 @@ class _QuickBar extends StatelessWidget {
             children: [
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text('AGENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text(
+                  'AGENT',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                ),
               ),
               for (final a in agents)
                 RadioListTile<String>(
                   value: a.name,
                   dense: true,
                   title: Text(a.name, style: const TextStyle(fontSize: 14)),
-                  subtitle:
-                      a.description.isEmpty ? null : Text(a.description, maxLines: 2, style: const TextStyle(fontSize: 11)),
+                  subtitle: a.description.isEmpty
+                      ? null
+                      : Text(
+                          a.description,
+                          maxLines: 2,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                 ),
             ],
           ),
@@ -1140,7 +1307,15 @@ class _QuickBar extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: Row(
                   children: [
-                    const Expanded(child: Text('TOOLS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                    const Expanded(
+                      child: Text(
+                        'TOOLS',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                     TextButton(
                       onPressed: () {
                         store.toolsEnabled.clear();
@@ -1151,8 +1326,13 @@ class _QuickBar extends StatelessWidget {
                   ],
                 ),
               ),
-              Text('Koi select nahi = sab tools on (default)',
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline)),
+              Text(
+                'Koi select nahi = sab tools on (default)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
@@ -1161,7 +1341,13 @@ class _QuickBar extends StatelessWidget {
                       CheckboxListTile(
                         dense: true,
                         value: store.toolsEnabled.contains(id),
-                        title: Text(id, style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5)),
+                        title: Text(
+                          id,
+                          style: const TextStyle(
+                            fontFamily: OCTypography.mono().fontFamily,
+                            fontSize: 12.5,
+                          ),
+                        ),
                         onChanged: (v) {
                           store.toggleTool(id, v ?? false);
                           setSheet(() {});
@@ -1232,7 +1418,10 @@ class _SlashTextFieldState extends State<SlashTextField> {
       final q = slash.group(1)!.toLowerCase();
       final names = widget.store.commands.map((c) => c.name).toSet()
         ..addAll(const ['init', 'compact', 'undo', 'redo', 'share', 'clear']);
-      return _set(names.where((n) => n.startsWith(q)).take(8).toList(), mode: '/');
+      return _set(
+        names.where((n) => n.startsWith(q)).take(8).toList(),
+        mode: '/',
+      );
     }
     final at = RegExp(r'(?:^|\s)@([\w./-]*)$').firstMatch(upto);
     if (at != null) {
@@ -1254,15 +1443,23 @@ class _SlashTextFieldState extends State<SlashTextField> {
 
   void _searchFiles(String q) async {
     try {
-      final list = await widget.store.api.findFiles(q.isEmpty ? ' ' : q, limit: 8);
+      final list = await widget.store.api.findFiles(
+        q.isEmpty ? ' ' : q,
+        limit: 8,
+      );
       if (!mounted || _mode != '@') return;
       setState(() => _files = list);
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   void _set(List<String> s, {String mode = ''}) {
     if (!mounted) return;
-    if (s.length == _suggestions.length && mode == _mode && s.join() == _suggestions.join()) return;
+    if (s.length == _suggestions.length &&
+        mode == _mode &&
+        s.join() == _suggestions.join())
+      return;
     setState(() {
       _suggestions = s;
       _mode = mode;
@@ -1274,7 +1471,9 @@ class _SlashTextFieldState extends State<SlashTextField> {
     final sel = widget.controller.selection;
     if (!sel.isValid) return;
     final upto = text.substring(0, sel.baseOffset);
-    final pattern = _mode == '@' ? RegExp(r'(?:^|\s)@[\w./-]*$') : RegExp(r'(?:^|\s)/[\w-]*$');
+    final pattern = _mode == '@'
+        ? RegExp(r'(?:^|\s)@[\w./-]*$')
+        : RegExp(r'(?:^|\s)/[\w-]*$');
     final m = pattern.firstMatch(upto);
     if (m == null) return;
     final start = sel.baseOffset - m.group(0)!.length;
@@ -1282,14 +1481,16 @@ class _SlashTextFieldState extends State<SlashTextField> {
     final insert = '$_mode$token ';
     final next = text.replaceRange(start, sel.baseOffset, '$prefix$insert');
     widget.controller.text = next;
-    widget.controller.selection = TextSelection.collapsed(offset: start + insert.length);
+    widget.controller.selection = TextSelection.collapsed(
+      offset: start + insert.length,
+    );
     _set([]);
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final showList = _suggestions.isNotEmpty || (_mode == '@' && _files.isNotEmpty);
+    final showList =
+        _suggestions.isNotEmpty || (_mode == '@' && _files.isNotEmpty);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -1302,13 +1503,19 @@ class _SlashTextFieldState extends State<SlashTextField> {
           textInputAction: TextInputAction.newline,
           keyboardType: TextInputType.multiline,
           onSubmitted: (_) => widget.onSubmit(),
-          style: const TextStyle(fontSize: 14.5, height: 1.4),
+          style: OCTypography.body.copyWith(height: 1.4),
           decoration: InputDecoration(
             hintText: 'Message likho…  (/command  @file)',
+            hintStyle: OCTypography.body.copyWith(color: OCColors.textTertiary),
+            filled: true,
+            fillColor: OCColors.surfaceSubtle,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: OCSpace.lg,
+              vertical: OCSpace.md,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(OCRadius.full),
               borderSide: BorderSide.none,
             ),
             suffixIcon: widget.controller.text.isEmpty
@@ -1322,12 +1529,11 @@ class _SlashTextFieldState extends State<SlashTextField> {
         ),
         if (showList)
           Container(
-            margin: const EdgeInsets.only(top: 4),
+            margin: const EdgeInsets.only(top: OCSpace.xs),
             constraints: const BoxConstraints(maxHeight: 190),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: cs.outlineVariant),
+              color: OCColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(OCRadius.inner),
             ),
             child: ListView(
               shrinkWrap: true,
@@ -1337,22 +1543,44 @@ class _SlashTextFieldState extends State<SlashTextField> {
                   ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    leading: const Icon(Icons.code, size: 15),
-                    title: Text(s, style: const TextStyle(fontSize: 12.5)),
+                    leading: const Icon(
+                      Icons.code,
+                      size: 15,
+                      color: OCColors.textTertiary,
+                    ),
+                    title: Text(
+                      s,
+                      style: OCTypography.caption.copyWith(
+                        color: OCColors.textPrimary,
+                      ),
+                    ),
                     subtitle: widget.store.commands
-                            .where((c) => c.name == s)
-                            .map((c) => c.description)
-                            .firstOrNull
-                            ?.let((d) => Text(d, style: const TextStyle(fontSize: 10.5))),
+                        .where((c) => c.name == s)
+                        .map((c) => c.description)
+                        .firstOrNull
+                        ?.let((d) => Text(d, style: OCTypography.micro)),
                     onTap: () => _apply(s),
                   ),
                 for (final f in _files)
                   ListTile(
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    leading: const Icon(Icons.insert_drive_file_outlined, size: 15),
-                    title: Text(baseName(f), style: const TextStyle(fontSize: 12.5)),
-                    subtitle: Text(f, style: TextStyle(fontSize: 10.5, color: cs.outline), overflow: TextOverflow.ellipsis),
+                    leading: const Icon(
+                      Icons.insert_drive_file_outlined,
+                      size: 15,
+                      color: OCColors.textTertiary,
+                    ),
+                    title: Text(
+                      baseName(f),
+                      style: OCTypography.caption.copyWith(
+                        color: OCColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      f,
+                      style: OCTypography.micro,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     onTap: () => _apply(f),
                   ),
               ],
@@ -1428,7 +1656,9 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
                     icon: const Icon(Icons.arrow_upward),
                     onPressed: () => _load(dir == '.' ? '.' : dirName(dir)),
                   ),
-                Expanded(child: Mono(dir == '.' ? 'project root' : dir, size: 12)),
+                Expanded(
+                  child: Mono(dir == '.' ? 'project root' : dir, size: 12),
+                ),
               ],
             ),
           ),
@@ -1437,25 +1667,39 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
             child: loading
                 ? const LoadingView()
                 : err != null
-                    ? EmptyHint(icon: Icons.error_outline, title: 'Load nahi hua', message: err!)
-                    : nodes.isEmpty
-                        ? const EmptyHint(icon: Icons.folder_off_outlined, title: 'Khaali', message: 'Yahan koi file nahi.')
-                        : ListView.builder(
-                            itemCount: nodes.length,
-                            itemBuilder: (_, i) {
-                              final n = nodes[i];
-                              return ListTile(
-                                dense: true,
-                                leading: Icon(
-                                  n.isDir ? Icons.folder_outlined : _iconFor(n.name),
-                                  size: 19,
-                                  color: n.isDir ? Theme.of(context).colorScheme.primary : null,
-                                ),
-                                title: Text(n.name, style: const TextStyle(fontSize: 13)),
-                                onTap: () => n.isDir ? _load(n.path) : Navigator.pop(context, n),
-                              );
-                            },
-                          ),
+                ? EmptyHint(
+                    icon: Icons.error_outline,
+                    title: 'Load nahi hua',
+                    message: err!,
+                  )
+                : nodes.isEmpty
+                ? const EmptyHint(
+                    icon: Icons.folder_off_outlined,
+                    title: 'Khaali',
+                    message: 'Yahan koi file nahi.',
+                  )
+                : ListView.builder(
+                    itemCount: nodes.length,
+                    itemBuilder: (_, i) {
+                      final n = nodes[i];
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(
+                          n.isDir ? Icons.folder_outlined : _iconFor(n.name),
+                          size: 19,
+                          color: n.isDir
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                        title: Text(
+                          n.name,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        onTap: () =>
+                            n.isDir ? _load(n.path) : Navigator.pop(context, n),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

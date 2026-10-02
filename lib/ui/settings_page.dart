@@ -7,6 +7,8 @@ import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
 import 'commands_page.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -26,7 +28,6 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final cs = Theme.of(context).colorScheme;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -35,32 +36,54 @@ class _SettingsPageState extends State<SettingsPage> {
         await store.refreshCatalog();
       },
       child: ListView(
-        padding: const EdgeInsets.only(bottom: 30),
+        padding: const EdgeInsets.only(bottom: OCSpace.xxxl),
         children: [
           // ---------------- server ----------------
           const SectionTitle('Server'),
           InfoRow('URL', store.baseUrl, mono: true),
-          InfoRow('Status', store.online ? 'connected (${store.serverVersion})' : 'disconnected'),
+          InfoRow(
+            'Status',
+            store.online
+                ? 'connected (${store.serverVersion})'
+                : 'disconnected',
+          ),
           InfoRow('Project', store.paths?.directory ?? '-', mono: true),
           InfoRow('Worktree', store.paths?.worktree ?? '-', mono: true),
           InfoRow('Config dir', store.paths?.config ?? '-', mono: true),
-          InfoRow('Git branch', store.vcs?.branch.isNotEmpty == true ? store.vcs!.branch : 'not a repo'),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-            child: Wrap(spacing: 8, children: [
-              OutlinedButton.icon(
-                onPressed: () => _editServer(context, store),
-                icon: const Icon(Icons.edit, size: 16),
-                label: const Text('Change server', style: TextStyle(fontSize: 12.5)),
-              ),
-              OutlinedButton.icon(
-                onPressed: store.connect,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Reconnect', style: TextStyle(fontSize: 12.5)),
-              ),
-            ]),
+          InfoRow(
+            'Git branch',
+            store.vcs?.branch.isNotEmpty == true
+                ? store.vcs!.branch
+                : 'not a repo',
           ),
-          const Divider(height: 26),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.screenX,
+              OCSpace.sm,
+              OCSpace.screenX,
+              0,
+            ),
+            child: Wrap(
+              spacing: OCSpace.sm,
+              children: [
+                OCButton(
+                  onPressed: () => _editServer(context, store),
+                  icon: Icons.edit,
+                  label: 'Change server',
+                  variant: OCButtonVariant.secondaryPill,
+                  expand: false,
+                ),
+                OCButton(
+                  onPressed: store.connect,
+                  icon: Icons.refresh,
+                  label: 'Reconnect',
+                  variant: OCButtonVariant.secondaryPill,
+                  expand: false,
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: OCSpace.xxl),
 
           // ---------------- session actions ----------------
           const SectionTitle('Current session'),
@@ -101,15 +124,18 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: 'Server ka current instance dispose karke fresh start',
             danger: true,
             onTap: () async {
-              final ok = await confirmDialog(context,
-                  title: 'Instance restart?',
-                  message: 'Current instance dispose ho jayega. Active kaam ruk sakta hai.',
-                  confirm: 'Restart');
+              final ok = await confirmDialog(
+                context,
+                title: 'Instance restart?',
+                message: 'Current instance dispose ho jayega. Active kaam ruk sakta hai.',
+                confirm: 'Restart',
+              );
               if (!ok) return;
               try {
                 await store.api.disposeInstance();
                 await store.connect();
-                if (context.mounted) showSnack(context, 'Instance restart ho gaya');
+                if (context.mounted)
+                  showSnack(context, 'Instance restart ho gaya');
               } catch (e) {
                 if (context.mounted) showSnack(context, '$e', error: true);
               }
@@ -121,10 +147,12 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: 'Server side opencode ko latest version pe le jao',
             danger: true,
             onTap: () async {
-              final ok = await confirmDialog(context,
-                  title: 'Upgrade karein?',
-                  message: 'Server restart ho sakta hai.',
-                  confirm: 'Upgrade');
+              final ok = await confirmDialog(
+                context,
+                title: 'Upgrade karein?',
+                message: 'Server restart ho sakta hai.',
+                confirm: 'Upgrade',
+              );
               if (!ok) return;
               try {
                 await store.api.upgrade();
@@ -140,10 +168,12 @@ class _SettingsPageState extends State<SettingsPage> {
             title: 'External folder likhne ki permission do',
             subtitle: 'Project ke bahar bhi files create karne allow karega',
             onTap: () async {
-              final ok = await confirmDialog(context,
-                  title: 'External directory permission allow karein?',
-                  message: 'Ye opencode ko project folder ke bahar bhi files likhne dega (jaise /storage/emulated/0/).',
-                  confirm: 'Allow');
+              final ok = await confirmDialog(
+                context,
+                title: 'External directory permission allow karein?',
+                message: 'Ye opencode ko project folder ke bahar bhi files likhne dega (jaise /storage/emulated/0/).',
+                confirm: 'Allow',
+              );
               if (!ok) return;
               try {
                 await store.api.patchConfig({
@@ -151,10 +181,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     'edit': 'allow',
                     'bash': 'allow',
                     'external_directory': 'allow',
-                  }
+                  },
                 });
                 await store.refreshConfig();
-                if (context.mounted) showSnack(context, 'External directory permission allow ho gaya');
+                if (context.mounted)
+                  showSnack(
+                    context,
+                    'External directory permission allow ho gaya',
+                  );
               } catch (e) {
                 if (context.mounted) showSnack(context, '$e', error: true);
               }
@@ -176,23 +210,40 @@ class _SettingsPageState extends State<SettingsPage> {
           SectionTitle('MCP servers (${store.mcp.length})'),
           if (store.mcp.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('Koi MCP server nahi.',
-                  style: TextStyle(fontSize: 12, color: cs.outline)),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                0,
+                OCSpace.screenX,
+                OCSpace.sm,
+              ),
+              child: Text('Koi MCP server nahi.', style: OCTypography.caption),
             ),
           for (final e in store.mcp.entries)
             ListTile(
               dense: true,
-              leading: Icon(e.value.healthy ? Icons.check_circle : Icons.error_outline,
-                  size: 18, color: e.value.healthy ? const Color(0xFF3DDC84) : cs.error),
-              title: Text(e.key, style: const TextStyle(fontSize: 13.5)),
+              leading: OCIconTile(
+                icon: e.value.healthy
+                    ? Icons.check_circle
+                    : Icons.error_outline,
+                accent: e.value.healthy ? OCAccent.green : OCAccent.red,
+                size: 30,
+                iconSize: 16,
+              ),
+              title: Text(e.key, style: OCTypography.caption),
               subtitle: Text(
-                  [e.value.status, if (e.value.message.isNotEmpty) e.value.message, if (e.value.detail.isNotEmpty) e.value.detail]
-                      .where((x) => x.isNotEmpty)
-                      .join(' · '),
-                  style: const TextStyle(fontSize: 11)),
+                [
+                  e.value.status,
+                  if (e.value.message.isNotEmpty) e.value.message,
+                  if (e.value.detail.isNotEmpty) e.value.detail,
+                ].where((x) => x.isNotEmpty).join(' · '),
+                style: OCTypography.micro,
+              ),
               trailing: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, size: 18),
+                icon: const Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: OCColors.textSecondary,
+                ),
                 onSelected: (v) async {
                   if (v == 'connect') {
                     await store.api.mcpConnect(e.key);
@@ -209,43 +260,65 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: OutlinedButton.icon(
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.screenX,
+              OCSpace.sm,
+              OCSpace.screenX,
+              0,
+            ),
+            child: OCButton(
               onPressed: () => _addMcp(context),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('MCP server add karo', style: TextStyle(fontSize: 12.5)),
+              icon: Icons.add,
+              label: 'MCP server add karo',
+              variant: OCButtonVariant.secondaryPill,
+              expand: false,
             ),
           ),
-          const Divider(height: 26),
+          const Divider(height: OCSpace.xxl),
 
           // ---------------- lsp / formatter ----------------
           const SectionTitle('Language servers'),
           if (store.lsp.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('Koi LSP active nahi.', style: TextStyle(fontSize: 12, color: cs.outline)),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                0,
+                OCSpace.screenX,
+                OCSpace.sm,
+              ),
+              child: Text('Koi LSP active nahi.', style: OCTypography.caption),
             ),
           for (final l in store.lsp) _StatusRow(l),
           const SectionTitle('Formatters'),
           if (store.formatters.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('Koi formatter nahi.', style: TextStyle(fontSize: 12, color: cs.outline)),
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                0,
+                OCSpace.screenX,
+                OCSpace.sm,
+              ),
+              child: Text('Koi formatter nahi.', style: OCTypography.caption),
             ),
           for (final f in store.formatters) _StatusRow(f),
-          const Divider(height: 26),
+          const Divider(height: OCSpace.xxl),
 
           // ---------------- skills ----------------
           const SkillsSection(),
-          const Divider(height: 26),
+          const Divider(height: OCSpace.xxl),
           const SectionTitle('About'),
           const InfoRow('App', 'OpenCode Client 1.0.0'),
           const InfoRow('Server API', 'opencode 1.18.x'),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.screenX,
+              OCSpace.md,
+              OCSpace.screenX,
+              0,
+            ),
             child: Text(
               'Is app ke liye Termux me opencode server chalna zaroori hai. Server ko usi project folder se start karo jise app me dekhna hai.',
-              style: TextStyle(fontSize: 11.5, color: cs.outline, height: 1.5),
+              style: OCTypography.micro.copyWith(height: 1.5),
             ),
           ),
         ],
@@ -264,33 +337,52 @@ class _SettingsPageState extends State<SettingsPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: url, decoration: const InputDecoration(labelText: 'URL')),
+            TextField(
+              controller: url,
+              decoration: const InputDecoration(labelText: 'URL'),
+            ),
             const SizedBox(height: 10),
             TextField(
-                controller: user, decoration: const InputDecoration(labelText: 'Username (basic auth)')),
+              controller: user,
+              decoration: const InputDecoration(
+                labelText: 'Username (basic auth)',
+              ),
+            ),
             const SizedBox(height: 10),
             TextField(
               controller: pass,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password (OPENCODE_SERVER_PASSWORD)'),
+              decoration: const InputDecoration(
+                labelText: 'Password (OPENCODE_SERVER_PASSWORD)',
+              ),
             ),
             const SizedBox(height: 10),
-            Wrap(spacing: 6, children: [
-              for (final preset in const [
-                'http://127.0.0.1:4096',
-                'http://127.0.0.1:4097',
-                'http://10.0.2.2:4096',
-              ])
-                ActionChip(
-                  label: Text(preset, style: const TextStyle(fontSize: 11)),
-                  onPressed: () => url.text = preset,
-                ),
-            ]),
+            Wrap(
+              spacing: 6,
+              children: [
+                for (final preset in const [
+                  'http://127.0.0.1:4096',
+                  'http://127.0.0.1:4097',
+                  'http://10.0.2.2:4096',
+                ])
+                  ActionChip(
+                    label: Text(preset, style: OCTypography.micro),
+                    onPressed: () => url.text = preset,
+                  ),
+              ],
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Connect')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          OCButton(
+            label: 'Connect',
+            variant: OCButtonVariant.primaryBlack,
+            onPressed: () => Navigator.pop(context, true),
+          ),
         ],
       ),
     );
@@ -312,17 +404,20 @@ class _SettingsPageState extends State<SettingsPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-              const SizedBox(height: 10),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'local', label: Text('Local')),
-                  ButtonSegment(value: 'remote', label: Text('Remote')),
-                ],
-                selected: {type},
-                onSelectionChanged: (s) => setD(() => type = s.first),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Name'),
               ),
               const SizedBox(height: 10),
+              OCSegmentedControl<String>(
+                segments: const [
+                  OCSegment('local', 'Local'),
+                  OCSegment('remote', 'Remote'),
+                ],
+                value: type,
+                onChanged: (v) => setD(() => type = v),
+              ),
+              const SizedBox(height: OCSpace.md),
               TextField(
                 controller: value,
                 decoration: InputDecoration(
@@ -333,14 +428,24 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dlg), child: const Text('Cancel')),
-            FilledButton(
+            TextButton(
+              onPressed: () => Navigator.pop(dlg),
+              child: const Text('Cancel'),
+            ),
+            OCButton(
+              label: 'Add',
+              variant: OCButtonVariant.primaryBlack,
               onPressed: () {
-                if (name.text.trim().isEmpty || value.text.trim().isEmpty) return;
-                store.addMcp(name.text.trim(), type, value.text.trim(), const []);
+                if (name.text.trim().isEmpty || value.text.trim().isEmpty)
+                  return;
+                store.addMcp(
+                  name.text.trim(),
+                  type,
+                  value.text.trim(),
+                  const [],
+                );
                 Navigator.pop(dlg);
               },
-              child: const Text('Add'),
             ),
           ],
         ),
@@ -356,7 +461,9 @@ class _Providers extends StatelessWidget {
     final info = store.providerInfo;
     if (info == null) return const LoadingView();
 
-    final connected = info.all.where((p) => info.connected.contains(p.id)).toList();
+    final connected = info.all
+        .where((p) => info.connected.contains(p.id))
+        .toList();
     final unconnected = info.all
         .where((p) => !info.connected.contains(p.id) && p.needsKey)
         .take(25)
@@ -367,16 +474,31 @@ class _Providers extends StatelessWidget {
       children: [
         if (connected.isEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('Koi provider connected nahi. Neeche se API key daal do.',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.screenX,
+              0,
+              OCSpace.screenX,
+              OCSpace.sm,
+            ),
+            child: Text(
+              'Koi provider connected nahi. Neeche se API key daal do.',
+              style: OCTypography.caption,
+            ),
           ),
         for (final p in connected)
           ListTile(
             dense: true,
-            leading: const Icon(Icons.check_circle, size: 17, color: Color(0xFF3DDC84)),
-            title: Text(p.name, style: const TextStyle(fontSize: 13.5)),
-            subtitle: Text('${p.models.length} models', style: const TextStyle(fontSize: 11)),
+            leading: const OCIconTile(
+              icon: Icons.check_circle,
+              accent: OCAccent.green,
+              size: 30,
+              iconSize: 16,
+            ),
+            title: Text(p.name, style: OCTypography.caption),
+            subtitle: Text(
+              '${p.models.length} models',
+              style: OCTypography.micro,
+            ),
             trailing: TextButton(
               onPressed: () async {
                 await store.api.removeAuth(p.id);
@@ -390,9 +512,14 @@ class _Providers extends StatelessWidget {
         for (final p in unconnected)
           ListTile(
             dense: true,
-            leading: const Icon(Icons.cloud_off_outlined, size: 17),
-            title: Text(p.name, style: const TextStyle(fontSize: 13.5)),
-            subtitle: Text(p.env.join(', '), style: const TextStyle(fontSize: 10.5)),
+            leading: const OCIconTile(
+              icon: Icons.cloud_off_outlined,
+              accent: OCAccent.neutral,
+              size: 30,
+              iconSize: 16,
+            ),
+            title: Text(p.name, style: OCTypography.caption),
+            subtitle: Text(p.env.join(', '), style: OCTypography.micro),
             trailing: TextButton(
               onPressed: () => _addKey(context, p),
               child: const Text('Key', style: TextStyle(fontSize: 12)),
@@ -413,11 +540,20 @@ class _Providers extends StatelessWidget {
           controller: c,
           autofocus: true,
           obscureText: true,
-          decoration: InputDecoration(hintText: p.env.isEmpty ? 'sk-...' : p.env.first),
+          decoration: InputDecoration(
+            hintText: p.env.isEmpty ? 'sk-...' : p.env.first,
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          OCButton(
+            label: 'Save',
+            variant: OCButtonVariant.primaryBlack,
+            onPressed: () => Navigator.pop(context, true),
+          ),
         ],
       ),
     );
@@ -441,7 +577,9 @@ class _ConfigEditor extends StatefulWidget {
 }
 
 class _ConfigEditorState extends State<_ConfigEditor> {
-  late final TextEditingController c = TextEditingController(text: _pretty(widget.config));
+  late final TextEditingController c = TextEditingController(
+    text: _pretty(widget.config),
+  );
 
   static String _pretty(Map<String, dynamic> j) {
     try {
@@ -466,28 +604,32 @@ class _ConfigEditorState extends State<_ConfigEditor> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: OCSpace.screenX),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             height: 240,
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(OCSpace.md),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10),
+              color: OCColors.surfaceSubtle,
+              borderRadius: BorderRadius.circular(OCRadius.inner),
             ),
             child: TextField(
               controller: c,
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, height: 1.45),
-              decoration: const InputDecoration(border: InputBorder.none, filled: false, isDense: true),
+              style: OCTypography.mono(size: 11.5),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                filled: false,
+                isDense: true,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          FilledButton.icon(
+          const SizedBox(height: OCSpace.sm),
+          OCButton(
             onPressed: () async {
               dynamic parsed;
               try {
@@ -502,12 +644,15 @@ class _ConfigEditorState extends State<_ConfigEditor> {
               }
               await AppScope.read(context).saveConfig(parsed);
             },
-            icon: const Icon(Icons.save_outlined, size: 16),
-            label: const Text('Config save karo', style: TextStyle(fontSize: 13)),
+            icon: Icons.save_outlined,
+            label: 'Config save karo',
+            variant: OCButtonVariant.primaryBlack,
           ),
-          const SizedBox(height: 6),
-          Text('PATCH /config — ye global opencode config update karta hai.',
-              style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.outline)),
+          const SizedBox(height: OCSpace.sm),
+          Text(
+            'PATCH /config — ye global opencode config update karta hai.',
+            style: OCTypography.micro,
+          ),
         ],
       ),
     );
@@ -520,15 +665,19 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return ListTile(
       dense: true,
-      leading: Icon(s.healthy ? Icons.check_circle : Icons.error_outline,
-          size: 17, color: s.healthy ? const Color(0xFF3DDC84) : cs.outline),
-      title: Text(s.name.isEmpty ? s.id : s.name, style: const TextStyle(fontSize: 13)),
+      leading: OCIconTile(
+        icon: s.healthy ? Icons.check_circle : Icons.error_outline,
+        accent: s.healthy ? OCAccent.green : OCAccent.neutral,
+        size: 30,
+        iconSize: 16,
+      ),
+      title: Text(s.name.isEmpty ? s.id : s.name, style: OCTypography.caption),
       subtitle: Text(
-          [s.status, s.message, s.detail].where((x) => x.isNotEmpty).join(' · '),
-          style: const TextStyle(fontSize: 10.5)),
+        [s.status, s.message, s.detail].where((x) => x.isNotEmpty).join(' · '),
+        style: OCTypography.micro,
+      ),
     );
   }
 }
@@ -548,12 +697,25 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        dense: true,
-        leading: Icon(icon, size: 19, color: danger ? Colors.redAccent : null),
-        title: Text(title,
-            style: TextStyle(fontSize: 13.5, color: danger ? Colors.redAccent : null)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11)),
-        trailing: const Icon(Icons.chevron_right, size: 18),
-        onTap: onTap,
-      );
+    dense: true,
+    leading: OCIconTile(
+      icon: icon,
+      accent: danger ? OCAccent.red : OCAccent.neutral,
+      size: 32,
+      iconSize: 18,
+    ),
+    title: Text(
+      title,
+      style: OCTypography.caption.copyWith(
+        color: danger ? OCColors.red : OCColors.textPrimary,
+      ),
+    ),
+    subtitle: Text(subtitle, style: OCTypography.micro),
+    trailing: const Icon(
+      Icons.chevron_right,
+      size: 18,
+      color: OCColors.textTertiary,
+    ),
+    onTap: onTap,
+  );
 }

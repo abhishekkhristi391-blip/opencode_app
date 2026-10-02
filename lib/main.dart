@@ -54,8 +54,8 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
       child: MaterialApp(
         title: 'OpenCode',
         debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.dark,
-        theme: buildDarkTheme(),
+        themeMode: ThemeMode.light,
+        theme: buildLightTheme(),
         darkTheme: buildDarkTheme(),
         home: const HomeShell(),
       ),
@@ -65,7 +65,8 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
 
 /// Inherited notifier so every widget reads the same [OcStore].
 class AppScope extends InheritedNotifier<OcStore> {
-  const AppScope({super.key, required OcStore store, required super.child}) : super(notifier: store);
+  const AppScope({super.key, required OcStore store, required super.child})
+    : super(notifier: store);
 
   static OcStore of(BuildContext context) {
     final s = context.dependOnInheritedWidgetOfExactType<AppScope>();

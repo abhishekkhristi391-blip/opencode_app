@@ -10,7 +10,7 @@ import sys
 import webbrowser
 from datetime import datetime
 
-REPO_DIR = os.path.expanduser("~/opencode_chat")
+REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 REMOTE = "https://github.com/abhishekkhristi391-blip/opencode_app.git"
 BRANCH = "main"
 ACTIONS_URL = f"https://github.com/abhishekkhristi391-blip/opencode_app/actions"

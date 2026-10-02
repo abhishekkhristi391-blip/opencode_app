@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../models/models.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 class TodosPage extends StatelessWidget {
@@ -10,7 +12,6 @@ class TodosPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final cs = Theme.of(context).colorScheme;
     final todos = store.todos;
     final done = todos.where((t) => t.done).length;
 
@@ -30,22 +31,31 @@ class TodosPage extends StatelessWidget {
               ],
             )
           : ListView(
-              padding: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.only(bottom: OCSpace.xl),
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(
+                    OCSpace.screenX,
+                    OCSpace.md,
+                    OCSpace.screenX,
+                    OCSpace.sm,
+                  ),
                   child: Row(
                     children: [
-                      Text('$done / ${todos.length} done',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      Text(
+                        '$done / ${todos.length} done',
+                        style: OCTypography.bodyStrong,
+                      ),
                       const Spacer(),
                       if (todos.isNotEmpty)
                         SizedBox(
-                          width: 90,
-                          child: LinearProgressIndicator(
+                          width: 104,
+                          child: OCProgressBar(
                             value: todos.isEmpty ? 0 : done / todos.length,
-                            minHeight: 5,
-                            borderRadius: BorderRadius.circular(4),
+                            height: 6,
+                            animate: false,
+                            semanticLabel:
+                                '$done of ${todos.length} tasks done',
                           ),
                         ),
                     ],
@@ -54,21 +64,31 @@ class TodosPage extends StatelessWidget {
                 // Active first, then pending, then completed.
                 if (todos.any((t) => t.active)) ...[
                   const SectionTitle('In progress'),
-                  for (final t in todos.where((t) => t.active)) _TodoTile(todo: t),
+                  for (final t in todos.where((t) => t.active))
+                    _TodoTile(todo: t),
                 ],
                 if (todos.any((t) => !t.active && !t.done)) ...[
                   const SectionTitle('Pending'),
-                  for (final t in todos.where((t) => !t.active && !t.done)) _TodoTile(todo: t),
+                  for (final t in todos.where((t) => !t.active && !t.done))
+                    _TodoTile(todo: t),
                 ],
                 if (todos.any((t) => t.done)) ...[
                   const SectionTitle('Completed'),
-                  for (final t in todos.where((t) => t.done)) _TodoTile(todo: t),
+                  for (final t in todos.where((t) => t.done))
+                    _TodoTile(todo: t),
                 ],
                 if (store.current != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: Text('Session: ${store.current!.label}',
-                        style: TextStyle(fontSize: 11, color: cs.outline)),
+                    padding: const EdgeInsets.fromLTRB(
+                      OCSpace.screenX,
+                      OCSpace.sm,
+                      OCSpace.screenX,
+                      0,
+                    ),
+                    child: Text(
+                      'Session: ${store.current!.label}',
+                      style: OCTypography.micro,
+                    ),
                   ),
               ],
             ),
@@ -82,35 +102,49 @@ class _TodoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final color = todo.done
-        ? cs.outline
+    final accent = todo.done
+        ? OCAccent.neutral
         : todo.active
-            ? const Color(0xFF3DDC84)
-            : cs.onSurfaceVariant;
+        ? OCAccent.green
+        : OCAccent.neutral;
 
-    return ListTile(
-      dense: true,
-      leading: Icon(
-        todo.done
-            ? Icons.check_circle
-            : todo.active
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: OCSpace.screenX,
+        vertical: OCSpace.xxs,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: todo.active ? OCColors.greenTint : OCColors.surface,
+          borderRadius: BorderRadius.circular(OCRadius.inner),
+        ),
+        child: ListTile(
+          dense: true,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(OCRadius.inner),
+          ),
+          leading: OCIconTile(
+            icon: todo.done
+                ? Icons.check_circle
+                : todo.active
                 ? Icons.play_circle_fill
                 : Icons.radio_button_unchecked,
-        size: 19,
-        color: color,
-      ),
-      title: Text(
-        todo.content,
-        style: TextStyle(
-          fontSize: 13.5,
-          color: todo.done ? cs.outline : cs.onSurface,
-          decoration: todo.done ? TextDecoration.lineThrough : null,
+            accent: accent,
+            size: 30,
+            iconSize: 17,
+          ),
+          title: Text(
+            todo.content,
+            style: OCTypography.caption.copyWith(
+              color: todo.done ? OCColors.textTertiary : OCColors.textPrimary,
+              decoration: todo.done ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          subtitle: todo.priority.isEmpty
+              ? null
+              : Text(todo.priority, style: OCTypography.micro),
         ),
       ),
-      subtitle: todo.priority.isEmpty
-          ? null
-          : Text(todo.priority, style: const TextStyle(fontSize: 10.5)),
     );
   }
 }

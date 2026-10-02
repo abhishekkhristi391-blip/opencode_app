@@ -13,12 +13,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'theme.dart';
+
 class Markdown extends StatelessWidget {
   final String text;
   final TextStyle? base;
   final bool selectable;
   final void Function(String url)? onLink;
-  const Markdown(this.text, {super.key, this.base, this.selectable = true, this.onLink});
+  const Markdown(
+    this.text, {
+    super.key,
+    this.base,
+    this.selectable = true,
+    this.onLink,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,16 +56,34 @@ class Markdown extends StatelessWidget {
         final s = sizes[(b.level - 1).clamp(0, 5)];
         return Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 2),
-          child: _rich(context, b.lines.join(' '),
-              style.copyWith(fontSize: s, fontWeight: FontWeight.w700, height: 1.3)),
+          child: _rich(
+            context,
+            b.lines.join(' '),
+            style.copyWith(
+              fontSize: s,
+              fontWeight: FontWeight.w700,
+              height: 1.3,
+            ),
+          ),
         );
       case _Kind.quote:
         return Container(
           padding: const EdgeInsets.only(left: 10),
           decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 3)),
+            border: Border(
+              left: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 3,
+              ),
+            ),
           ),
-          child: _rich(context, b.lines.join('\n'), style.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          child: _rich(
+            context,
+            b.lines.join('\n'),
+            style.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         );
       case _Kind.bullet:
       case _Kind.number:
@@ -65,7 +91,10 @@ class Markdown extends StatelessWidget {
       case _Kind.table:
         return _table(context, b, style);
       case _Kind.hr:
-        return Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 12);
+        return Divider(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          height: 12,
+        );
       default:
         return _paragraph(context, b, style);
     }
@@ -87,8 +116,12 @@ class Markdown extends StatelessWidget {
     Widget row(int i) {
       final line = b.lines[i];
       final isItem = ordered || _listItemRe.hasMatch(line);
-      final marker = isItem ? (ordered ? '${i + 1}.' : _bulletMarker(line)) : '';
-      final text = isItem ? line.replaceFirst(_listItemRe, '') : line.trimLeft();
+      final marker = isItem
+          ? (ordered ? '${i + 1}.' : _bulletMarker(line))
+          : '';
+      final text = isItem
+          ? line.replaceFirst(_listItemRe, '')
+          : line.trimLeft();
       return Padding(
         padding: const EdgeInsets.only(left: 4, top: 1, bottom: 1),
         child: Row(
@@ -111,7 +144,8 @@ class Markdown extends StatelessWidget {
   }
 
   static final _bulletRe = RegExp(r'^\s*([-*+])');
-  static String _bulletMarker(String line) => _bulletRe.firstMatch(line)?.group(1) ?? '•';
+  static String _bulletMarker(String line) =>
+      _bulletRe.firstMatch(line)?.group(1) ?? '•';
 
   static final _tableEdgeRe = RegExp(r'^\s*\||\|\s*$');
 
@@ -119,7 +153,9 @@ class Markdown extends StatelessWidget {
     final rows = <List<String>>[];
     for (final l in b.lines) {
       if (_tableSepRe.hasMatch(l)) continue;
-      rows.add(l.replaceAll(_tableEdgeRe, '').split('|').map((e) => e.trim()).toList());
+      rows.add(
+        l.replaceAll(_tableEdgeRe, '').split('|').map((e) => e.trim()).toList(),
+      );
     }
     if (rows.isEmpty) return const SizedBox.shrink();
     final header = rows.first;
@@ -137,13 +173,22 @@ class Markdown extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: [
-                for (final c in header) Expanded(child: _rich(context, c, style.copyWith(fontWeight: FontWeight.w600))),
+                for (final c in header)
+                  Expanded(
+                    child: _rich(
+                      context,
+                      c,
+                      style.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
               ],
             ),
           ),
           for (var r = 0; r < body.length; r++)
             Container(
-              decoration: BoxDecoration(border: r == body.length - 1 ? null : Border(bottom: border)),
+              decoration: BoxDecoration(
+                border: r == body.length - 1 ? null : Border(bottom: border),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,8 +207,9 @@ class Markdown extends StatelessWidget {
     );
   }
 
-  Widget _rich(BuildContext context, String text, TextStyle style) =>
-      Text.rich(TextSpan(children: _inlineSpans(context, text, style), style: style));
+  Widget _rich(BuildContext context, String text, TextStyle style) => Text.rich(
+    TextSpan(children: _inlineSpans(context, text, style), style: style),
+  );
 
   // ---------------------------------------------------------------------
   // inline parsing
@@ -189,7 +235,11 @@ class Markdown extends StatelessWidget {
     return it.moveNext() ? it.current : null;
   }
 
-  List<InlineSpan> _inlineSpans(BuildContext context, String src, TextStyle style) {
+  List<InlineSpan> _inlineSpans(
+    BuildContext context,
+    String src,
+    TextStyle style,
+  ) {
     final spans = <InlineSpan>[];
     final n = src.length;
     if (n == 0) return spans;
@@ -220,7 +270,8 @@ class Markdown extends StatelessWidget {
         }
       }
       if (best == null) break;
-      if (best.start > pos) spans.add(TextSpan(text: src.substring(pos, best.start)));
+      if (best.start > pos)
+        spans.add(TextSpan(text: src.substring(pos, best.start)));
       spans.add(_makeSpan(context, bestRule, best, style));
       pos = best.end;
     }
@@ -228,7 +279,12 @@ class Markdown extends StatelessWidget {
     return spans;
   }
 
-  InlineSpan _makeSpan(BuildContext context, int rule, RegExpMatch m, TextStyle style) {
+  InlineSpan _makeSpan(
+    BuildContext context,
+    int rule,
+    RegExpMatch m,
+    TextStyle style,
+  ) {
     switch (rule) {
       case 0:
         return TextSpan(text: m.group(1), style: _codeStyle(context, style));
@@ -239,15 +295,29 @@ class Markdown extends StatelessWidget {
         return _linkSpan(context, m.group(1)!, m.group(1)!, style);
       case 3:
       case 4:
-        return TextSpan(text: m.group(1), style: style.copyWith(fontWeight: FontWeight.w700));
+        return TextSpan(
+          text: m.group(1),
+          style: style.copyWith(fontWeight: FontWeight.w700),
+        );
       case 5:
-        return TextSpan(text: m.group(1), style: style.copyWith(decoration: TextDecoration.lineThrough));
+        return TextSpan(
+          text: m.group(1),
+          style: style.copyWith(decoration: TextDecoration.lineThrough),
+        );
       default:
-        return TextSpan(text: m.group(1), style: style.copyWith(fontStyle: FontStyle.italic));
+        return TextSpan(
+          text: m.group(1),
+          style: style.copyWith(fontStyle: FontStyle.italic),
+        );
     }
   }
 
-  InlineSpan _linkSpan(BuildContext context, String label, String url, TextStyle style) {
+  InlineSpan _linkSpan(
+    BuildContext context,
+    String label,
+    String url,
+    TextStyle style,
+  ) {
     final color = Theme.of(context).colorScheme.primary;
     final recognizer = TapGestureRecognizer()
       ..onTap = () {
@@ -265,11 +335,11 @@ class Markdown extends StatelessWidget {
     );
   }
 
-  static TextStyle _codeStyle(BuildContext context, TextStyle base) => base.copyWith(
-        fontFamily: 'monospace',
-        fontFamilyFallback: const ['monospace'],
+  static TextStyle _codeStyle(BuildContext context, TextStyle base) =>
+      base.copyWith(
+        fontFamily: OCTypography.mono(color: null).fontFamily,
         fontSize: (base.fontSize ?? 14) - 0.5,
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+        backgroundColor: OCColors.surfaceMuted,
         color: Theme.of(context).colorScheme.onSurface,
       );
 }
@@ -381,7 +451,9 @@ List<_Block> _parse(String src) {
     }
 
     // table
-    if (line.contains('|') && i + 1 < lines.length && _tableSepRe.hasMatch(lines[i + 1])) {
+    if (line.contains('|') &&
+        i + 1 < lines.length &&
+        _tableSepRe.hasMatch(lines[i + 1])) {
       flushPara();
       final body = <String>[];
       while (i < lines.length && lines[i].contains('|')) {
@@ -436,55 +508,73 @@ class _CodeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outlineVariant),
+        color: OCColors.surfaceSubtle,
+        borderRadius: BorderRadius.circular(OCRadius.inner),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: cs.outlineVariant)),
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.md,
+              OCSpace.xs,
+              OCSpace.xs,
+              OCSpace.xs,
+            ),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: OCColors.borderHairline),
+              ),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     lang.isEmpty ? 'code' : lang,
-                    style: TextStyle(fontSize: 11, color: cs.outline, fontFamily: 'monospace'),
+                    style: OCTypography.mono(
+                      size: 11,
+                      color: OCColors.textTertiary,
+                    ),
                   ),
                 ),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   iconSize: 16,
                   tooltip: 'Copy',
-                  icon: const Icon(Icons.copy_all_outlined),
+                  icon: const Icon(
+                    Icons.copy_all_outlined,
+                    color: OCColors.textSecondary,
+                  ),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: code));
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Code copy ho gaya'), duration: Duration(seconds: 1)));
+                      const SnackBar(
+                        content: Text('Code copy ho gaya'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
                   },
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.md,
+              OCSpace.sm,
+              OCSpace.md,
+              OCSpace.md,
+            ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Text(
                 code,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontFamilyFallback: ['monospace'],
-                  fontSize: 12.5,
-                  height: 1.45,
+                style: OCTypography.mono(
+                  size: 12.5,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),

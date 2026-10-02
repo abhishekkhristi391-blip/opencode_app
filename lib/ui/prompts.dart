@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../main.dart';
 import '../models/models.dart';
+import 'primitives.dart';
+import 'theme.dart';
 import 'widgets.dart';
 
 /// Renders pending permission requests and clarifying questions on top of
@@ -26,9 +28,7 @@ class PromptOverlay extends StatelessWidget {
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(18),
-              child: q != null
-                  ? _QuestionCard(q)
-                  : _PermissionCard(p!),
+              child: q != null ? _QuestionCard(q) : _PermissionCard(p!),
             ),
           ),
         ),
@@ -43,86 +43,101 @@ class _PermissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final store = AppScope.of(context);
     final detail = p.detail;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.shield_outlined, color: cs.primary, size: 20),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Text('Permission chahiye', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text('opencode "${p.title}" karne ja raha hai.',
-                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
-            if (detail.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 220),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SingleChildScrollView(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SelectableText(detail,
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, height: 1.45)),
-                  ),
+    return OCCard(
+      padding: const EdgeInsets.all(OCSpace.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const OCIconTile(
+                icon: Icons.shield_outlined,
+                accent: OCAccent.purple,
+                size: 36,
+                iconSize: 20,
+              ),
+              const SizedBox(width: OCSpace.md),
+              Expanded(
+                child: Text(
+                  'Permission chahiye',
+                  style: OCTypography.h2.copyWith(fontSize: 18),
                 ),
               ),
             ],
-            if (p.always.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text('Server is rules suggest kar raha hai: ${p.always.join(', ')}',
-                  style: TextStyle(fontSize: 11, color: cs.outline)),
-            ],
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(foregroundColor: cs.error),
-                    onPressed: () => store.answerPermission(p, 'reject'),
-                    child: const Text('Deny', style: TextStyle(fontSize: 13)),
+          ),
+          const SizedBox(height: OCSpace.sm),
+          Text(
+            'opencode "${p.title}" karne ja raha hai.',
+            style: OCTypography.caption,
+          ),
+          if (detail.isNotEmpty) ...[
+            const SizedBox(height: OCSpace.md),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 220),
+              padding: const EdgeInsets.all(OCSpace.md),
+              decoration: BoxDecoration(
+                color: OCColors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(OCRadius.inner),
+              ),
+              child: SingleChildScrollView(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SelectableText(
+                    detail,
+                    style: OCTypography.mono(size: 11.5),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => store.answerPermission(p, 'always'),
-                    child: const Text('Always', style: TextStyle(fontSize: 13)),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => store.answerPermission(p, 'once'),
-                    child: const Text('Allow', style: TextStyle(fontSize: 13)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Center(
-              child: Text('Baaki ${store.permissions.length - 1} request(s) pending',
-                  style: TextStyle(fontSize: 10.5, color: cs.outline)),
+              ),
             ),
           ],
-        ),
+          if (p.always.isNotEmpty) ...[
+            const SizedBox(height: OCSpace.md),
+            Text(
+              'Server is rules suggest kar raha hai: ${p.always.join(', ')}',
+              style: OCTypography.micro,
+            ),
+          ],
+          const SizedBox(height: OCSpace.lg),
+          Row(
+            children: [
+              Expanded(
+                child: OCButton(
+                  label: 'Deny',
+                  variant: OCButtonVariant.ghostOutline,
+                  onPressed: () => store.answerPermission(p, 'reject'),
+                ),
+              ),
+              const SizedBox(width: OCSpace.sm),
+              Expanded(
+                child: OCButton(
+                  label: 'Always',
+                  variant: OCButtonVariant.secondaryPill,
+                  onPressed: () => store.answerPermission(p, 'always'),
+                ),
+              ),
+              const SizedBox(width: OCSpace.sm),
+              Expanded(
+                child: OCButton(
+                  label: 'Allow',
+                  variant: OCButtonVariant.primaryBlack,
+                  onPressed: () => store.answerPermission(p, 'once'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: OCSpace.sm),
+          Center(
+            child: Text(
+              'Baaki ${store.permissions.length - 1} request(s) pending',
+              style: OCTypography.micro,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -168,102 +183,153 @@ class _QuestionCardState extends State<_QuestionCard> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final cs = Theme.of(context).colorScheme;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Icon(Icons.help_outline, color: cs.primary, size: 20),
-              const SizedBox(width: 9),
-              const Expanded(
-                child: Text('Agent ne sawal pucha', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+    return OCCard(
+      padding: const EdgeInsets.all(OCSpace.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const OCIconTile(
+                icon: Icons.help_outline,
+                accent: OCAccent.orange,
+                size: 36,
+                iconSize: 20,
               ),
-            ]),
-            const SizedBox(height: 10),
-            for (var i = 0; i < widget.q.questions.length; i++) ...[
-              if (i > 0) const Divider(height: 22),
-              _question(context, widget.q.questions[i], i),
+              const SizedBox(width: OCSpace.md),
+              const Expanded(
+                child: Text(
+                  'Agent ne sawal pucha',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: OCColors.textPrimary,
+                  ),
+                ),
+              ),
             ],
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(foregroundColor: cs.error),
-                    onPressed: () => store.rejectQuestion(widget.q),
-                    child: const Text('Skip', style: TextStyle(fontSize: 13)),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton(
-                    onPressed: () {
-                      final answers = <List<String>>[];
-                      for (var i = 0; i < widget.q.questions.length; i++) {
-                        final s = picks[i] ?? <String>{};
-                        if (widget.q.questions[i].custom) {
-                          final t = custom[i]?.text.trim();
-                          if (t != null && t.isNotEmpty) s.add(t);
-                        }
-                        answers.add(s.toList());
-                      }
-                      store.answerQuestion(widget.q, answers);
-                    },
-                    child: const Text('Bhejo', style: TextStyle(fontSize: 13)),
-                  ),
-                ),
-              ],
-            ),
+          ),
+          const SizedBox(height: OCSpace.md),
+          for (var i = 0; i < widget.q.questions.length; i++) ...[
+            if (i > 0) const Divider(height: OCSpace.xxl),
+            _question(context, widget.q.questions[i], i),
           ],
-        ),
+          const SizedBox(height: OCSpace.lg),
+          Row(
+            children: [
+              Expanded(
+                child: OCButton(
+                  label: 'Skip',
+                  variant: OCButtonVariant.ghostOutline,
+                  onPressed: () => store.rejectQuestion(widget.q),
+                ),
+              ),
+              const SizedBox(width: OCSpace.sm),
+              Expanded(
+                flex: 2,
+                child: OCButton(
+                  label: 'Bhejo',
+                  variant: OCButtonVariant.primaryBlack,
+                  onPressed: () {
+                    final answers = <List<String>>[];
+                    for (var i = 0; i < widget.q.questions.length; i++) {
+                      final s = picks[i] ?? <String>{};
+                      if (widget.q.questions[i].custom) {
+                        final t = custom[i]?.text.trim();
+                        if (t != null && t.isNotEmpty) s.add(t);
+                      }
+                      answers.add(s.toList());
+                    }
+                    store.answerQuestion(widget.q, answers);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _question(BuildContext context, QuestionItem item, int qi) {
-    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (item.header.isNotEmpty)
-          Text(item.header.toUpperCase(),
-              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: cs.outline, letterSpacing: 0.6)),
-        const SizedBox(height: 4),
-        Text(item.question, style: const TextStyle(fontSize: 14)),
+          Text(
+            item.header.toUpperCase(),
+            style: OCTypography.micro.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+        const SizedBox(height: OCSpace.xs),
+        Text(
+          item.question,
+          style: OCTypography.body.copyWith(color: OCColors.textPrimary),
+        ),
         if (item.multiple)
           Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text('Multiple select ho sakta hai', style: TextStyle(fontSize: 10.5, color: cs.outline)),
+            padding: const EdgeInsets.only(top: OCSpace.xxs),
+            child: Text(
+              'Multiple select ho sakta hai',
+              style: OCTypography.micro,
+            ),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: OCSpace.sm),
         for (final o in item.options)
-          CheckboxListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            value: (picks[qi] ?? const {}).contains(o.label),
-            title: Text(o.label, style: const TextStyle(fontSize: 13)),
-            subtitle: o.description.isEmpty
-                ? null
-                : Text(o.description, style: const TextStyle(fontSize: 11)),
-            onChanged: (_) => _toggle(qi, o.label, item.multiple),
+          Container(
+            margin: const EdgeInsets.only(bottom: OCSpace.xs),
+            decoration: BoxDecoration(
+              color: (picks[qi] ?? const {}).contains(o.label)
+                  ? OCColors.orangeTint
+                  : OCColors.surfaceSubtle,
+              borderRadius: BorderRadius.circular(OCRadius.inner),
+            ),
+            child: CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              value: (picks[qi] ?? const {}).contains(o.label),
+              title: Text(
+                o.label,
+                style: OCTypography.caption.copyWith(
+                  color: OCColors.textPrimary,
+                ),
+              ),
+              subtitle: o.description.isEmpty
+                  ? null
+                  : Text(o.description, style: OCTypography.micro),
+              onChanged: (_) => _toggle(qi, o.label, item.multiple),
+            ),
           ),
         if (item.custom)
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: OCSpace.sm),
             child: TextField(
               controller: custom.putIfAbsent(qi, TextEditingController.new),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Apna answer likho…',
+                hintStyle: OCTypography.caption,
                 isDense: true,
-                prefixIcon: Icon(Icons.edit_outlined, size: 17),
+                filled: true,
+                fillColor: OCColors.surfaceSubtle,
+                prefixIcon: const Icon(
+                  Icons.edit_outlined,
+                  size: 17,
+                  color: OCColors.textTertiary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.inner),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.inner),
+                  borderSide: BorderSide.none,
+                ),
               ),
-              style: const TextStyle(fontSize: 13),
+              style: OCTypography.caption.copyWith(color: OCColors.textPrimary),
             ),
           ),
       ],
@@ -277,18 +343,28 @@ class ShareCard extends StatelessWidget {
   const ShareCard({super.key, required this.url});
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: ListTile(
-          leading: const Icon(Icons.link),
-          title: const Text('Share link'),
-          subtitle: Text(url, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5)),
-          trailing: IconButton(
-            icon: const Icon(Icons.copy),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: url));
-              showSnack(context, 'Link copy ho gaya');
-            },
-          ),
-        ),
-      );
+  Widget build(BuildContext context) => OCCard(
+    padding: EdgeInsets.zero,
+    child: ListTile(
+      leading: const OCIconTile(
+        icon: Icons.link,
+        accent: OCAccent.blue,
+        size: 36,
+      ),
+      title: Text('Share link', style: OCTypography.h3.copyWith(fontSize: 15)),
+      subtitle: Text(
+        url,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: OCTypography.mono(size: 11.5, color: OCColors.textSecondary),
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.copy, color: OCColors.textSecondary),
+        onPressed: () {
+          Clipboard.setData(ClipboardData(text: url));
+          showSnack(context, 'Link copy ho gaya');
+        },
+      ),
+    ),
+  );
 }
