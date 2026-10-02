@@ -110,8 +110,6 @@ class _ChatPageState extends State<ChatPage> {
     final store = AppScope.read(context);
     final text = input.text;
     if (text.trim().isEmpty && store.attachments.isEmpty) return;
-    input.clear();
-    focus.requestFocus();
 
     final trimmed = text.trim();
     if (trimmed.startsWith('/')) {
@@ -120,11 +118,28 @@ class _ChatPageState extends State<ChatPage> {
       final args = sp < 0 ? '' : trimmed.substring(sp + 1);
       final match = store.commands.where((c) => c.name == cmd).firstOrNull;
       if (match != null) {
+        input.clear();
+        focus.requestFocus();
         await store.runCommand(cmd, args);
         return;
       }
     }
-    await store.send(text);
+
+    if (store.providerId.isEmpty || store.modelId.isEmpty) {
+      if (mounted) showSnack(context, 'Pehle model choose karo', error: true);
+      return;
+    }
+
+    input.clear();
+    focus.requestFocus();
+
+    try {
+      await store.send(text);
+    } catch (e) {
+      input.text = text;
+      input.selection = TextSelection.collapsed(offset: text.length);
+      if (mounted) showSnack(context, '$e', error: true);
+    }
     if (mounted) setState(() {});
   }
 }
