@@ -173,6 +173,8 @@ class Message {
 
   bool get isUser => role == 'user';
   bool get isError => finishReason == 'error' || raw['error'] != null;
+
+  Map<String, dynamic> toMap() => raw;
 }
 
 // ---------- parts ----------
@@ -309,6 +311,8 @@ class Part {
     final one = s.replaceAll(RegExp(r'\s+'), ' ');
     return one.length <= 80 ? one : '${one.substring(0, 80)}…';
   }
+
+  Map<String, dynamic> toMap() => raw;
 }
 
 // ---------- agent / provider / model ----------
