@@ -244,7 +244,7 @@ class _GuardedSessionTileState extends State<_GuardedSessionTile> {
     // which blanks the whole viewport. Index + id is always unique and stays
     // stable while the list is only reordered by `updated`.
     return _SessionTile(
-      key: ValueKey('sess:${widget.index}:${widget.s.id}'),
+      rowKey: 'sess:${widget.index}:${widget.s.id}',
       s: widget.s,
     );
   }
@@ -281,7 +281,12 @@ class _BrokenSessionRow extends StatelessWidget {
 
 class _SessionTile extends StatelessWidget {
   final Session s;
-  const _SessionTile({super.key, required this.s});
+
+  /// Unique per row. `Dismissible` requires a key and asserts on duplicates,
+  /// so the caller owns it rather than deriving one from [s.id].
+  final String rowKey;
+
+  const _SessionTile({required this.s, required this.rowKey});
 
   @override
   Widget build(BuildContext context) {
@@ -289,6 +294,7 @@ class _SessionTile extends StatelessWidget {
     final active = store.current?.id == s.id;
 
     return Dismissible(
+      key: ValueKey(rowKey),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
