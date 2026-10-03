@@ -1488,7 +1488,10 @@ class OcStore extends ChangeNotifier {
       final i = _optimisticIndex();
       final info = _echoInfo;
       _clearLocalEcho();
-      if (i >= 0 && info != null) messages[i] = ChatMessage(info, <Part>[]);
+      if (i >= 0 && info != null) {
+        final oldParts = messages[i].parts;
+        messages[i] = ChatMessage(info, oldParts);
+      }
     }
     var msg = _messageById(part.messageId);
     if (msg == null) {
