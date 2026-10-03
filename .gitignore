@@ -18,3 +18,4 @@ android/app/release/
 .DS_Store
 *.log
 config.json
+graphify-out/

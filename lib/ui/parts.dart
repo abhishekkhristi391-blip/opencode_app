@@ -70,7 +70,7 @@ class _ToolTimelineState extends State<ToolTimeline> {
 
   Widget _buildStep(Part p) {
     final t = context.oc;
-    final key = '${p.id}:${p.callID}';
+    final key = '${p.id}:${p.toolCallId}';
     final open = _open.contains(key);
     final status = p.status;
     // Reference `.step.run`: accent while in flight, green once finished,

@@ -8,8 +8,9 @@ graphify_lite.py - single-file code graph tool (stdlib only, phone friendly)
   python graphify_lite.py explain "X"           # who calls X, what X calls
   python graphify_lite.py impact  "X"           # everything that depends on X
   python graphify_lite.py report                # print GRAPH_REPORT.md
+  python graphify_lite.py html                  # (re)make graph.html (offline, touch friendly)
 
-Output goes to <folder>/graphify-out/: graph.json, graph.md, GRAPH_REPORT.md
+Output goes to <folder>/graphify-out/: graph.json, graph.md, GRAPH_REPORT.md, graph.html
 Tags: EXTRACTED = read directly in code, INFERRED = matched by name (confidence).
 """
 import ast, os, re, sys, json, collections
@@ -422,8 +423,9 @@ def build(root):
     out = os.path.join(root, "graphify-out")
     os.makedirs(out, exist_ok=True)
     deg, sccs, communities, orphans = analyze(g)
+    meta = make_meta(g, communities)
     with open(os.path.join(out, "graph.json"), "w") as fh:
-        json.dump({"nodes": g.nodes, "edges": g.edges}, fh)
+        json.dump({"nodes": g.nodes, "edges": g.edges, "meta": meta}, fh)
     with open(os.path.join(out, "graph.md"), "w") as fh:
         for s, d, rel, tag, conf, f, l in sorted(g.edges):
             t = tag if tag == "EXTRACTED" else f"INFERRED {conf}"
@@ -431,8 +433,10 @@ def build(root):
     rep = report(g, deg, sccs, communities, orphans, len(files_list))
     with open(os.path.join(out, "GRAPH_REPORT.md"), "w") as fh:
         fh.write(rep)
+    hp = write_html(out, g.nodes, g.edges, meta, rep)
     print(rep)
-    print(f"\nSaved: {out}/ (graph.json, graph.md, GRAPH_REPORT.md)")
+    print(f"\nSaved: {out}/ (graph.json, graph.md, GRAPH_REPORT.md, graph.html)")
+    print(f"Open graph: termux-open {hp}   (or: cd graphify-out && python -m http.server 8000 -> http://localhost:8000/graph.html)")
 
 
 def report(g, deg, sccs, communities, orphans, nfiles):
@@ -480,6 +484,307 @@ def report(g, deg, sccs, communities, orphans, nfiles):
     L.append("- Which files depend on the most-connected file?   -> explain")
     L.append("\nNOTE: INFERRED edges are name-matches. Verify before trusting.")
     return "\n".join(L) + "\n"
+
+
+HTML_TPL = r'''<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>graphify-lite graph</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0f0f1a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#cv{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none;display:block}
+#top{position:fixed;left:0;right:0;top:0;padding:calc(8px + env(safe-area-inset-top)) 8px 8px;display:flex;gap:6px;z-index:5;background:linear-gradient(#0f0f1a,#0f0f1acc 70%,transparent)}
+#q{flex:1;min-width:0;background:#1a1a2e;border:1px solid #3a3a5e;color:#e0e0e0;padding:10px 12px;border-radius:10px;font-size:15px;outline:none}
+#q:focus{border-color:#4E79A7}
+.btn{background:#1a1a2e;border:1px solid #3a3a5e;color:#e0e0e0;border-radius:10px;width:42px;font-size:18px;cursor:pointer}
+#res{position:fixed;left:8px;right:8px;top:calc(56px + env(safe-area-inset-top));max-height:40vh;overflow:auto;background:#1a1a2e;border:1px solid #2a2a4e;border-radius:10px;display:none;z-index:6}
+.si{padding:9px 12px;font-size:13px;border-bottom:1px solid #23233d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.si small{color:#777;margin-left:6px}
+#badge{position:fixed;left:10px;top:calc(62px + env(safe-area-inset-top));font-size:11px;color:#6a6a8a;z-index:3;pointer-events:none}
+#sheet{position:fixed;left:0;right:0;bottom:0;max-height:46vh;overflow:auto;background:#1a1a2ef5;border-top:1px solid #2a2a4e;border-radius:14px 14px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));z-index:4;display:none;font-size:13px;line-height:1.5}
+@media(min-width:900px){#sheet{left:auto;top:0;right:0;width:350px;max-height:none;border-radius:0;border-top:0;border-left:1px solid #2a2a4e;padding-top:70px}}
+.hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;font-size:15px;margin-bottom:4px;word-break:break-all}
+.x{cursor:pointer;color:#999;padding:0 4px;font-size:18px}
+.f{color:#aaa;font-size:12px;word-break:break-all}
+.cr{color:#ff7b72}.wr{color:#e3b341}
+.iss{margin-top:8px;color:#e3b341;font-size:12px}
+.sec{margin-top:10px;margin-bottom:3px;color:#8a8aaa;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.nb{display:flex;align-items:center;gap:7px;padding:6px 4px;border-radius:5px;cursor:pointer;font-size:12px;border-bottom:1px solid #23233d}
+.nb:active,.si:active{background:#2a2a4e}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
+.tg{margin-left:auto;color:#7b8bb8;font-size:11px;flex-shrink:0;padding-left:6px}
+.tg.inf{color:#e3b341}
+#drawer{position:fixed;top:0;bottom:0;right:0;width:min(88vw,330px);background:#1a1a2e;border-left:1px solid #2a2a4e;z-index:8;transform:translateX(105%);transition:transform .2s;overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 14px 24px;font-size:13px}
+#drawer.open{transform:none}
+.seg{display:flex;gap:6px;margin:6px 0}
+.seg button,.mini{flex:1;background:#0f0f1a;border:1px solid #3a3a5e;color:#ccc;padding:8px;border-radius:8px;font-size:12px}
+.seg button.on{background:#4E79A7;border-color:#4E79A7;color:#fff}
+.mini{flex:none;padding:5px 12px;margin-right:6px}
+label.row{display:flex;align-items:center;gap:8px;padding:7px 0;color:#ccc;cursor:pointer}
+.gi{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:12px}
+.gi span.nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnt{color:#666;font-size:11px}
+.leg{margin-top:12px;color:#777;font-size:11px;line-height:1.7}
+#rep{position:fixed;left:0;top:0;right:0;bottom:0;background:#0f0f1af7;z-index:9;display:none;overflow:auto;padding:calc(14px + env(safe-area-inset-top)) 14px 30px}
+#rep pre{white-space:pre-wrap;font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;color:#cfcfe0;margin-top:12px}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="top"><input id="q" placeholder="Search nodes / files..." autocomplete="off"><button class="btn" id="bFit" title="Fit">&#x2922;</button><button class="btn" id="bRep" title="Report">&#x1F4CB;</button><button class="btn" id="bMenu" title="Filters">&#x2630;</button></div>
+<div id="res"></div>
+<div id="badge"></div>
+<div id="sheet"></div>
+<div id="drawer"></div>
+<div id="rep"><button class="btn" id="bRepClose" style="width:auto;padding:8px 14px;font-size:14px">&#x2715; Close</button><pre id="repText"></pre></div>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+var D=JSON.parse(document.getElementById('data').textContent);
+var PAL=["#4E79A7","#F28E2B","#E15759","#76B7B2","#59A14F","#EDC948","#B07AA1","#FF9DA7","#9C755F","#BAB0AC"];
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+var N=D.nodes.map(function(a,i){return {i:i,name:a[0],kind:a[1],file:a[2],line:a[3],dir:a[4],comm:a[5],deg:a[6]};});
+var E=D.edges.map(function(a){return {s:a[0],t:a[1],rel:a[2],tag:a[3],conf:a[4]};});
+var fileIdx={};N.forEach(function(n){if(n.kind==='file')fileIdx[n.file]=n.i;});
+var issuesBy={};(D.issues||[]).forEach(function(x){(issuesBy[x[2]]=issuesBy[x[2]]||[]).push(x);});
+var colorBy='dir',showSym=N.length<=700,showInf=true,hidden={},sel=-1,nbset={};
+var vn=[],ve=[],adj={},groups=[],gcol={},labelMin=2,alpha=1,ticks=0,dirty=true,userMoved=false;
+var cv=$('cv'),ctx=cv.getContext('2d'),W=0,H=0,dpr=window.devicePixelRatio||1,tx=0,ty=0,k=1;
+function label(n){return n.kind==='file'?n.file.split('/').pop():n.name;}
+function gkey(n){return colorBy==='dir'?n.dir:String(n.comm);}
+function gname(key){return colorBy==='dir'?key:((D.comm_names&&D.comm_names[+key])||'isolated');}
+function computeGroups(){
+  var cnt={};N.forEach(function(n){var q=gkey(n);cnt[q]=(cnt[q]||0)+1;});
+  groups=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];}).map(function(q,i){return {k:q,name:gname(q),n:cnt[q],color:PAL[i%PAL.length]};});
+  gcol={};groups.forEach(function(g){gcol[g.k]=g.color;});
+}
+function visibleNode(n){return (n.kind==='file'||showSym)&&!hidden[gkey(n)];}
+/*PHYS_START*/
+function physics(vn,ve,alpha){
+  var CELL=110,grid={},i,j,n,m,e;
+  for(i=0;i<vn.length;i++){n=vn[i];n._cx=Math.floor(n.x/CELL);n._cy=Math.floor(n.y/CELL);var key=n._cx+','+n._cy;(grid[key]=grid[key]||[]).push(n);}
+  for(i=0;i<vn.length;i++){
+    n=vn[i];
+    for(var ox=-1;ox<=1;ox++)for(var oy=-1;oy<=1;oy++){
+      var c=grid[(n._cx+ox)+','+(n._cy+oy)];if(!c)continue;
+      for(j=0;j<c.length;j++){m=c[j];if(m===n)continue;
+        var dx=n.x-m.x,dy=n.y-m.y,d2=dx*dx+dy*dy;
+        if(d2<1){dx=Math.random()-0.5;dy=Math.random()-0.5;d2=dx*dx+dy*dy+1;}
+        var d=Math.sqrt(d2),f=(150/d)*alpha;
+        n.vx+=dx/d*f;n.vy+=dy/d*f;
+      }
+    }
+  }
+  for(i=0;i<ve.length;i++){
+    e=ve[i];var a=e.a,b=e.b,ex=b.x-a.x,ey=b.y-a.y,ed=Math.sqrt(ex*ex+ey*ey)||1;
+    var def=e.rel==='defines',L=def?34:85,ff=(ed-L)*(def?0.09:0.04)*alpha,fx=ex/ed*ff,fy=ey/ed*ff;
+    a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;
+  }
+  for(i=0;i<vn.length;i++){
+    n=vn[i];if(n.fixed){n.vx=0;n.vy=0;continue;}
+    n.vx-=n.x*0.004*alpha;n.vy-=n.y*0.004*alpha;
+    n.vx*=0.78;n.vy*=0.78;
+    if(n.vx>40)n.vx=40;if(n.vx<-40)n.vx=-40;if(n.vy>40)n.vy=40;if(n.vy<-40)n.vy=-40;
+    n.x+=n.vx;n.y+=n.vy;
+  }
+}
+/*PHYS_END*/
+function rebuild(){
+  var vis={};vn=[];
+  N.forEach(function(n){if(visibleNode(n)){vis[n.i]=true;vn.push(n);}});
+  var seen={};ve=[];
+  E.forEach(function(e){
+    if(e.tag==='INFERRED'&&!showInf)return;
+    var a=e.s,b=e.t;
+    if(!showSym){if(e.rel==='defines')return;a=fileIdx[N[a].file];b=fileIdx[N[b].file];if(a===undefined||b===undefined)return;}
+    if(a===b||!vis[a]||!vis[b])return;
+    var key=a+'>'+b+'>'+e.rel;if(seen[key])return;seen[key]=1;
+    ve.push({a:N[a],b:N[b],rel:e.rel,tag:e.tag,conf:e.conf});
+  });
+  adj={};ve.forEach(function(e){(adj[e.a.i]=adj[e.a.i]||[]).push(e);(adj[e.b.i]=adj[e.b.i]||[]).push(e);});
+  vn.forEach(function(n,j){n.vd=0;if(n.x===undefined){var r=30*Math.sqrt(j);n.x=r*Math.cos(j*2.4);n.y=r*Math.sin(j*2.4);n.vx=0;n.vy=0;}});
+  ve.forEach(function(e){e.a.vd++;e.b.vd++;});
+  var ds=vn.map(function(n){return n.vd;}).sort(function(x,y){return y-x;});
+  labelMin=ds.length?Math.max(2,ds[Math.floor(ds.length*0.12)]||2):2;
+  alpha=1;ticks=0;if(sel>=0&&!vis[sel])sel=-1;
+  computeNb();renderSheet();dirty=true;$('badge').textContent=vn.length+' nodes · '+ve.length+' edges shown ('+N.length+' / '+E.length+' total)';
+}
+function computeNb(){nbset={};if(sel<0)return;(adj[sel]||[]).forEach(function(e){nbset[e.a.i]=1;nbset[e.b.i]=1;});}
+function rad(n){return (n.kind==='file'?5:3.2)+Math.sqrt(n.vd||0)*1.8;}
+function resize(){W=window.innerWidth;H=window.innerHeight;dpr=window.devicePixelRatio||1;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);if(tx===0&&ty===0){tx=W/2;ty=H/2;}dirty=true;}
+function fit(){
+  if(!vn.length)return;var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  vn.forEach(function(n){if(n.x<x0)x0=n.x;if(n.x>x1)x1=n.x;if(n.y<y0)y0=n.y;if(n.y>y1)y1=n.y;});
+  var pad=40,bw=Math.max(x1-x0,50),bh=Math.max(y1-y0,50),aw=W-(W>=900?350:0);
+  k=Math.max(0.05,Math.min(3,Math.min((aw-pad*2)/bw,(H-pad*2-60)/bh)));
+  tx=aw/2-((x0+x1)/2)*k;ty=H/2+20-((y0+y1)/2)*k;dirty=true;
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=1;ctx.fillStyle='#0f0f1a';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(tx,ty);ctx.scale(k,k);ctx.lineCap='round';
+  var i,e,n,hasSel=sel>=0;
+  for(i=0;i<ve.length;i++){
+    e=ve[i];var hot=hasSel&&(e.a.i===sel||e.b.i===sel),def=e.rel==='defines';
+    ctx.globalAlpha=hasSel?(hot?0.95:0.05):(def?0.2:(e.tag==='INFERRED'?0.32:0.45));
+    ctx.strokeStyle=hot?'#ffffff':(def?'#6b6b8a':'#9aa0c8');ctx.lineWidth=(hot?2:1)/k;
+    ctx.setLineDash(e.tag==='INFERRED'?[5/k,4/k]:[]);
+    ctx.beginPath();ctx.moveTo(e.a.x,e.a.y);ctx.lineTo(e.b.x,e.b.y);ctx.stroke();
+    if(hot&&!def){var dx=e.b.x-e.a.x,dy=e.b.y-e.a.y,dl=Math.sqrt(dx*dx+dy*dy)||1,ux=dx/dl,uy=dy/dl,r=rad(e.b)+2/k,px=e.b.x-ux*r,py=e.b.y-uy*r,s=7/k;
+      ctx.setLineDash([]);ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-ux*s-uy*s*0.5,py-uy*s+ux*s*0.5);ctx.lineTo(px-ux*s+uy*s*0.5,py-uy*s-ux*s*0.5);ctx.closePath();ctx.fill();}
+  }
+  ctx.setLineDash([]);
+  for(i=0;i<vn.length;i++){
+    n=vn[i];var r2=rad(n),dim=hasSel&&n.i!==sel&&!nbset[n.i];
+    ctx.globalAlpha=dim?0.15:1;ctx.fillStyle=gcol[gkey(n)]||'#888';
+    if(n.kind==='file'){ctx.fillRect(n.x-r2,n.y-r2,2*r2,2*r2);}else{ctx.beginPath();ctx.arc(n.x,n.y,r2,0,6.2832);ctx.fill();}
+    if(n.i===sel){ctx.globalAlpha=1;ctx.strokeStyle='#fff';ctx.lineWidth=2.5/k;if(n.kind==='file')ctx.strokeRect(n.x-r2,n.y-r2,2*r2,2*r2);else{ctx.beginPath();ctx.arc(n.x,n.y,r2,0,6.2832);ctx.stroke();}}
+  }
+  ctx.textAlign='center';ctx.font=(11/k)+'px sans-serif';ctx.lineJoin='round';
+  for(i=0;i<vn.length;i++){
+    n=vn[i];var show=hasSel?(n.i===sel||nbset[n.i]):(n.vd>=labelMin||k>1.6);
+    if(!show)continue;
+    var tl=label(n),ty2=n.y+rad(n)+11/k;
+    ctx.globalAlpha=0.95;ctx.strokeStyle='#0f0f1a';ctx.lineWidth=3/k;ctx.strokeText(tl,n.x,ty2);ctx.fillStyle='#fff';ctx.fillText(tl,n.x,ty2);
+  }
+  ctx.restore();
+}
+function loop(){
+  if(alpha>0.03){physics(vn,ve,alpha);alpha*=0.985;ticks++;dirty=true;if(!userMoved&&(ticks===60||ticks===130||ticks===220))fit();}
+  if(dirty){draw();dirty=false;}
+  requestAnimationFrame(loop);
+}
+function toWorld(x,y){return {x:(x-tx)/k,y:(y-ty)/k};}
+function hit(x,y){var w=toWorld(x,y),best=null,bd=1e9;
+  for(var i=vn.length-1;i>=0;i--){var n=vn[i],dx=n.x-w.x,dy=n.y-w.y,d=Math.sqrt(dx*dx+dy*dy);if(d<=rad(n)+14/k&&d<bd){bd=d;best=n;}}
+  return best;}
+function zoomAt(mx,my,f){var nk=Math.max(0.05,Math.min(8,k*f));f=nk/k;tx=mx-(mx-tx)*f;ty=my-(my-ty)*f;k=nk;dirty=true;}
+function select(i){sel=i;computeNb();renderSheet();dirty=true;}
+function focusNode(i){
+  var n=N[i];
+  if(!visibleNode(n)){if(n.kind!=='file'&&!showSym){showSym=true;}delete hidden[gkey(n)];renderDrawer();rebuild();}
+  select(i);k=Math.max(k,1.3);var narrow=W<900;
+  tx=(narrow?W/2:(W-350)/2)-n.x*k;ty=(narrow?H*0.28:H/2)-n.y*k;userMoved=true;dirty=true;
+}
+var ptrs={},np=0,drag=null,moved=0,downT=0,pinch=null;
+cv.addEventListener('pointerdown',function(e){
+  try{cv.setPointerCapture(e.pointerId);}catch(x){}
+  if(!ptrs[e.pointerId])np++;ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
+  if(np===1){moved=0;downT=Date.now();drag=hit(e.clientX,e.clientY);if(drag)drag.fixed=true;}
+  else if(np===2){if(drag){drag.fixed=false;drag=null;}var p=Object.keys(ptrs).map(function(q){return ptrs[q];});pinch={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1};moved=99;}
+});
+cv.addEventListener('pointermove',function(e){
+  var p=ptrs[e.pointerId];if(!p)return;var dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(np>=2&&pinch){var q=Object.keys(ptrs).map(function(z){return ptrs[z];}),d=Math.hypot(q[0].x-q[1].x,q[0].y-q[1].y)||1;
+    zoomAt((q[0].x+q[1].x)/2,(q[0].y+q[1].y)/2,d/pinch.d);pinch.d=d;userMoved=true;return;}
+  moved+=Math.abs(dx)+Math.abs(dy);
+  if(drag){if(moved>6){var w=toWorld(e.clientX,e.clientY);drag.x=w.x;drag.y=w.y;drag.vx=0;drag.vy=0;if(alpha<0.3)alpha=0.3;dirty=true;}}
+  else{tx+=dx;ty+=dy;userMoved=true;dirty=true;}
+});
+function up(e){
+  if(!ptrs[e.pointerId])return;delete ptrs[e.pointerId];np--;
+  if(np<=0){np=0;if(drag)drag.fixed=false;
+    if(moved<8&&Date.now()-downT<600){var h=hit(e.clientX,e.clientY);select(h?h.i:-1);}
+    drag=null;pinch=null;}
+  else if(np===1){pinch=null;moved=99;}
+}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',function(e){e.preventDefault();zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0015));userMoved=true;},{passive:false});
+function renderSheet(){
+  var s=$('sheet');if(sel<0){s.style.display='none';return;}
+  var n=N[sel],out=[],inn=[];s.style.display='block';
+  (adj[sel]||[]).forEach(function(e){if(e.a.i===sel)out.push(e);else inn.push(e);});
+  function row(e,o){return '<div class="nb" data-i="'+o.i+'"><span class="dot" style="background:'+(gcol[gkey(o)]||'#888')+'"></span><span>'+esc(o.kind==='file'?o.file:o.name)+'</span><span class="tg'+(e.tag==='INFERRED'?' inf':'')+'">'+esc(e.rel)+(e.tag==='INFERRED'?' ~'+e.conf:'')+'</span></div>';}
+  var h='<div class="hd"><b>'+esc(n.kind==='file'?n.file:n.name)+'</b><span class="x" id="sx">&#x2715;</span></div>';
+  h+='<div class="f">'+esc(n.kind)+' &middot; '+esc(n.file)+':'+n.line+'</div>';
+  h+='<div class="f">Folder: '+esc(n.dir)+' &middot; Community: '+esc(gname(String(n.comm)).replace(/^$/,'-'))+' &middot; Links: '+n.deg+'</div>';
+  var is=issuesBy[n.file]||[];
+  if(is.length){h+='<div class="iss">&#9888; Issues in this file</div>';is.slice(0,6).forEach(function(x){h+='<div class="f '+(x[0]==='CRITICAL'?'cr':'wr')+'">['+esc(x[0])+'] '+esc(x[1])+' :'+x[3]+'</div>';});}
+  if(out.length){h+='<div class="sec">Uses &rarr; ('+out.length+')</div>';out.slice(0,40).forEach(function(e){h+=row(e,e.b);});}
+  if(inn.length){h+='<div class="sec">Used by &larr; ('+inn.length+')</div>';inn.slice(0,40).forEach(function(e){h+=row(e,e.a);});}
+  s.innerHTML=h;s.scrollTop=0;
+}
+$('sheet').addEventListener('click',function(e){
+  var t=e.target;if(t.id==='sx'){select(-1);return;}
+  while(t&&t!==this&&!(t.dataset&&t.dataset.i!==undefined))t=t.parentNode;
+  if(t&&t.dataset&&t.dataset.i!==undefined)focusNode(+t.dataset.i);
+});
+$('q').addEventListener('input',function(){
+  var q=this.value.trim().toLowerCase(),r=$('res');
+  if(!q){r.style.display='none';return;}
+  var m=N.filter(function(n){return n.name.toLowerCase().indexOf(q)>=0||n.file.toLowerCase().indexOf(q)>=0;}).sort(function(a,b){return b.deg-a.deg;}).slice(0,25);
+  if(!m.length){r.style.display='none';return;}
+  r.style.display='block';
+  r.innerHTML=m.map(function(n){return '<div class="si" data-i="'+n.i+'"><span class="dot" style="background:'+(gcol[gkey(n)]||'#888')+'"></span> '+esc(n.kind==='file'?n.file:n.name)+'<small>'+esc(n.kind==='file'?'file':n.file+':'+n.line)+'</small></div>';}).join('');
+});
+$('res').addEventListener('click',function(e){
+  var t=e.target;while(t&&t!==this&&!(t.dataset&&t.dataset.i!==undefined))t=t.parentNode;
+  if(t&&t.dataset&&t.dataset.i!==undefined){focusNode(+t.dataset.i);this.style.display='none';$('q').value='';$('q').blur();}
+});
+function renderDrawer(){
+  var d=$('drawer'),h='<div class="hd"><b>Filters</b><span class="x" id="dx">&#x2715;</span></div>';
+  h+='<div class="sec">Color by</div><div class="seg"><button data-cb="dir" class="'+(colorBy==='dir'?'on':'')+'">Folder</button><button data-cb="comm" class="'+(colorBy==='comm'?'on':'')+'">Community</button></div>';
+  h+='<label class="row"><input type="checkbox" id="cSym" '+(showSym?'checked':'')+'> Show symbols (functions / classes)</label>';
+  h+='<label class="row"><input type="checkbox" id="cInf" '+(showInf?'checked':'')+'> Show INFERRED edges (dashed)</label>';
+  h+='<div class="sec">Groups</div><div style="margin-bottom:6px"><button class="mini" data-all="1">All</button><button class="mini" data-all="0">None</button></div>';
+  groups.forEach(function(g,i){h+='<label class="gi"><input type="checkbox" data-g="'+i+'" '+(hidden[g.k]?'':'checked')+'><span class="dot" style="background:'+g.color+'"></span><span class="nm">'+esc(g.name)+'</span><span class="cnt">'+g.n+'</span></label>';});
+  h+='<div class="leg">&#9632; file &nbsp; &#9679; symbol<br>solid line = EXTRACTED (seen in code)<br>dashed line = INFERRED (name match, verify!)<br>Tap node = inspect &middot; drag node = move<br>Pinch / wheel = zoom</div>';
+  d.innerHTML=h;
+}
+$('drawer').addEventListener('click',function(e){
+  var t=e.target;
+  if(t.id==='dx'){this.classList.remove('open');return;}
+  if(t.dataset&&t.dataset.cb){colorBy=t.dataset.cb;hidden={};computeGroups();renderDrawer();rebuild();return;}
+  if(t.dataset&&t.dataset.all!==undefined){hidden={};if(t.dataset.all==='0')groups.forEach(function(g){hidden[g.k]=1;});renderDrawer();rebuild();}
+});
+$('drawer').addEventListener('change',function(e){
+  var t=e.target;
+  if(t.id==='cSym'){showSym=t.checked;rebuild();return;}
+  if(t.id==='cInf'){showInf=t.checked;rebuild();return;}
+  if(t.dataset&&t.dataset.g!==undefined){var g=groups[+t.dataset.g];if(t.checked)delete hidden[g.k];else hidden[g.k]=1;rebuild();}
+});
+$('bMenu').addEventListener('click',function(){$('drawer').classList.toggle('open');});
+$('bFit').addEventListener('click',function(){userMoved=false;fit();});
+$('bRep').addEventListener('click',function(){$('repText').textContent=D.report||'(no report)';$('rep').style.display='block';});
+$('bRepClose').addEventListener('click',function(){$('rep').style.display='none';});
+window.addEventListener('resize',resize);
+computeGroups();renderDrawer();resize();rebuild();loop();
+})();
+</script>
+</body></html>
+'''
+
+
+def write_html(out, nodes, edges, meta, rep):
+    ids = list(nodes.keys())
+    idx = {n: i for i, n in enumerate(ids)}
+    deg = collections.Counter()
+    for e in edges:
+        deg[e[0]] += 1
+        deg[e[1]] += 1
+    cmap = meta.get("comm_of_file", {}) if meta else {}
+    nl = []
+    for n in ids:
+        v = nodes[n]
+        nl.append([v["name"], v["kind"], v["file"], v["line"],
+                   os.path.dirname(v["file"]) or ".", cmap.get(v["file"], -1), deg[n]])
+    el = [[idx[e[0]], idx[e[1]], e[2], e[3], e[4], e[5], e[6]] for e in edges if e[0] in idx and e[1] in idx]
+    data = {"nodes": nl, "edges": el, "comm_names": (meta or {}).get("comm_names", []),
+            "issues": (meta or {}).get("issues", []), "report": rep}
+    blob = json.dumps(data).replace("<", "\\u003c")
+    path = os.path.join(out, "graph.html")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(HTML_TPL.replace("__DATA__", blob))
+    return path
+
+
+def make_meta(g, communities):
+    cmap, names = {}, []
+    for i, c in enumerate(communities):
+        top = collections.Counter(os.path.dirname(f) or "." for f in c).most_common(1)[0][0]
+        names.append(f"{top} ({len(c)} files) #{i + 1}")
+        for f in c:
+            cmap[f] = i
+    return {"comm_of_file": cmap, "comm_names": names, "issues": g.issues}
 
 
 def load(root):
@@ -600,6 +905,15 @@ def main():
         cmd_path(root, a[1], a[2])
     elif c == "impact" and len(a) > 1:
         cmd_impact(root, a[1])
+    elif c == "html":
+        p_ = os.path.join(root, "graphify-out", "graph.json")
+        if not os.path.exists(p_):
+            sys.exit("No graph yet. Run: python graphify_lite.py build .")
+        d_ = json.load(open(p_))
+        rp = os.path.join(root, "graphify-out", "GRAPH_REPORT.md")
+        rep_ = open(rp).read() if os.path.exists(rp) else ""
+        hp = write_html(os.path.join(root, "graphify-out"), d_["nodes"], [tuple(e) for e in d_["edges"]], d_.get("meta", {}), rep_)
+        print(f"Saved {hp}\nOpen: termux-open {hp}   (or: cd graphify-out && python -m http.server 8000)")
     elif c == "report":
         print(open(os.path.join(root, "graphify-out", "GRAPH_REPORT.md")).read())
     else:
