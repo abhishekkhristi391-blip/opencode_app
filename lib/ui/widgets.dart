@@ -279,8 +279,42 @@ class ConnectionErrorView extends StatelessWidget {
                 children: [
                   Text(S.serverSetupTitle, style: OCTypography.h3),
                   const SizedBox(height: OCSpace.md),
-                  const OCInnerCell(
-                    child: Mono(S.serverSetupCommand, size: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(OCRadius.inner),
+                      border: Border.all(color: const Color(0xFF3A3A3A)),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: OCSpace.md + 2,
+                      vertical: OCSpace.sm,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Mono(
+                            S.serverSetupCommand,
+                            size: 12,
+                            color: const Color(0xFFE8E8E6),
+                          ),
+                        ),
+                        const SizedBox(width: OCSpace.sm),
+                        InkWell(
+                          onTap: () =>
+                              copyToClipboard(context, S.serverSetupCommand),
+                          borderRadius: BorderRadius.circular(OCRadius.inner),
+                          child: const Padding(
+                            padding: EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.copy,
+                              size: 16,
+                              color: Color(0xFFB0B0AE),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: OCSpace.md),
                   Text(S.serverSetupNote, style: OCTypography.caption),
