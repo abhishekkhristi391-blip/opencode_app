@@ -364,6 +364,9 @@ class OcStore extends ChangeNotifier {
         }
       },
     );
+    // Health check passed; avoid offline flicker while SSE connects.
+    online = true;
+    notifyListeners();
     _stream!.start();
   }
 
@@ -1467,10 +1470,11 @@ class OcStore extends ChangeNotifier {
         if (oi >= 0) messages.removeAt(oi);
       }
     } else if (isRealUser && _optimisticIndex() >= 0) {
-      // Server echo of the message we showed optimistically. Keep the local
-      // bubble on screen and remember which row the real parts belong to.
-      _echoForLocal = info.id;
-      _echoInfo = info;
+      // Server echo of the optimistic user message. Replace it immediately
+      // (user messages don't stream parts, so _upsertPart swap never fires).
+      final oi = _optimisticIndex();
+      if (oi >= 0) messages[oi] = ChatMessage(info, messages[oi].parts);
+      _clearLocalEcho();
     } else {
       messages.add(ChatMessage(info, <Part>[]));
     }
