@@ -10,7 +10,6 @@ import '../l10n/strings.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
-import 'diff_page.dart';
 import 'line_icons.dart';
 import 'markdown.dart';
 import 'models_page.dart';
@@ -1963,14 +1962,13 @@ class _SlashTextFieldState extends State<SlashTextField> {
                     ),
                     subtitle: widget.store.commands
                         .where((c) => c.name == s)
-                        .map((c) => c.description)
-                        .firstOrNull
-                        ?.let(
-                          (d) => Text(
-                            d,
+                        .map(
+                          (c) => Text(
+                            c.description,
                             style: OCTypography.micro.copyWith(color: t.mute),
                           ),
-                        ),
+                        )
+                        .firstOrNull,
                     onTap: () => _apply(s),
                   ),
                 for (final f in _files)

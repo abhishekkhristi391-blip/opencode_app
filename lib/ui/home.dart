@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
 import '../main.dart';
+import '../state/store.dart';
 import 'about_page.dart';
 import 'chat.dart';
 import 'commands_page.dart';

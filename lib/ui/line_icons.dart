@@ -11,7 +11,7 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 /// The glyphs the redesign draws. Names mirror the reference's icons.
 enum LI {
@@ -322,7 +322,7 @@ class LLinePainter extends CustomPainter {
 
       case LI.mic:
         // Five vertical bars, tallest in the middle: the reference's voice icon.
-        const bars = <double, double>{
+        const bars = <int, double>{
           4: 2.6,
           8: 6.4,
           12: 9.4,
@@ -332,8 +332,8 @@ class LLinePainter extends CustomPainter {
         bars.forEach((x, h) {
           canvas.drawPath(
             _path((p) {
-              p.moveTo(x, 12 - h / 2);
-              p.lineTo(x, 12 + h / 2);
+              p.moveTo(x.toDouble(), 12 - h / 2);
+              p.lineTo(x.toDouble(), 12 + h / 2);
             }),
             stroke,
           );

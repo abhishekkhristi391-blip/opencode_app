@@ -577,7 +577,7 @@ extension _TextStyleExt on TextStyle {
 /// Light theme — the design system's default. Pale warm-grey canvas, matching
 /// the visual reference (`--bg:#f4f3f1`).
 ThemeData buildLightTheme() {
-  const cs = ColorScheme(
+  final cs = ColorScheme(
     brightness: Brightness.light,
     // One primary colour (ink) + one tonal secondary (orange family).
     primary: OCColors.ctaSolid,
@@ -633,7 +633,7 @@ extension OCColorSchemeX on ColorScheme {
 /// Dark theme — the reference dark palette (`--bg:#161517`, `--card:#212024`).
 /// Picked automatically when the OS is in dark mode.
 ThemeData buildDarkTheme() {
-  const cs = ColorScheme(
+  final cs = ColorScheme(
     brightness: Brightness.dark,
     primary: Color(0xFFF2EFEB),
     onPrimary: Color(0xFF161517),
