@@ -121,8 +121,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 12 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart ...
 
-## lib/ui/sessions_page.dart  (398 lines)
-- Defines (read with exact line ranges): class SessionsPage L13+, function createState L17-19, class _SessionsPageState L20+, function dispose L26-31, function build L32-44, class _SessionsHeader L45+, function visibleSessions L67-74, class _SessionsList L75+, class _SessionsListState L83+, class _SessionTile L175+, function _showActions L244-338, function _showChildren L339-398
+## lib/ui/sessions_page.dart  (504 lines)
+- Defines (read with exact line ranges): class SessionsPage L13+, function createState L17-19, class _SessionsPageState L20+, function dispose L26-31, function build L32-41, class _SessionsHeader L42+, function visibleSessions L64-71, class _SessionsList L72+, class _SessionsListState L80+, function _pushTileErrorGuard L188-199, function _popTileErrorGuard L200-217, class _GuardedSessionTile L218+, class _GuardedSessionTileState L227+, function initState L229-254, class _BrokenSessionRow L255+, class _SessionTile L282+, function _showActions L350-444, function _showChildren L445-504
 - Imports: lib/l10n/strings.dart, lib/main.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/chat.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 12 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/prompts.dart, lib/ui/settings_page.dart ...

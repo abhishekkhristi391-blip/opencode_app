@@ -30,14 +30,11 @@ class _SessionsPageState extends State<SessionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: AppScope.read(context).refreshSessions,
-      child: Column(
-        children: [
-          _SessionsHeader(filter: filter),
-          _SessionsList(filter: filter),
-        ],
-      ),
+    return Column(
+      children: [
+        _SessionsHeader(filter: filter),
+        _SessionsList(filter: filter),
+      ],
     );
   }
 }
@@ -118,52 +115,62 @@ class _SessionsListState extends State<_SessionsList> {
               // 1. loading skeleton, 2. error, 3. filtered-empty, 4. list.
               // The error only takes over when there is nothing cached to
               // browse — otherwise a dead server would hide local history.
-              child: store.sessionsLoading
-                  ? const OCSkeletonList(semanticLabel: S.sessionsLoading)
-                  : store.sessionsError != null && list.isEmpty
-                  ? EmptyHint(
-                      icon: Icons.error_outline,
-                      title: S.sessionsErrorTitle,
-                      message: store.sessionsError!,
-                      action: OCButton(
-                        onPressed: store.refreshSessions,
-                        icon: Icons.refresh,
-                        label: S.retry,
-                        variant: OCButtonVariant.primaryBlack,
-                        expand: false,
+              // The indicator wraps the scrollable itself: sitting on the page
+              // around a bare Column it could never fire, because a Column
+              // emits no scroll notifications.
+              child: RefreshIndicator(
+                onRefresh: store.refreshSessions,
+                child: store.sessionsLoading
+                    ? const OCSkeletonList(semanticLabel: S.sessionsLoading)
+                    : store.sessionsError != null && list.isEmpty
+                    ? EmptyHint(
+                        icon: Icons.error_outline,
+                        title: S.sessionsErrorTitle,
+                        message: store.sessionsError!,
+                        action: OCButton(
+                          onPressed: store.refreshSessions,
+                          icon: Icons.refresh,
+                          label: S.retry,
+                          variant: OCButtonVariant.primaryBlack,
+                          expand: false,
+                        ),
+                      )
+                    : list.isEmpty
+                    ? EmptyHint(
+                        icon: Icons.history,
+                        title: parentsOnly && store.sessions.isNotEmpty
+                            ? S.sessionsFilteredEmptyTitle
+                            : S.sessionsEmptyTitle,
+                        message: parentsOnly && store.sessions.isNotEmpty
+                            ? S.sessionsFilteredEmptyBody
+                            : S.sessionsEmptyBody,
+                        action: OCButton(
+                          onPressed: () async {
+                            await store.newSession();
+                            if (context.mounted)
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ChatPage(),
+                                ),
+                              );
+                          },
+                          icon: Icons.add,
+                          label: S.newChat,
+                          variant: OCButtonVariant.primaryBlack,
+                          expand: false,
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: OCSpace.xs),
+                        // Without this a short history never overscrolls, so
+                        // pull-to-refresh would be dead on arrival.
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: list.length,
+                        itemBuilder: (_, i) =>
+                            _GuardedSessionTile(s: list[i], index: i),
                       ),
-                    )
-                  : list.isEmpty
-                  ? EmptyHint(
-                      icon: Icons.history,
-                      title: parentsOnly && store.sessions.isNotEmpty
-                          ? S.sessionsFilteredEmptyTitle
-                          : S.sessionsEmptyTitle,
-                      message: parentsOnly && store.sessions.isNotEmpty
-                          ? S.sessionsFilteredEmptyBody
-                          : S.sessionsEmptyBody,
-                      action: OCButton(
-                        onPressed: () async {
-                          await store.newSession();
-                          if (context.mounted)
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ChatPage(),
-                              ),
-                            );
-                        },
-                        icon: Icons.add,
-                        label: S.newChat,
-                        variant: OCButtonVariant.primaryBlack,
-                        expand: false,
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: OCSpace.xs),
-                      itemCount: list.length,
-                      itemBuilder: (_, i) => _SessionTile(s: list[i]),
-                    ),
+              ),
             ),
           ],
         );
@@ -172,9 +179,109 @@ class _SessionsListState extends State<_SessionsList> {
   }
 }
 
+/// Refcount for [_pushTileErrorGuard]. Rows mount lazily and unmount while
+/// scrolling, so a plain save/restore would restore a stale builder as soon as
+/// one row scrolled away.
+int _tileGuards = 0;
+ErrorWidgetBuilder? _tileGuardPrev;
+
+void _pushTileErrorGuard() {
+  if (_tileGuards++ > 0) return;
+  _tileGuardPrev = ErrorWidget.builder;
+  ErrorWidget.builder = (details) {
+    debugPrint(
+      'session row failed to build: ${details.exception}\n'
+      '${details.stack ?? '<no stack>'}',
+    );
+    return const _BrokenSessionRow();
+  };
+}
+
+void _popTileErrorGuard() {
+  if (--_tileGuards > 0) return;
+  _tileGuards = 0;
+  final prev = _tileGuardPrev;
+  _tileGuardPrev = null;
+  if (prev != null) ErrorWidget.builder = prev;
+}
+
+/// Wraps one history row so a single malformed session cannot take the list
+/// with it.
+///
+/// Flutter replaces anything whose build throws with an [ErrorWidget] — an
+/// empty grey box — so a throw inside the viewport left the page showing the
+/// header count and nothing under it, with no way to tell which row was at
+/// fault. There is no way to `try/catch` a build from the parent (the child's
+/// `build` runs a frame later), so the guard replaces [ErrorWidget.builder]
+/// while this row is mounted, logs the real exception, and paints a visible
+/// placeholder instead.
+class _GuardedSessionTile extends StatefulWidget {
+  final Session s;
+  final int index;
+  const _GuardedSessionTile({required this.s, required this.index});
+
+  @override
+  State<_GuardedSessionTile> createState() => _GuardedSessionTileState();
+}
+
+class _GuardedSessionTileState extends State<_GuardedSessionTile> {
+  @override
+  void initState() {
+    super.initState();
+    _pushTileErrorGuard();
+  }
+
+  @override
+  void dispose() {
+    _popTileErrorGuard();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // The row id alone is not a safe key: two sessions restored from the same
+    // cache page can share it, and `Dismissible` asserts on duplicate keys,
+    // which blanks the whole viewport. Index + id is always unique and stays
+    // stable while the list is only reordered by `updated`.
+    return _SessionTile(
+      key: ValueKey('sess:${widget.index}:${widget.s.id}'),
+      s: widget.s,
+    );
+  }
+}
+
+/// Stand-in painted when a row's build throws, so the list keeps its rhythm
+/// and the rest of the sessions stay tappable.
+class _BrokenSessionRow extends StatelessWidget {
+  const _BrokenSessionRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: OCSpace.screenX,
+        vertical: OCSpace.tapGap / 2,
+      ),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: OCSpace.tapTarget),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
+        decoration: BoxDecoration(
+          color: OCColors.redTint,
+          borderRadius: BorderRadius.circular(OCRadius.inner),
+        ),
+        child: Text(
+          'row failed to render',
+          style: OCTypography.micro.copyWith(color: OCColors.redInk),
+        ),
+      ),
+    );
+  }
+}
+
 class _SessionTile extends StatelessWidget {
   final Session s;
-  const _SessionTile({required this.s});
+  const _SessionTile({super.key, required this.s});
 
   @override
   Widget build(BuildContext context) {
@@ -182,7 +289,6 @@ class _SessionTile extends StatelessWidget {
     final active = store.current?.id == s.id;
 
     return Dismissible(
-      key: ValueKey(s.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,

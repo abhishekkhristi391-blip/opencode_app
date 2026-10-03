@@ -837,17 +837,23 @@ lib/ui/sessions_page.dart --calls--> lib/ui/primitives.dart::OCProgressRing [INF
 lib/ui/sessions_page.dart --calls--> lib/ui/primitives.dart::OCSegment [INFERRED 0.6] lib/ui/sessions_page.dart:0
 lib/ui/sessions_page.dart --calls--> lib/ui/primitives.dart::OCSkeletonList [INFERRED 0.6] lib/ui/sessions_page.dart:0
 lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::SessionsPage [EXTRACTED] lib/ui/sessions_page.dart:13
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionTile [EXTRACTED] lib/ui/sessions_page.dart:175
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsHeader [EXTRACTED] lib/ui/sessions_page.dart:45
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsList [EXTRACTED] lib/ui/sessions_page.dart:75
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsListState [EXTRACTED] lib/ui/sessions_page.dart:83
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_BrokenSessionRow [EXTRACTED] lib/ui/sessions_page.dart:255
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_GuardedSessionTile [EXTRACTED] lib/ui/sessions_page.dart:218
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_GuardedSessionTileState [EXTRACTED] lib/ui/sessions_page.dart:227
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionTile [EXTRACTED] lib/ui/sessions_page.dart:282
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsHeader [EXTRACTED] lib/ui/sessions_page.dart:42
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsList [EXTRACTED] lib/ui/sessions_page.dart:72
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsListState [EXTRACTED] lib/ui/sessions_page.dart:80
 lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_SessionsPageState [EXTRACTED] lib/ui/sessions_page.dart:20
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_showActions [EXTRACTED] lib/ui/sessions_page.dart:244
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_showChildren [EXTRACTED] lib/ui/sessions_page.dart:339
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_popTileErrorGuard [EXTRACTED] lib/ui/sessions_page.dart:200
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_pushTileErrorGuard [EXTRACTED] lib/ui/sessions_page.dart:188
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_showActions [EXTRACTED] lib/ui/sessions_page.dart:350
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::_showChildren [EXTRACTED] lib/ui/sessions_page.dart:445
 lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::build [EXTRACTED] lib/ui/sessions_page.dart:32
 lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::createState [EXTRACTED] lib/ui/sessions_page.dart:17
 lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::dispose [EXTRACTED] lib/ui/sessions_page.dart:26
-lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::visibleSessions [EXTRACTED] lib/ui/sessions_page.dart:67
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::initState [EXTRACTED] lib/ui/sessions_page.dart:229
+lib/ui/sessions_page.dart --defines--> lib/ui/sessions_page.dart::visibleSessions [EXTRACTED] lib/ui/sessions_page.dart:64
 lib/ui/sessions_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/sessions_page.dart:10
 lib/ui/sessions_page.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/sessions_page.dart:11
 lib/ui/sessions_page.dart --calls--> lib/ui/widgets.dart::EmptyHint [INFERRED 0.6] lib/ui/sessions_page.dart:0
