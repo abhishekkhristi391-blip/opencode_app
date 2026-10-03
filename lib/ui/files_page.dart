@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 import '../main.dart';
 import '../models/models.dart';
@@ -522,6 +524,27 @@ class _FileEditorPageState extends State<FileEditorPage> {
   }
 
   Future<void> _save() async {
+    if (Platform.isAndroid) {
+      try {
+        final st = await Permission.manageExternalStorage.status;
+        if (!st.isGranted) {
+          final r = await Permission.manageExternalStorage.request();
+          if (!r.isGranted) {
+            final r2 = await Permission.storage.request();
+            if (!r2.isGranted && mounted) {
+              showSnack(context, 'Storage permission required', error: true);
+              return;
+            }
+          }
+        }
+      } catch (_) {
+        final r2 = await Permission.storage.request();
+        if (!r2.isGranted && mounted) {
+          showSnack(context, 'Storage permission required', error: true);
+          return;
+        }
+      }
+    }
     setState(() => saving = true);
     try {
       await AppScope.read(context).writeFile(widget.path, c.text);

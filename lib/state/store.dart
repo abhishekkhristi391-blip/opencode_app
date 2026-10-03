@@ -4,10 +4,13 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../api/client.dart';
 import '../api/events.dart';
 import '../models/models.dart';
+import '../db/chat_db.dart';
 
 class ChatMessage {
   Message info;
@@ -129,6 +132,21 @@ class OcStore extends ChangeNotifier {
     _todoTimer = Timer(const Duration(milliseconds: 600), () {
       if (!_disposed) unawaited(refreshTodos());
     });
+  }
+
+  // ---- permissions ----
+  Future<bool> _ensureStoragePermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final manage = Permission.manageExternalStorage;
+      var status = await manage.status;
+      if (!status.isGranted) {
+        status = await manage.request();
+      }
+      if (status.isGranted) return true;
+    } catch (_) {}
+    final st = await Permission.storage.request();
+    return st.isGranted;
   }
 
   // =====================================================================
@@ -365,6 +383,18 @@ class OcStore extends ChangeNotifier {
     messagesLoading = true;
     notifyListeners();
     try {
+      // Load from local DB first for instant history
+      final cached = await ChatDB.instance.loadMessages(id, limit: 500);
+      final cachedList = cached
+          .map((e) => ChatMessage(Message.fromJson(e['info'] ?? e), (e['parts'] as List<dynamic>? ?? []).map((p) => Part.fromJson(p)).toList()))
+          .where((m) => !m.info.summary)
+          .toList();
+      if (cachedList.isNotEmpty) {
+        messages = cachedList;
+        _oldestMessageId = messages.first.info.id;
+        hasMoreMessages = true;
+        notifyListeners();
+      }
       final fetched = (await api.messages(id, limit: 60))
           .map((e) => ChatMessage(e.info, e.parts))
           .where((m) => !m.info.summary)
@@ -372,9 +402,13 @@ class OcStore extends ChangeNotifier {
       messages = fetched;
       if (fetched.isNotEmpty) {
         _oldestMessageId = fetched.first.info.id;
-        hasMoreMessages =
-            true; // assume there might be more, will verify on load
+        hasMoreMessages = true;
       }
+      // persist fetched
+      unawaited(ChatDB.instance.upsertMessages(id, fetched.map((m) => {
+        'info': m.info.toMap(),
+        'parts': m.parts.map((p) => p.toMap()).toList(),
+      }).toList()));
       final st = asMap(await api.sessionStatus())[id];
       busy = st != null && asStr(asMap(st)['type']) == 'busy';
       busyStatus = busy ? asStr(asMap(st)['message'], 'busy') : '';
@@ -412,6 +446,7 @@ class OcStore extends ChangeNotifier {
         current = null;
         messages = [];
       }
+      unawaited(ChatDB.instance.clearSession(id));
       await refreshSessions();
       return true;
     } on ApiException catch (e) {
@@ -806,6 +841,10 @@ class OcStore extends ChangeNotifier {
   }
 
   Future<void> writeFile(String path, String content) async {
+    final ok = await _ensureStoragePermission();
+    if (!ok) {
+      throw ApiException(1, 'PermissionDenied', 'Storage permission required to write files');
+    }
     final b64 = base64Encode(utf8.encode(content));
     // Chunked so very large files stay inside ARG_MAX.
     const chunk = 24000;
@@ -1041,6 +1080,7 @@ class OcStore extends ChangeNotifier {
           current = null;
           messages = [];
         }
+        unawaited(ChatDB.instance.clearSession(delId));
         notifyListeners();
         break;
       case 'session.diff':
@@ -1139,6 +1179,9 @@ class OcStore extends ChangeNotifier {
     } else {
       messages.add(ChatMessage(info, <Part>[]));
     }
+    if (current != null) {
+      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+    }
     _scheduleNotify();
   }
 
@@ -1173,6 +1216,9 @@ class OcStore extends ChangeNotifier {
     } else {
       msg.parts.add(part);
     }
+    if (current != null) {
+      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+    }
     _scheduleNotify();
   }
 
@@ -1186,6 +1232,9 @@ class OcStore extends ChangeNotifier {
         final raw = Map<String, dynamic>.from(m.parts[i].raw);
         raw[field] = '${asStr(raw[field])}$delta';
         m.parts[i] = Part.fromJson(raw);
+        if (current != null) {
+          unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+        }
         _scheduleNotify(); // FIX: was notifyListeners() on every single token
         return;
       }
@@ -1197,12 +1246,19 @@ class OcStore extends ChangeNotifier {
     for (final m in messages) {
       m.parts.removeWhere((p) => p.id == partId);
     }
+    if (current != null) {
+      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+    }
     _scheduleNotify();
   }
 
   void _removeMessage(String sid, String messageId) {
     if (!_isCurrent(sid)) return;
     messages.removeWhere((m) => m.info.id == messageId);
+    if (current != null) {
+      // upsert rest
+      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+    }
     _scheduleNotify();
   }
 
@@ -1231,6 +1287,19 @@ class OcStore extends ChangeNotifier {
   /// Call this on app resume to reconnect the SSE stream if needed.
   void reconnectStream() {
     _stream?.reconnect();
+  }
+
+  void pauseConnections() {
+    try {
+      _stream?.stop();
+    } catch (_) {}
+    _clearBusyTimer();
+  }
+
+  void resumeConnections() {
+    try {
+      _stream?.reconnect();
+    } catch (_) {}
   }
 
   @override

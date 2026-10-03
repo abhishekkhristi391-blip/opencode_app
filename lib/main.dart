@@ -38,12 +38,16 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      store.resumeConnections();
       store.reconnectStream();
       // Refresh the open session if any
       final id = store.current?.id;
       if (id != null) {
         unawaited(store.openSession(id));
       }
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
+      // Gracefully pause connections when app goes to background
+      store.pauseConnections();
     }
   }
 
