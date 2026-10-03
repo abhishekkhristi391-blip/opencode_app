@@ -365,7 +365,9 @@ class OcStore extends ChangeNotifier {
 
   Future<void> _resyncMessages(String id) async {
     try {
-      final fresh = (await api.messages(id))
+      // Same page size as openSession — the 60 default silently truncated the
+      // history of any long conversation on every resync.
+      final fresh = (await api.messages(id, limit: _limit))
           .map((e) => ChatMessage(e.info, e.parts))
           .where((m) => !m.info.summary)
           .toList();
@@ -378,7 +380,8 @@ class OcStore extends ChangeNotifier {
       // The merge can push older messages back to the front, so the pagination
       // cursor has to move with it or "load older" would skip a page.
       _oldestMessageId = messages.isEmpty ? null : messages.first.info.id;
-      hasMoreMessages = messages.length > fresh.length || fresh.length >= 60;
+      hasMoreMessages =
+          messages.length > fresh.length || fresh.length >= _limit;
       _persistHistory(id, fresh);
       notifyListeners();
     } catch (_) {
@@ -543,6 +546,7 @@ class OcStore extends ChangeNotifier {
     todos = [];
     _oldestMessageId = null;
     hasMoreMessages = false;
+    _limit = pageLimit;
     messagesLoading = true;
     notifyListeners();
     try {
@@ -555,17 +559,18 @@ class OcStore extends ChangeNotifier {
         hasMoreMessages = true;
         notifyListeners();
       }
-      final fetched = (await api.messages(id, limit: 60))
+      final fetched = (await api.messages(id, limit: _limit))
           .map((e) => ChatMessage(e.info, e.parts))
           .where((m) => !m.info.summary)
           .toList();
-      // Merge, don't replace: the server only sent the newest page, and
+      // Merge, don't replace: the server page is capped at [_limit], and
       // assigning it over `messages` used to drop all older history.
       messages = _mergeHistory(cached, fetched);
       _oldestMessageId = messages.isEmpty ? null : messages.first.info.id;
       // More to show if the merge kept older cached pages, or if the server
       // page came back full (so there is likely another page behind it).
-      hasMoreMessages = messages.length > fetched.length || fetched.length >= 60;
+      hasMoreMessages =
+          messages.length > fetched.length || fetched.length >= _limit;
       _persistHistory(id, fetched);
       final st = asMap(await api.sessionStatus())[id];
       busy = st != null && asStr(asMap(st)['type']) == 'busy';
@@ -575,6 +580,12 @@ class OcStore extends ChangeNotifier {
       unawaited(refreshDiff());
     } on ApiException catch (e) {
       sessionError = e.message;
+    } catch (e) {
+      // Anything else must not escape: the caller awaits this before pushing
+      // the chat route, so a throw here left the user tapping a dead row, and
+      // skipping the reset below left the list spinning forever.
+      sessionError = e.toString();
+      if (kDebugMode) debugPrint('openSession($id) failed: $e');
     }
     messagesLoading = false;
     notifyListeners();
@@ -684,27 +695,77 @@ class OcStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Newest-page size used when opening a session.
+  ///
+  /// This is deliberately generous. The documented `before` query parameter
+  /// answers `HTTP 400 {"_tag":"BadRequest"}` for *any* value on opencode
+  /// 1.18.27, so server-side backwards pagination is unavailable there — a
+  /// small limit would permanently hide everything but the newest page.
+  static const pageLimit = 500;
+
+  /// Current page size; widened on demand for unusually long conversations.
+  int _limit = pageLimit;
+
+  /// Adds older messages in front of the loaded history, skipping any the
+  /// server already gave us, and caches them.
+  void _prependHistory(String id, List<ChatMessage> older) {
+    if (older.isEmpty) return;
+    final known = {for (final m in messages) m.info.id};
+    final fresh = older.where((m) => !known.contains(m.info.id)).toList();
+    if (fresh.isEmpty) return;
+    messages = [...fresh, ...messages];
+    _oldestMessageId = messages.first.info.id;
+    _persistHistory(id, fresh);
+  }
+
+  /// Fallback for servers that reject `before`: refetch a wider prefix and
+  /// splice in the older messages that reveals. Uses only `limit`, which every
+  /// build supports, so history stays reachable instead of stopping dead at
+  /// the first page.
+  Future<void> _widenHistory(String id) async {
+    final wider = _limit * 4;
+    final all = (await api.messages(id, limit: wider))
+        .map((e) => ChatMessage(e.info, e.parts))
+        .where((m) => !m.info.summary)
+        .toList();
+    if (all.length <= messages.length) {
+      hasMoreMessages = false;
+      return;
+    }
+    final known = {for (final m in messages) m.info.id};
+    final extra = all.where((m) => !known.contains(m.info.id)).toList();
+    if (extra.isEmpty) {
+      hasMoreMessages = false;
+      return;
+    }
+    _limit = wider;
+    _prependHistory(id, extra);
+    // A short page means the server had nothing more to give.
+    hasMoreMessages = all.length >= wider;
+  }
+
   Future<void> loadOlderMessages() async {
     final id = current?.id;
     if (id == null || _oldestMessageId == null || messagesLoading) return;
     messagesLoading = true;
     notifyListeners();
     try {
+      // Preferred path: ask for the page before the oldest message we hold.
       final fetched =
           (await api.messages(id, limit: 60, before: _oldestMessageId))
               .map((e) => ChatMessage(e.info, e.parts))
               .where((m) => !m.info.summary)
               .toList();
       if (fetched.isNotEmpty) {
-        _oldestMessageId = fetched.first.info.id;
+        _prependHistory(id, fetched);
         hasMoreMessages = fetched.length >= 60;
-        messages = [...fetched, ...messages];
-        // Cache the page we just pulled in, otherwise closing and reopening the
-        // session re-downloads it and it is gone from disk in between.
-        _persistHistory(id, fetched);
       } else {
         hasMoreMessages = false;
       }
+    } on ApiException {
+      // `before` is unimplemented on some builds. Widening `limit` recovers the
+      // history instead of giving up and hiding it permanently.
+      await _widenHistory(id);
     } catch (_) {
       hasMoreMessages = false;
     }
