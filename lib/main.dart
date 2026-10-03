@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import 'state/store.dart';
 import 'ui/app_scope.dart';
@@ -32,7 +31,7 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsFlutterBinding.instance.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     store.dispose();
     super.dispose();
   }
