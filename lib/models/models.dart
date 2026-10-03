@@ -120,6 +120,8 @@ class Session {
   bool get isShared => shareUrl.isNotEmpty;
 
   String get label => title.trim().isEmpty ? id : title.trim();
+
+  Map<String, dynamic> toMap() => raw;
 }
 
 // ---------- message ----------

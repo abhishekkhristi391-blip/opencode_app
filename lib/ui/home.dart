@@ -101,7 +101,10 @@ class HomeShellState extends State<HomeShell> {
     if (!store.booted) {
       return const LoadingView(label: S.connecting);
     }
-    if (store.fatalError != null) {
+    // Only take over the whole app when there is genuinely nothing to show.
+    // With sessions restored from the local cache the tabs stay usable, so a
+    // dead server hides live data but not the chat history already on disk.
+    if (store.fatalError != null && store.sessions.isEmpty) {
       return ConnectionErrorView(
         message: store.fatalError!,
         onRetry: store.connect,

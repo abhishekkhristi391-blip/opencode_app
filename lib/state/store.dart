@@ -134,6 +134,120 @@ class OcStore extends ChangeNotifier {
     });
   }
 
+  // =====================================================================
+  // local history cache
+  // =====================================================================
+
+  /// Row shape stored by [ChatDB]. Built from the models' raw server JSON so a
+  /// reload round-trips through [Message.fromJson] without a lossy mapping.
+  Map<String, dynamic> _dbRow(ChatMessage m) => {
+    'info': m.info.toMap(),
+    'parts': m.parts.map((p) => p.toMap()).toList(),
+  };
+
+  /// Messages that must not be written to disk: the local echo of a user
+  /// message the server has not confirmed yet, and the blank placeholder
+  /// synthesised when a part arrives before its header. Both get a real row
+  /// moments later when the server echoes them back, so persisting them now
+  /// only risks resurrecting an empty bubble.
+  bool _isCacheable(ChatMessage m) {
+    if (m.info.id.isEmpty) return false;
+    if (m.info.raw['optimistic'] == true) return false;
+    if (m.info.raw.isEmpty) return false;
+    return true;
+  }
+
+  /// Combines already-loaded history with the newest [window] from the server.
+  ///
+  /// The server only returns the most recent page, so assigning it straight
+  /// over `messages` discarded everything older. Cached messages that sit
+  /// before that page are kept; messages inside it are replaced by the
+  /// server's copy, which is authoritative.
+  List<ChatMessage> _mergeHistory(
+    List<ChatMessage> existing,
+    List<ChatMessage> window,
+  ) {
+    if (window.isEmpty) return existing;
+    final ids = {for (final m in window) m.info.id};
+    final newest = window.last.info.created;
+    final older = <ChatMessage>[];
+    if (newest > 0) {
+      for (final m in existing) {
+        if (ids.contains(m.info.id)) continue;
+        if (m.info.created > 0 && m.info.created < newest) older.add(m);
+      }
+    }
+    return [...older, ...window];
+  }
+
+  /// Reads a session's history out of the cache. Returns an empty list rather
+  /// than throwing: a broken cache must never block opening a session.
+  Future<List<ChatMessage>> _cachedHistory(String id) async {
+    try {
+      final rows = await ChatDB.instance.loadMessages(id);
+      return rows
+          .map(
+            (r) => ChatMessage(
+              Message.fromJson(asMap(r['info'])),
+              asList(r['parts']).map((p) => Part.fromJson(asMap(p))).toList(),
+            ),
+          )
+          .where((m) => !m.info.summary)
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('history cache read failed: $e');
+      return const [];
+    }
+  }
+
+  /// Streaming calls this per token. Snapshotting the touched messages and
+  /// letting [ChatDB] serialise the write keeps the cache current without
+  /// re-encoding every row in a long session on every token. During a run
+  /// only the live message is dirty, so this stays at one row.
+  Timer? _flushTimer;
+  String? _flushSession;
+  final Map<String, Map<String, dynamic>> _dirty = {};
+
+  void _scheduleFlush(String sessionId, ChatMessage m) {
+    if (!_isCacheable(m)) return;
+    // Snapshots are keyed by session, so switching chats has to push out the
+    // pending rows first or they would be written under the new session id.
+    if (_flushSession != null && _flushSession != sessionId) {
+      unawaited(_flushHistory());
+    }
+    _flushSession = sessionId;
+    _dirty[m.info.id] = _dbRow(m);
+    _flushTimer?.cancel();
+    _flushTimer = Timer(const Duration(milliseconds: 400), () {
+      if (!_disposed) unawaited(_flushHistory());
+    });
+  }
+
+  /// Writes the pending snapshots now. Called before switching sessions and
+  /// when a run goes idle, so the tail of a conversation is never left
+  /// unwritten. Rows are read synchronously, before [ChatDB]'s queue turn.
+  Future<void> _flushHistory() async {
+    _flushTimer?.cancel();
+    _flushTimer = null;
+    final sid = _flushSession;
+    final rows = _dirty.values.toList();
+    _flushSession = null;
+    _dirty.clear();
+    if (sid == null || rows.isEmpty) return;
+    try {
+      await ChatDB.instance.upsertMessages(sid, rows);
+    } catch (e) {
+      if (kDebugMode) debugPrint('history cache write failed: $e');
+    }
+  }
+
+  /// Persists a full page of server messages (open / paginate / resync).
+  void _persistHistory(String sessionId, List<ChatMessage> list) {
+    final rows = list.where(_isCacheable).map(_dbRow).toList();
+    if (rows.isEmpty) return;
+    unawaited(ChatDB.instance.upsertMessages(sessionId, rows));
+  }
+
   // ---- permissions ----
   Future<bool> _ensureStoragePermission() async {
     if (!Platform.isAndroid) return true;
@@ -217,8 +331,13 @@ class OcStore extends ChangeNotifier {
       ]);
     } on ApiException catch (e) {
       fatalError = e.message;
+      // Health check failed, so refreshSessions() above never ran. Populate the
+      // session list from disk anyway, otherwise the cached chat history has no
+      // entry point while the server is unreachable.
+      await _restoreSessionsFromCache();
     } catch (e) {
       fatalError = e.toString();
+      await _restoreSessionsFromCache();
     }
     notifyListeners();
   }
@@ -250,10 +369,18 @@ class OcStore extends ChangeNotifier {
           .map((e) => ChatMessage(e.info, e.parts))
           .where((m) => !m.info.summary)
           .toList();
-      if (current?.id == id) {
-        messages = fresh;
-        notifyListeners();
-      }
+      if (current?.id != id || _disposed) return;
+      // Merge rather than replace: this fires once a run finishes, and
+      // assigning the fresh page over the list used to drop every message the
+      // server did not include — and nothing was cached afterwards, so the
+      // next open lost them for good.
+      messages = _mergeHistory(messages, fresh);
+      // The merge can push older messages back to the front, so the pagination
+      // cursor has to move with it or "load older" would skip a page.
+      _oldestMessageId = messages.isEmpty ? null : messages.first.info.id;
+      hasMoreMessages = messages.length > fresh.length || fresh.length >= 60;
+      _persistHistory(id, fresh);
+      notifyListeners();
     } catch (_) {
       /* ignore */
     }
@@ -342,14 +469,48 @@ class OcStore extends ChangeNotifier {
         final i = sessions.indexWhere((s) => s.id == current!.id);
         if (i >= 0) current = sessions[i];
       }
+      unawaited(_persistSessions(sessions));
     } on ApiException catch (e) {
       sessionsError = e.message;
       fatalError = e.message;
+      // The server is unreachable. Without the cached session list the whole
+      // history cache is unreachable too — there is nothing to tap open.
+      await _restoreSessionsFromCache();
     } catch (e) {
       sessionsError = e.toString();
+      await _restoreSessionsFromCache();
     } finally {
       sessionsLoading = false;
       notifyListeners();
+    }
+  }
+
+  void _persistSessions(List<Session> list) {
+    final rows = list
+        .where((s) => s.id.isNotEmpty)
+        .map((s) => {'id': s.id, 'raw': s.toMap(), 'updated': s.updated})
+        .toList();
+    if (rows.isEmpty) return;
+    unawaited(ChatDB.instance.saveSessions(rows));
+  }
+
+  /// Falls back to the on-disk session list so cached chats stay reachable
+  /// offline. Leaves an existing online list alone.
+  Future<void> _restoreSessionsFromCache() async {
+    if (sessions.isNotEmpty) return;
+    try {
+      final rows = await ChatDB.instance.loadSessions();
+      if (rows.isEmpty) return;
+      final list = rows
+          .map((r) => Session.fromJson(r))
+          .where((s) => s.id.isNotEmpty)
+          .toList()
+        ..sort((a, b) => b.updated.compareTo(a.updated));
+      if (list.isEmpty) return;
+      sessions = list;
+      if (kDebugMode) debugPrint('restored ${list.length} sessions from cache');
+    } catch (e) {
+      if (kDebugMode) debugPrint('session cache read failed: $e');
     }
   }
 
@@ -372,6 +533,8 @@ class OcStore extends ChangeNotifier {
   }
 
   Future<void> openSession(String id) async {
+    // Land the previous session's last streamed chunk before moving on.
+    await _flushHistory();
     current =
         sessions.where((s) => s.id == id).firstOrNull ?? await _safeSession(id);
     messages = [];
@@ -383,15 +546,12 @@ class OcStore extends ChangeNotifier {
     messagesLoading = true;
     notifyListeners();
     try {
-      // Load from local DB first for instant history
-      final cached = await ChatDB.instance.loadMessages(id, limit: 500);
-      final cachedList = cached
-          .map((e) => ChatMessage(Message.fromJson(e['info'] ?? e), (e['parts'] as List<dynamic>? ?? []).map((p) => Part.fromJson(p)).toList()))
-          .where((m) => !m.info.summary)
-          .toList();
-      if (cachedList.isNotEmpty) {
-        messages = cachedList;
-        _oldestMessageId = messages.first.info.id;
+      // Paint cached history first so the chat is readable immediately, and
+      // stays readable if the server never answers.
+      final cached = await _cachedHistory(id);
+      if (cached.isNotEmpty) {
+        messages = cached;
+        _oldestMessageId = cached.first.info.id;
         hasMoreMessages = true;
         notifyListeners();
       }
@@ -399,16 +559,14 @@ class OcStore extends ChangeNotifier {
           .map((e) => ChatMessage(e.info, e.parts))
           .where((m) => !m.info.summary)
           .toList();
-      messages = fetched;
-      if (fetched.isNotEmpty) {
-        _oldestMessageId = fetched.first.info.id;
-        hasMoreMessages = true;
-      }
-      // persist fetched
-      unawaited(ChatDB.instance.upsertMessages(id, fetched.map((m) => {
-        'info': m.info.toMap(),
-        'parts': m.parts.map((p) => p.toMap()).toList(),
-      }).toList()));
+      // Merge, don't replace: the server only sent the newest page, and
+      // assigning it over `messages` used to drop all older history.
+      messages = _mergeHistory(cached, fetched);
+      _oldestMessageId = messages.isEmpty ? null : messages.first.info.id;
+      // More to show if the merge kept older cached pages, or if the server
+      // page came back full (so there is likely another page behind it).
+      hasMoreMessages = messages.length > fetched.length || fetched.length >= 60;
+      _persistHistory(id, fetched);
       final st = asMap(await api.sessionStatus())[id];
       busy = st != null && asStr(asMap(st)['type']) == 'busy';
       busyStatus = busy ? asStr(asMap(st)['message'], 'busy') : '';
@@ -447,6 +605,7 @@ class OcStore extends ChangeNotifier {
         messages = [];
       }
       unawaited(ChatDB.instance.clearSession(id));
+      unawaited(ChatDB.instance.deleteSessionRow(id));
       await refreshSessions();
       return true;
     } on ApiException catch (e) {
@@ -540,6 +699,9 @@ class OcStore extends ChangeNotifier {
         _oldestMessageId = fetched.first.info.id;
         hasMoreMessages = fetched.length >= 60;
         messages = [...fetched, ...messages];
+        // Cache the page we just pulled in, otherwise closing and reopening the
+        // session re-downloads it and it is gone from disk in between.
+        _persistHistory(id, fetched);
       } else {
         hasMoreMessages = false;
       }
@@ -1050,6 +1212,9 @@ class OcStore extends ChangeNotifier {
           busy = false;
           busyStatus = '';
           notifyListeners();
+          // The run is over: commit the tail now instead of waiting out the
+          // flush debounce, so killing the app here still keeps the answer.
+          unawaited(_flushHistory());
           if (!_disposed) {
             unawaited(refreshTodos());
             unawaited(refreshDiff());
@@ -1080,7 +1245,10 @@ class OcStore extends ChangeNotifier {
           current = null;
           messages = [];
         }
-        unawaited(ChatDB.instance.clearSession(delId));
+        if (delId.isNotEmpty) {
+          unawaited(ChatDB.instance.clearSession(delId));
+          unawaited(ChatDB.instance.deleteSessionRow(delId));
+        }
         notifyListeners();
         break;
       case 'session.diff':
@@ -1179,9 +1347,8 @@ class OcStore extends ChangeNotifier {
     } else {
       messages.add(ChatMessage(info, <Part>[]));
     }
-    if (current != null) {
-      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
-    }
+    final m = _messageById(info.id);
+    if (m != null && current != null) _scheduleFlush(current!.id, m);
     _scheduleNotify();
   }
 
@@ -1216,9 +1383,7 @@ class OcStore extends ChangeNotifier {
     } else {
       msg.parts.add(part);
     }
-    if (current != null) {
-      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
-    }
+    if (current != null) _scheduleFlush(current!.id, msg);
     _scheduleNotify();
   }
 
@@ -1232,9 +1397,7 @@ class OcStore extends ChangeNotifier {
         final raw = Map<String, dynamic>.from(m.parts[i].raw);
         raw[field] = '${asStr(raw[field])}$delta';
         m.parts[i] = Part.fromJson(raw);
-        if (current != null) {
-          unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
-        }
+        if (current != null) _scheduleFlush(current!.id, m);
         _scheduleNotify(); // FIX: was notifyListeners() on every single token
         return;
       }
@@ -1243,11 +1406,18 @@ class OcStore extends ChangeNotifier {
 
   void _removePart(String sid, String partId) {
     if (!_isCurrent(sid)) return;
+    final affected = <ChatMessage>[];
     for (final m in messages) {
+      final before = m.parts.length;
       m.parts.removeWhere((p) => p.id == partId);
+      if (m.parts.length != before) affected.add(m);
     }
+    // Re-mark only the affected messages so the dropped part is not
+    // resurrected from the cache on the next open.
     if (current != null) {
-      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+      for (final m in affected) {
+        _scheduleFlush(current!.id, m);
+      }
     }
     _scheduleNotify();
   }
@@ -1256,8 +1426,7 @@ class OcStore extends ChangeNotifier {
     if (!_isCurrent(sid)) return;
     messages.removeWhere((m) => m.info.id == messageId);
     if (current != null) {
-      // upsert rest
-      unawaited(ChatDB.instance.upsertMessages(current!.id, messages.map((m) => {'info': m.info.toMap(), 'parts': m.parts.map((p) => p.toMap()).toList()}).toList()));
+      unawaited(ChatDB.instance.deleteMessage(current!.id, messageId));
     }
     _scheduleNotify();
   }
@@ -1271,6 +1440,9 @@ class OcStore extends ChangeNotifier {
     }
     sessions.sort((a, b) => b.updated.compareTo(a.updated));
     if (current?.id == s.id) current = s;
+    // Keep the on-disk session list current so the chat survives a cold start
+    // with the server down.
+    unawaited(ChatDB.instance.saveSession(s.id, s.toMap(), s.updated));
     _scheduleNotify();
   }
 
@@ -1294,6 +1466,9 @@ class OcStore extends ChangeNotifier {
       _stream?.stop();
     } catch (_) {}
     _clearBusyTimer();
+    // Android can kill a backgrounded process without further notice; commit the
+    // streamed tail now rather than relying on the debounce timer.
+    unawaited(_flushHistory());
   }
 
   void resumeConnections() {
@@ -1308,7 +1483,9 @@ class OcStore extends ChangeNotifier {
     _clearBusyTimer();
     _notifyTimer?.cancel();
     _todoTimer?.cancel();
+    _flushTimer?.cancel();
     _stream?.stop();
+    unawaited(_flushHistory());
     api.close();
     super.dispose();
   }

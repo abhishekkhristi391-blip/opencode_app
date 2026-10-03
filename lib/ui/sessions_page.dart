@@ -115,10 +115,12 @@ class _SessionsListState extends State<_SessionsList> {
               ),
             ),
             Expanded(
-              // 1. loading skeleton, 2. error, 3. filtered-empty, 4. list
+              // 1. loading skeleton, 2. error, 3. filtered-empty, 4. list.
+              // The error only takes over when there is nothing cached to
+              // browse — otherwise a dead server would hide local history.
               child: store.sessionsLoading
                   ? const OCSkeletonList(semanticLabel: S.sessionsLoading)
-                  : store.sessionsError != null
+                  : store.sessionsError != null && list.isEmpty
                   ? EmptyHint(
                       icon: Icons.error_outline,
                       title: S.sessionsErrorTitle,
