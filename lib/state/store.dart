@@ -469,7 +469,7 @@ class OcStore extends ChangeNotifier {
         final i = sessions.indexWhere((s) => s.id == current!.id);
         if (i >= 0) current = sessions[i];
       }
-      unawaited(_persistSessions(sessions));
+      _persistSessions(sessions);
     } on ApiException catch (e) {
       sessionsError = e.message;
       fatalError = e.message;
