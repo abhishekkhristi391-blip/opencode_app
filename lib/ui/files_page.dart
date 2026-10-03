@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
-import '../main.dart';
 import '../models/models.dart';
+import '../state/store.dart';
+import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -55,8 +56,8 @@ class _FilesPageState extends State<FilesPage> {
       int changed = 0;
       try {
         changed = (await store.api.fileStatus()).length;
-      } catch (_) {
-        /* tracked-status is optional */
+      } catch (e) {
+        debugPrint('File status check failed: $e');
       }
       if (!mounted) return;
       setState(() {
@@ -537,7 +538,8 @@ class _FileEditorPageState extends State<FileEditorPage> {
             }
           }
         }
-      } catch (_) {
+      } catch (e) {
+        debugPrint('Storage permission check failed: $e');
         final r2 = await Permission.storage.request();
         if (!r2.isGranted && mounted) {
           showSnack(context, 'Storage permission required', error: true);

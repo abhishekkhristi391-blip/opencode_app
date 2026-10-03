@@ -83,14 +83,16 @@ class OcClient {
       if (bytes.length > _isolateThreshold && r.statusCode < 400) {
         try {
           body = await compute(_parseBytes, bytes);
-        } catch (_) {
+        } catch (e) {
+          if (kDebugMode) debugPrint('Isolate JSON parse failed: $e');
           body = utf8.decode(bytes, allowMalformed: true);
         }
       } else {
         text = utf8.decode(bytes, allowMalformed: true);
         try {
           body = jsonDecode(text);
-        } catch (_) {
+        } catch (e) {
+          if (kDebugMode) debugPrint('JSON decode failed: $e');
           body = text;
         }
       }
@@ -252,7 +254,9 @@ class OcClient {
         try {
           final j = jsonDecode(raw);
           if (j is Map) yield asMap(j);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Failed to parse event JSON: $e');
+        }
       } else if (line.startsWith('data:')) {
         if (buf.isNotEmpty) buf.write('\n');
         buf.write(line.substring(5).trimLeft());
@@ -269,7 +273,9 @@ class OcClient {
         await for (final e in events(global: global)) {
           yield e;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Event stream error: $e');
+      }
       await Future.delayed(const Duration(seconds: 2));
     }
   }

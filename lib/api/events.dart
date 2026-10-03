@@ -148,8 +148,9 @@ class EventStream {
             },
             cancelOnError: true,
           );
-    } catch (_) {
+    } catch (e) {
       if (gen == _gen) _scheduleRetry();
+      debugPrint('EventStream connection error: $e');
     }
   }
 
@@ -165,8 +166,8 @@ class EventStream {
     if (text.isEmpty || text == '[DONE]') return;
     try {
       onEvent(OcEvent.fromJson(asMap(jsonDecode(text))));
-    } catch (_) {
-      // Ignore malformed frames rather than killing the stream.
+    } catch (e) {
+      debugPrint('EventStream frame parse error: $e');
     }
   }
 

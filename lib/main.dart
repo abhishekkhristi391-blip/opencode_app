@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'state/store.dart';
+import 'ui/app_scope.dart';
 import 'ui/home.dart';
 import 'ui/theme.dart';
 
@@ -30,7 +31,7 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsFlutterBinding.instance.removeObserver(this);
     store.dispose();
     super.dispose();
   }
@@ -66,24 +67,5 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
         home: const HomeShell(),
       ),
     );
-  }
-}
-
-/// Inherited notifier so every widget reads the same [OcStore].
-class AppScope extends InheritedNotifier<OcStore> {
-  const AppScope({super.key, required OcStore store, required super.child})
-    : super(notifier: store);
-
-  static OcStore of(BuildContext context) {
-    final s = context.dependOnInheritedWidgetOfExactType<AppScope>();
-    assert(s != null, 'AppScope nahi mila');
-    return s!.notifier!;
-  }
-
-  /// Read without subscribing to rebuilds (for callbacks).
-  static OcStore read(BuildContext context) {
-    final s = context.getInheritedWidgetOfExactType<AppScope>();
-    assert(s != null, 'AppScope nahi mila');
-    return s!.notifier!;
   }
 }

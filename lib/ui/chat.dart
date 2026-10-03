@@ -7,9 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/strings.dart';
-import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
+import 'app_scope.dart';
 import 'line_icons.dart';
 import 'markdown.dart';
 import 'models_page.dart';
@@ -70,6 +70,13 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     scroll.addListener(_onScroll);
+    // Listen to store changes for follow-the-tail logic (outside of build)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final store = AppScope.read(context);
+        store.addListener(_onStoreChange);
+      }
+    });
   }
 
   @override
@@ -78,7 +85,17 @@ class _ChatPageState extends State<ChatPage> {
     input.dispose();
     scroll.dispose();
     focus.dispose();
+    // Remove store listener
+    if (mounted) {
+      final store = AppScope.read(context);
+      store.removeListener(_onStoreChange);
+    }
     super.dispose();
+  }
+
+  void _onStoreChange() {
+    if (!mounted) return;
+    _syncFollow();
   }
 
   double get _gap {
@@ -202,11 +219,16 @@ class _ChatPageState extends State<ChatPage> {
     if (count > _lastCount && count > 0 && store.messages.last.info.isUser) {
       _setFollow(true);
     }
-    _lastCount = count;
 
     final justLoaded = _wasLoading && !store.messagesLoading;
     _wasLoading = store.messagesLoading;
-    if (justLoaded) _setFollow(true);
+    // Only re-arm follow on load completion if we were already following,
+    // or if this is the initial load (messages was empty). Prevents jumping
+    /// to bottom after "load older" when user is scrolled up reading history.
+    if (justLoaded && (_follow || _lastCount == 0)) {
+      _setFollow(true);
+    }
+    _lastCount = count;
 
     _queueAutoScroll();
   }
@@ -216,7 +238,6 @@ class _ChatPageState extends State<ChatPage> {
     return ListenableBuilder(
       listenable: AppScope.of(context),
       builder: (context, _) {
-        _syncFollow();
         return Column(
           children: [
             const _ErrorBarWidget(),
@@ -1859,17 +1880,17 @@ class _SlashTextFieldState extends State<SlashTextField> {
   }
 
   void _searchFiles(String q) async {
-    try {
-      final list = await widget.store.api.findFiles(
-        q.isEmpty ? ' ' : q,
-        limit: 8,
-      );
-      if (!mounted || _mode != '@') return;
-      setState(() => _files = list);
-    } catch (_) {
-      /* ignore */
+try {
+        final list = await widget.store.api.findFiles(
+          q.isEmpty ? ' ' : q,
+          limit: 8,
+        );
+        if (!mounted || _mode != '@') return;
+        setState(() => _files = list);
+      } catch (e) {
+        debugPrint('File search failed: $e');
+      }
     }
-  }
 
   void _set(List<String> s, {String mode = ''}) {
     if (!mounted) return;

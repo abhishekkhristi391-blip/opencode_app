@@ -485,7 +485,8 @@ class _InputBlock extends StatelessWidget {
   static String _pretty(dynamic v) {
     try {
       return const JsonEncoder.withIndent('  ').convert(v);
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) debugPrint('JSON encode failed: $e');
       return v.toString();
     }
   }

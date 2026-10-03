@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
 import '../models/models.dart';
+import '../state/store.dart';
+import 'app_scope.dart';
 import 'parts.dart';
 import 'primitives.dart';
 import 'theme.dart';
@@ -59,7 +60,9 @@ class _DiffPageState extends State<DiffPage> {
             final path = asStr(a['path'], asStr(a['file']));
             return '$type\t$path';
           }).toList();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Failed to load VCS status: $e');
+        }
         sessionFiles = [];
       }
       if (!mounted) return;

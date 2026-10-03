@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
-import '../main.dart';
 import '../models/models.dart';
+import '../state/store.dart';
+import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';

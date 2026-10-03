@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
-import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
+import 'app_scope.dart';
 import 'chat.dart';
 import 'primitives.dart';
 import 'theme.dart';
@@ -33,7 +33,13 @@ class _SessionsPageState extends State<SessionsPage> {
     return Column(
       children: [
         _SessionsHeader(filter: filter),
-        _SessionsList(filter: filter),
+        // Expanded is load-bearing, not cosmetic. Without it [_SessionsList] is
+        // a non-flex child of this Column, and a Column hands non-flex children
+        // unbounded main-axis constraints. The Column inside [_SessionsList]
+        // then has an `Expanded` ListView under an unbounded height, which
+        // throws during layout — so the header painted its count while the
+        // list painted nothing at all.
+        Expanded(child: _SessionsList(filter: filter)),
       ],
     );
   }

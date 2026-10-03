@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../main.dart';
 import '../models/models.dart';
+import '../state/store.dart';
+import 'app_scope.dart';
 import 'chat.dart';
 import 'markdown.dart';
 import 'primitives.dart';

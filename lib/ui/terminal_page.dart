@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../main.dart';
+import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
 

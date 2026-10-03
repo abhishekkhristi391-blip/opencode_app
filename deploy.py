@@ -80,8 +80,8 @@ def main():
     if shutil_which("xdg-open"):
         try:
             webbrowser.open(ACTIONS_URL)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Failed to open browser: {e}")
 
 
 def shutil_which(binary):

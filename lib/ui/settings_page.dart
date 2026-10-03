@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
-import '../main.dart';
 import '../models/models.dart';
 import '../state/store.dart';
+import 'app_scope.dart';
 import 'commands_page.dart';
 import 'primitives.dart';
 import 'theme.dart';
@@ -596,7 +596,8 @@ class _ConfigEditorState extends State<_ConfigEditor> {
   static String _pretty(Map<String, dynamic> j) {
     try {
       return const JsonEncoder.withIndent('  ').convert(j);
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) debugPrint('JSON encode failed: $e');
       return j.toString();
     }
   }

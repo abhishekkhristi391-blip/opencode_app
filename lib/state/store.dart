@@ -70,6 +70,7 @@ class OcStore extends ChangeNotifier {
   bool messagesLoading = false;
   bool hasMoreMessages = false;
   String? _oldestMessageId;
+  int _historyLoadGen = 0; // guards against stale loads after session switch
   bool busy = false;
   String busyStatus = '';
   String? sessionError;
@@ -258,7 +259,9 @@ class OcStore extends ChangeNotifier {
         status = await manage.request();
       }
       if (status.isGranted) return true;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Storage permission check failed: $e');
+    }
     final st = await Permission.storage.request();
     return st.isGranted;
   }
@@ -268,15 +271,16 @@ class OcStore extends ChangeNotifier {
   // =====================================================================
 
   Future<void> boot() async {
-    _prefs = await SharedPreferences.getInstance();
-    baseUrl = _prefs!.getString('url') ?? baseUrl;
-    username = _prefs!.getString('user') ?? username;
-    password = _prefs!.getString('pass') ?? '';
-    agent = _prefs!.getString('agent') ?? agent;
-    providerId = _prefs!.getString('provider') ?? '';
-    modelId = _prefs!.getString('model') ?? '';
-    toolsEnabled.addAll(_prefs!.getStringList('tools') ?? const []);
-    showTokensInChat = _prefs!.getBool('showTokens') ?? false;
+    final prefs = await SharedPreferences.getInstance();
+    _prefs = prefs;
+    baseUrl = prefs.getString('url') ?? baseUrl;
+    username = prefs.getString('user') ?? username;
+    password = prefs.getString('pass') ?? '';
+    agent = prefs.getString('agent') ?? agent;
+    providerId = prefs.getString('provider') ?? '';
+    modelId = prefs.getString('model') ?? '';
+    toolsEnabled.addAll(prefs.getStringList('tools') ?? const []);
+    showTokensInChat = prefs.getBool('showTokens') ?? false;
     booted = true;
     notifyListeners();
     await connect();
@@ -384,8 +388,8 @@ class OcStore extends ChangeNotifier {
           messages.length > fresh.length || fresh.length >= _limit;
       _persistHistory(id, fresh);
       notifyListeners();
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('Failed to resync messages: $e');
     }
   }
 
@@ -393,8 +397,8 @@ class OcStore extends ChangeNotifier {
     try {
       paths = await api.paths();
       vcs = await api.vcs();
-    } catch (_) {
-      /* non fatal */
+    } catch (e) {
+      debugPrint('Failed to refresh server info: $e');
     }
     notifyListeners();
   }
@@ -403,8 +407,8 @@ class OcStore extends ChangeNotifier {
     try {
       agents = await api.agents();
       providerInfo = await api.providers();
-    } catch (_) {
-      /* non fatal */
+    } catch (e) {
+      debugPrint('Failed to refresh catalog: $e');
     }
 
     if (providerId.isEmpty || modelId.isEmpty) {
@@ -538,9 +542,12 @@ class OcStore extends ChangeNotifier {
   Future<void> openSession(String id) async {
     // Land the previous session's last streamed chunk before moving on.
     await _flushHistory();
+    // Invalidate any in-flight history loads for the old session.
+    _historyLoadGen++;
     current =
         sessions.where((s) => s.id == id).firstOrNull ?? await _safeSession(id);
     messages = [];
+    _clearLocalEcho();
     sessionError = null;
     liveDiff = [];
     todos = [];
@@ -594,7 +601,8 @@ class OcStore extends ChangeNotifier {
   Future<Session?> _safeSession(String id) async {
     try {
       return await api.session(id);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to fetch session $id: $e');
       return null;
     }
   }
@@ -612,6 +620,7 @@ class OcStore extends ChangeNotifier {
     try {
       await api.deleteSession(id);
       if (current?.id == id) {
+        _historyLoadGen++;
         current = null;
         messages = [];
       }
@@ -678,8 +687,8 @@ class OcStore extends ChangeNotifier {
     if (id == null) return;
     try {
       todos = await api.todos(id);
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('Failed to refresh todos: $e');
     }
     notifyListeners();
   }
@@ -689,8 +698,8 @@ class OcStore extends ChangeNotifier {
     if (id == null) return;
     try {
       liveDiff = await api.diff(id);
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('Failed to refresh diff: $e');
     }
     notifyListeners();
   }
@@ -722,12 +731,15 @@ class OcStore extends ChangeNotifier {
   /// splice in the older messages that reveals. Uses only `limit`, which every
   /// build supports, so history stays reachable instead of stopping dead at
   /// the first page.
-  Future<void> _widenHistory(String id) async {
-    final wider = _limit * 4;
+  Future<void> _widenHistory(String id, [int? gen]) async {
+    final wider = (_limit * 4).clamp(0, 5000); // Cap at 5000 to prevent unbounded growth
     final all = (await api.messages(id, limit: wider))
         .map((e) => ChatMessage(e.info, e.parts))
         .where((m) => !m.info.summary)
         .toList();
+    // Guard against session switch during the await.
+    if (gen != null && gen != _historyLoadGen) return;
+    if (current?.id != id || _disposed) return;
     if (all.length <= messages.length) {
       hasMoreMessages = false;
       return;
@@ -746,6 +758,7 @@ class OcStore extends ChangeNotifier {
 
   Future<void> loadOlderMessages() async {
     final id = current?.id;
+    final gen = _historyLoadGen;
     if (id == null || _oldestMessageId == null || messagesLoading) return;
     messagesLoading = true;
     notifyListeners();
@@ -756,6 +769,8 @@ class OcStore extends ChangeNotifier {
               .map((e) => ChatMessage(e.info, e.parts))
               .where((m) => !m.info.summary)
               .toList();
+      // Guard against session switch during the await.
+      if (gen != _historyLoadGen || current?.id != id || _disposed) return;
       if (fetched.isNotEmpty) {
         _prependHistory(id, fetched);
         hasMoreMessages = fetched.length >= 60;
@@ -765,12 +780,17 @@ class OcStore extends ChangeNotifier {
     } on ApiException {
       // `before` is unimplemented on some builds. Widening `limit` recovers the
       // history instead of giving up and hiding it permanently.
-      await _widenHistory(id);
-    } catch (_) {
+      await _widenHistory(id, gen);
+    } catch (e) {
+      debugPrint('Failed to load older messages: $e');
+      // Guard against session switch during the await.
+      if (gen != _historyLoadGen || current?.id != id || _disposed) return;
       hasMoreMessages = false;
     }
-    messagesLoading = false;
-    notifyListeners();
+    if (gen == _historyLoadGen && current?.id == id) {
+      messagesLoading = false;
+      notifyListeners();
+    }
   }
 
   // =====================================================================
@@ -822,6 +842,13 @@ class OcStore extends ChangeNotifier {
     if (trimmed.isNotEmpty) parts.insert(0, {'type': 'text', 'text': text});
     if (parts.isEmpty) return;
     clearAttachments();
+
+    // Only one prompt is in flight, so the echo hand-over is 1:1. Clearing both
+    // here keeps a send the server never echoed from stealing the next echo.
+    _clearLocalEcho();
+    messages.removeWhere(
+      (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
+    );
 
     // Optimistically add user message for instant feedback
     final userMsgId = 'local-${DateTime.now().millisecondsSinceEpoch}';
@@ -929,6 +956,19 @@ class OcStore extends ChangeNotifier {
       _clearBusyTimer();
       busy = false;
       sessionError = e.message;
+      // Remove the optimistic user message on error
+      messages.removeWhere(
+        (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
+      );
+      notifyListeners();
+    } catch (e) {
+      _clearBusyTimer();
+      busy = false;
+      sessionError = e.toString();
+      // Remove the optimistic user message on error
+      messages.removeWhere(
+        (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
+      );
       notifyListeners();
     }
   }
@@ -1031,7 +1071,8 @@ class OcStore extends ChangeNotifier {
       try {
         await api.session(_utilSessionId!);
         return _utilSessionId!;
-      } catch (_) {
+      } catch (e) {
+        debugPrint('Util session validation failed: $e');
         _utilSessionId = null;
       }
     }
@@ -1115,8 +1156,8 @@ class OcStore extends ChangeNotifier {
     try {
       commands = await api.commands();
       skills = await api.skills();
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('Failed to refresh commands: $e');
     }
     notifyListeners();
   }
@@ -1127,8 +1168,8 @@ class OcStore extends ChangeNotifier {
       mcp = await api.mcp();
       lsp = await api.lsp();
       formatters = await api.formatters();
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('Failed to refresh config: $e');
     }
     notifyListeners();
   }
@@ -1179,8 +1220,8 @@ class OcStore extends ChangeNotifier {
           .map(QuestionReq.fromJson)
           .where((q) => q.id.isNotEmpty)
           .toList();
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('Failed to load pending questions: $e');
     }
     notifyListeners();
   }
@@ -1386,9 +1427,32 @@ class OcStore extends ChangeNotifier {
     return null;
   }
 
-  int _optimisticIndex() => messages.indexWhere(
-    (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
-  );
+  /// Newest optimistic user row. Only one prompt is in flight at a time, so the
+  /// server's echo always belongs to the send that was made last — matching the
+  /// *first* optimistic row instead used to delete the wrong bubble.
+  int _optimisticIndex() {
+    for (var i = messages.length - 1; i >= 0; i--) {
+      final m = messages[i];
+      if (m.info.raw['optimistic'] == true && m.info.role == 'user') return i;
+    }
+    return -1;
+  }
+
+  /// Real message id whose `message.updated` has arrived while the local
+  /// bubble is still standing in for it, plus that message's real info.
+  ///
+  /// `message.updated` carries no parts, so swapping the optimistic row for it
+  /// straight away left the row with nothing to render — the user's own message
+  /// visibly vanished and, if the part events never followed, never came back.
+  /// The swap is deferred to [_upsertPart], the first event that actually has
+  /// content to replace the local text with.
+  String? _echoForLocal;
+  Message? _echoInfo;
+
+  void _clearLocalEcho() {
+    _echoForLocal = null;
+    _echoInfo = null;
+  }
 
   void _upsertMessage(Message info) {
     if (!_isCurrent(info.sessionId)) return;
@@ -1403,8 +1467,10 @@ class OcStore extends ChangeNotifier {
         if (oi >= 0) messages.removeAt(oi);
       }
     } else if (isRealUser && _optimisticIndex() >= 0) {
-      // Server echo of the message we showed optimistically: swap in place.
-      messages[_optimisticIndex()] = ChatMessage(info, <Part>[]);
+      // Server echo of the message we showed optimistically. Keep the local
+      // bubble on screen and remember which row the real parts belong to.
+      _echoForLocal = info.id;
+      _echoInfo = info;
     } else {
       messages.add(ChatMessage(info, <Part>[]));
     }
@@ -1415,6 +1481,15 @@ class OcStore extends ChangeNotifier {
 
   void _upsertPart(Part part) {
     if (!_isCurrent(part.sessionId)) return;
+    // The server has real content for the row we drew locally: adopt the real
+    // id in place. Swapping here rather than on `message.updated` is what keeps
+    // the sent text on screen for the whole hand-over.
+    if (_echoForLocal != null && part.messageId == _echoForLocal) {
+      final i = _optimisticIndex();
+      final info = _echoInfo;
+      _clearLocalEcho();
+      if (i >= 0 && info != null) messages[i] = ChatMessage(info, <Part>[]);
+    }
     var msg = _messageById(part.messageId);
     if (msg == null) {
       // The part arrived before its message header; synthesise a placeholder.
@@ -1485,6 +1560,13 @@ class OcStore extends ChangeNotifier {
 
   void _removeMessage(String sid, String messageId) {
     if (!_isCurrent(sid)) return;
+    // The row still carries the local id, so a plain `removeWhere` missed it and
+    // left a ghost bubble behind.
+    if (messageId == _echoForLocal) {
+      _clearLocalEcho();
+      final i = _optimisticIndex();
+      if (i >= 0) messages.removeAt(i);
+    }
     messages.removeWhere((m) => m.info.id == messageId);
     if (current != null) {
       unawaited(ChatDB.instance.deleteMessage(current!.id, messageId));
@@ -1525,7 +1607,9 @@ class OcStore extends ChangeNotifier {
   void pauseConnections() {
     try {
       _stream?.stop();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to pause connections: $e');
+    }
     _clearBusyTimer();
     // Android can kill a backgrounded process without further notice; commit the
     // streamed tail now rather than relying on the debounce timer.
@@ -1535,7 +1619,9 @@ class OcStore extends ChangeNotifier {
   void resumeConnections() {
     try {
       _stream?.reconnect();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to resume connections: $e');
+    }
   }
 
   @override
