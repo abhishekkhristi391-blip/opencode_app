@@ -9,7 +9,7 @@
 - showSnack (function) - 9 links - lib/ui/widgets.dart:132
 - EmptyHint (class) - 9 links - lib/ui/widgets.dart:147
 - LoadingView (class) - 7 links - lib/ui/widgets.dart:206
-- send (function) - 6 links - lib/state/store.dart:831
+- send (function) - 6 links - lib/state/store.dart:830
 - confirmDialog (function) - 6 links - lib/ui/widgets.dart:370
 - SectionTitle (class) - 6 links - lib/ui/widgets.dart:405
 
@@ -39,7 +39,7 @@
 
 ## Rationale / TODO notes
 - WHY: the raw message needs this before the UI can show anything. - lib/models/models.dart:189
-- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:264
+- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:263
 
 ## Suggested questions
 - What breaks if I change OCIconTile?   -> impact

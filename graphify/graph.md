@@ -208,7 +208,7 @@ lib/models/models.dart --defines--> lib/models/models.dart::fmtBytes [EXTRACTED]
 lib/models/models.dart --defines--> lib/models/models.dart::fmtDuration [EXTRACTED] lib/models/models.dart:724
 lib/models/models.dart --defines--> lib/models/models.dart::fmtTime [EXTRACTED] lib/models/models.dart:708
 lib/models/models.dart --defines--> lib/models/models.dart::toMap [EXTRACTED] lib/models/models.dart:124
-lib/state/store.dart --imports--> lib/api/client.dart [EXTRACTED] lib/state/store.dart:9
+lib/state/store.dart --imports--> lib/api/client.dart [EXTRACTED] lib/state/store.dart:8
 lib/state/store.dart --calls--> lib/api/client.dart::ApiException [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::OcClient [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::abort [INFERRED 0.6] lib/state/store.dart:0
@@ -244,12 +244,12 @@ lib/state/store.dart --calls--> lib/api/client.dart::summarize [INFERRED 0.35] l
 lib/state/store.dart --calls--> lib/api/client.dart::todos [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::unrevert [INFERRED 0.35] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::unshare [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --imports--> lib/api/events.dart [EXTRACTED] lib/state/store.dart:10
+lib/state/store.dart --imports--> lib/api/events.dart [EXTRACTED] lib/state/store.dart:9
 lib/state/store.dart --calls--> lib/api/events.dart::EventStream [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/events.dart::reconnect [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/events.dart::start [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/events.dart::stop [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --imports--> lib/db/chat_db.dart [EXTRACTED] lib/state/store.dart:12
+lib/state/store.dart --imports--> lib/db/chat_db.dart [EXTRACTED] lib/state/store.dart:11
 lib/state/store.dart --calls--> lib/db/chat_db.dart::clearSession [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::deleteMessage [INFERRED 0.35] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::deleteSessionRow [INFERRED 0.6] lib/state/store.dart:0
@@ -258,102 +258,102 @@ lib/state/store.dart --calls--> lib/db/chat_db.dart::loadSessions [INFERRED 0.6]
 lib/state/store.dart --calls--> lib/db/chat_db.dart::saveSession [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::saveSessions [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::upsertMessages [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --imports--> lib/models/models.dart [EXTRACTED] lib/state/store.dart:11
+lib/state/store.dart --imports--> lib/models/models.dart [EXTRACTED] lib/state/store.dart:10
 lib/state/store.dart --calls--> lib/models/models.dart::Message [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::Tokens [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::asList [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::asMap [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::asStr [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --defines--> lib/state/store.dart::ChatMessage [EXTRACTED] lib/state/store.dart:14
-lib/state/store.dart --defines--> lib/state/store.dart::OcStore [EXTRACTED] lib/state/store.dart:54
-lib/state/store.dart --defines--> lib/state/store.dart::PendingAttachment [EXTRACTED] lib/state/store.dart:39
-lib/state/store.dart --defines--> lib/state/store.dart::_applyDelta [EXTRACTED] lib/state/store.dart:1669
-lib/state/store.dart --defines--> lib/state/store.dart::_cachedHistory [EXTRACTED] lib/state/store.dart:197
-lib/state/store.dart --defines--> lib/state/store.dart::_clearBusyTimer [EXTRACTED] lib/state/store.dart:980
-lib/state/store.dart --defines--> lib/state/store.dart::_clearLocalEcho [EXTRACTED] lib/state/store.dart:1591
-lib/state/store.dart --defines--> lib/state/store.dart::_dbRow [EXTRACTED] lib/state/store.dart:152
-lib/state/store.dart --defines--> lib/state/store.dart::_debouncedTodos [EXTRACTED] lib/state/store.dart:139
-lib/state/store.dart --defines--> lib/state/store.dart::_errorText [EXTRACTED] lib/state/store.dart:1549
-lib/state/store.dart --defines--> lib/state/store.dart::_flushHistory [EXTRACTED] lib/state/store.dart:241
-lib/state/store.dart --defines--> lib/state/store.dart::_handleEvent [EXTRACTED] lib/state/store.dart:1408
-lib/state/store.dart --defines--> lib/state/store.dart::_isCacheable [EXTRACTED] lib/state/store.dart:163
-lib/state/store.dart --defines--> lib/state/store.dart::_isCurrent [EXTRACTED] lib/state/store.dart:1558
-lib/state/store.dart --defines--> lib/state/store.dart::_mergeHistory [EXTRACTED] lib/state/store.dart:178
-lib/state/store.dart --defines--> lib/state/store.dart::_messageById [EXTRACTED] lib/state/store.dart:1561
-lib/state/store.dart --defines--> lib/state/store.dart::_optimisticIndex [EXTRACTED] lib/state/store.dart:1572
-lib/state/store.dart --defines--> lib/state/store.dart::_parentDir [EXTRACTED] lib/state/store.dart:1228
-lib/state/store.dart --defines--> lib/state/store.dart::_partPayload [EXTRACTED] lib/state/store.dart:817
-lib/state/store.dart --defines--> lib/state/store.dart::_persist [EXTRACTED] lib/state/store.dart:288
-lib/state/store.dart --defines--> lib/state/store.dart::_persistHistory [EXTRACTED] lib/state/store.dart:257
-lib/state/store.dart --defines--> lib/state/store.dart::_persistSessions [EXTRACTED] lib/state/store.dart:497
-lib/state/store.dart --defines--> lib/state/store.dart::_prependHistory [EXTRACTED] lib/state/store.dart:722
-lib/state/store.dart --defines--> lib/state/store.dart::_probeBusyState [EXTRACTED] lib/state/store.dart:945
-lib/state/store.dart --defines--> lib/state/store.dart::_removeMessage [EXTRACTED] lib/state/store.dart:1704
-lib/state/store.dart --defines--> lib/state/store.dart::_removePart [EXTRACTED] lib/state/store.dart:1686
-lib/state/store.dart --defines--> lib/state/store.dart::_restoreSessionsFromCache [EXTRACTED] lib/state/store.dart:508
-lib/state/store.dart --defines--> lib/state/store.dart::_resyncMessages [EXTRACTED] lib/state/store.dart:372
-lib/state/store.dart --defines--> lib/state/store.dart::_safeSession [EXTRACTED] lib/state/store.dart:603
-lib/state/store.dart --defines--> lib/state/store.dart::_scheduleFlush [EXTRACTED] lib/state/store.dart:223
-lib/state/store.dart --defines--> lib/state/store.dart::_scheduleNotify [EXTRACTED] lib/state/store.dart:130
-lib/state/store.dart --defines--> lib/state/store.dart::_sendParts [EXTRACTED] lib/state/store.dart:985
-lib/state/store.dart --defines--> lib/state/store.dart::_shellQuote [EXTRACTED] lib/state/store.dart:1234
-lib/state/store.dart --defines--> lib/state/store.dart::_startBusyTimer [EXTRACTED] lib/state/store.dart:913
-lib/state/store.dart --defines--> lib/state/store.dart::_startStream [EXTRACTED] lib/state/store.dart:348
-lib/state/store.dart --defines--> lib/state/store.dart::_toast [EXTRACTED] lib/state/store.dart:1738
-lib/state/store.dart --defines--> lib/state/store.dart::_touchActivity [EXTRACTED] lib/state/store.dart:911
-lib/state/store.dart --defines--> lib/state/store.dart::_upsertMessage [EXTRACTED] lib/state/store.dart:1596
-lib/state/store.dart --defines--> lib/state/store.dart::_upsertPart [EXTRACTED] lib/state/store.dart:1622
-lib/state/store.dart --defines--> lib/state/store.dart::_upsertSession [EXTRACTED] lib/state/store.dart:1720
-lib/state/store.dart --defines--> lib/state/store.dart::_utilSession [EXTRACTED] lib/state/store.dart:1127
-lib/state/store.dart --defines--> lib/state/store.dart::_widenHistory [EXTRACTED] lib/state/store.dart:736
-lib/state/store.dart --defines--> lib/state/store.dart::abortSession [EXTRACTED] lib/state/store.dart:669
-lib/state/store.dart --defines--> lib/state/store.dart::addAttachment [EXTRACTED] lib/state/store.dart:802
-lib/state/store.dart --defines--> lib/state/store.dart::addMcp [EXTRACTED] lib/state/store.dart:1318
-lib/state/store.dart --defines--> lib/state/store.dart::answerPermission [EXTRACTED] lib/state/store.dart:1360
-lib/state/store.dart --defines--> lib/state/store.dart::answerQuestion [EXTRACTED] lib/state/store.dart:1374
-lib/state/store.dart --defines--> lib/state/store.dart::boot [EXTRACTED] lib/state/store.dart:272
-lib/state/store.dart --defines--> lib/state/store.dart::clearAttachments [EXTRACTED] lib/state/store.dart:812
-lib/state/store.dart --defines--> lib/state/store.dart::connect [EXTRACTED] lib/state/store.dart:313
-lib/state/store.dart --defines--> lib/state/store.dart::deleteEntry [EXTRACTED] lib/state/store.dart:1243
-lib/state/store.dart --defines--> lib/state/store.dart::deleteSession [EXTRACTED] lib/state/store.dart:621
-lib/state/store.dart --defines--> lib/state/store.dart::dispose [EXTRACTED] lib/state/store.dart:1771
-lib/state/store.dart --defines--> lib/state/store.dart::enableExternalDirectoryAccess [EXTRACTED] lib/state/store.dart:1302
-lib/state/store.dart --defines--> lib/state/store.dart::forkSession [EXTRACTED] lib/state/store.dart:639
-lib/state/store.dart --defines--> lib/state/store.dart::handleEvent [EXTRACTED] lib/state/store.dart:1398
-lib/state/store.dart --defines--> lib/state/store.dart::initAgents [EXTRACTED] lib/state/store.dart:1094
-lib/state/store.dart --defines--> lib/state/store.dart::loadOlderMessages [EXTRACTED] lib/state/store.dart:761
-lib/state/store.dart --defines--> lib/state/store.dart::loadPending [EXTRACTED] lib/state/store.dart:1345
-lib/state/store.dart --defines--> lib/state/store.dart::mkdirEntry [EXTRACTED] lib/state/store.dart:1254
-lib/state/store.dart --defines--> lib/state/store.dart::newSession [EXTRACTED] lib/state/store.dart:526
-lib/state/store.dart --defines--> lib/state/store.dart::openSession [EXTRACTED] lib/state/store.dart:544
-lib/state/store.dart --defines--> lib/state/store.dart::pauseConnections [EXTRACTED] lib/state/store.dart:1750
-lib/state/store.dart --defines--> lib/state/store.dart::reconnectStream [EXTRACTED] lib/state/store.dart:1746
-lib/state/store.dart --defines--> lib/state/store.dart::refreshCatalog [EXTRACTED] lib/state/store.dart:408
-lib/state/store.dart --defines--> lib/state/store.dart::refreshCommands [EXTRACTED] lib/state/store.dart:1269
-lib/state/store.dart --defines--> lib/state/store.dart::refreshConfig [EXTRACTED] lib/state/store.dart:1279
-lib/state/store.dart --defines--> lib/state/store.dart::refreshDiff [EXTRACTED] lib/state/store.dart:698
-lib/state/store.dart --defines--> lib/state/store.dart::refreshServerInfo [EXTRACTED] lib/state/store.dart:398
-lib/state/store.dart --defines--> lib/state/store.dart::refreshSessions [EXTRACTED] lib/state/store.dart:470
-lib/state/store.dart --defines--> lib/state/store.dart::refreshTodos [EXTRACTED] lib/state/store.dart:687
-lib/state/store.dart --defines--> lib/state/store.dart::rejectQuestion [EXTRACTED] lib/state/store.dart:1384
-lib/state/store.dart --defines--> lib/state/store.dart::removeAttachment [EXTRACTED] lib/state/store.dart:807
-lib/state/store.dart --defines--> lib/state/store.dart::renameSession [EXTRACTED] lib/state/store.dart:612
-lib/state/store.dart --defines--> lib/state/store.dart::resumeConnections [EXTRACTED] lib/state/store.dart:1762
-lib/state/store.dart --defines--> lib/state/store.dart::revert [EXTRACTED] lib/state/store.dart:1072
-lib/state/store.dart --defines--> lib/state/store.dart::runCommand [EXTRACTED] lib/state/store.dart:1035
-lib/state/store.dart --defines--> lib/state/store.dart::saveConfig [EXTRACTED] lib/state/store.dart:1291
-lib/state/store.dart --defines--> lib/state/store.dart::send [EXTRACTED] lib/state/store.dart:831
-lib/state/store.dart --defines--> lib/state/store.dart::setAgent [EXTRACTED] lib/state/store.dart:447
-lib/state/store.dart --defines--> lib/state/store.dart::setModel [EXTRACTED] lib/state/store.dart:440
-lib/state/store.dart --defines--> lib/state/store.dart::setServer [EXTRACTED] lib/state/store.dart:305
-lib/state/store.dart --defines--> lib/state/store.dart::setShowTokensInChat [EXTRACTED] lib/state/store.dart:102
-lib/state/store.dart --defines--> lib/state/store.dart::shareSession [EXTRACTED] lib/state/store.dart:650
-lib/state/store.dart --defines--> lib/state/store.dart::summarize [EXTRACTED] lib/state/store.dart:1062
-lib/state/store.dart --defines--> lib/state/store.dart::takeToast [EXTRACTED] lib/state/store.dart:1739
-lib/state/store.dart --defines--> lib/state/store.dart::toggleTool [EXTRACTED] lib/state/store.dart:453
-lib/state/store.dart --defines--> lib/state/store.dart::unrevert [EXTRACTED] lib/state/store.dart:1083
-lib/state/store.dart --defines--> lib/state/store.dart::unshareSession [EXTRACTED] lib/state/store.dart:660
-lib/state/store.dart --defines--> lib/state/store.dart::writeFile [EXTRACTED] lib/state/store.dart:1187
+lib/state/store.dart --defines--> lib/state/store.dart::ChatMessage [EXTRACTED] lib/state/store.dart:13
+lib/state/store.dart --defines--> lib/state/store.dart::OcStore [EXTRACTED] lib/state/store.dart:53
+lib/state/store.dart --defines--> lib/state/store.dart::PendingAttachment [EXTRACTED] lib/state/store.dart:38
+lib/state/store.dart --defines--> lib/state/store.dart::_applyDelta [EXTRACTED] lib/state/store.dart:1668
+lib/state/store.dart --defines--> lib/state/store.dart::_cachedHistory [EXTRACTED] lib/state/store.dart:196
+lib/state/store.dart --defines--> lib/state/store.dart::_clearBusyTimer [EXTRACTED] lib/state/store.dart:979
+lib/state/store.dart --defines--> lib/state/store.dart::_clearLocalEcho [EXTRACTED] lib/state/store.dart:1590
+lib/state/store.dart --defines--> lib/state/store.dart::_dbRow [EXTRACTED] lib/state/store.dart:151
+lib/state/store.dart --defines--> lib/state/store.dart::_debouncedTodos [EXTRACTED] lib/state/store.dart:138
+lib/state/store.dart --defines--> lib/state/store.dart::_errorText [EXTRACTED] lib/state/store.dart:1548
+lib/state/store.dart --defines--> lib/state/store.dart::_flushHistory [EXTRACTED] lib/state/store.dart:240
+lib/state/store.dart --defines--> lib/state/store.dart::_handleEvent [EXTRACTED] lib/state/store.dart:1407
+lib/state/store.dart --defines--> lib/state/store.dart::_isCacheable [EXTRACTED] lib/state/store.dart:162
+lib/state/store.dart --defines--> lib/state/store.dart::_isCurrent [EXTRACTED] lib/state/store.dart:1557
+lib/state/store.dart --defines--> lib/state/store.dart::_mergeHistory [EXTRACTED] lib/state/store.dart:177
+lib/state/store.dart --defines--> lib/state/store.dart::_messageById [EXTRACTED] lib/state/store.dart:1560
+lib/state/store.dart --defines--> lib/state/store.dart::_optimisticIndex [EXTRACTED] lib/state/store.dart:1571
+lib/state/store.dart --defines--> lib/state/store.dart::_parentDir [EXTRACTED] lib/state/store.dart:1227
+lib/state/store.dart --defines--> lib/state/store.dart::_partPayload [EXTRACTED] lib/state/store.dart:816
+lib/state/store.dart --defines--> lib/state/store.dart::_persist [EXTRACTED] lib/state/store.dart:287
+lib/state/store.dart --defines--> lib/state/store.dart::_persistHistory [EXTRACTED] lib/state/store.dart:256
+lib/state/store.dart --defines--> lib/state/store.dart::_persistSessions [EXTRACTED] lib/state/store.dart:496
+lib/state/store.dart --defines--> lib/state/store.dart::_prependHistory [EXTRACTED] lib/state/store.dart:721
+lib/state/store.dart --defines--> lib/state/store.dart::_probeBusyState [EXTRACTED] lib/state/store.dart:944
+lib/state/store.dart --defines--> lib/state/store.dart::_removeMessage [EXTRACTED] lib/state/store.dart:1703
+lib/state/store.dart --defines--> lib/state/store.dart::_removePart [EXTRACTED] lib/state/store.dart:1685
+lib/state/store.dart --defines--> lib/state/store.dart::_restoreSessionsFromCache [EXTRACTED] lib/state/store.dart:507
+lib/state/store.dart --defines--> lib/state/store.dart::_resyncMessages [EXTRACTED] lib/state/store.dart:371
+lib/state/store.dart --defines--> lib/state/store.dart::_safeSession [EXTRACTED] lib/state/store.dart:602
+lib/state/store.dart --defines--> lib/state/store.dart::_scheduleFlush [EXTRACTED] lib/state/store.dart:222
+lib/state/store.dart --defines--> lib/state/store.dart::_scheduleNotify [EXTRACTED] lib/state/store.dart:129
+lib/state/store.dart --defines--> lib/state/store.dart::_sendParts [EXTRACTED] lib/state/store.dart:984
+lib/state/store.dart --defines--> lib/state/store.dart::_shellQuote [EXTRACTED] lib/state/store.dart:1233
+lib/state/store.dart --defines--> lib/state/store.dart::_startBusyTimer [EXTRACTED] lib/state/store.dart:912
+lib/state/store.dart --defines--> lib/state/store.dart::_startStream [EXTRACTED] lib/state/store.dart:347
+lib/state/store.dart --defines--> lib/state/store.dart::_toast [EXTRACTED] lib/state/store.dart:1737
+lib/state/store.dart --defines--> lib/state/store.dart::_touchActivity [EXTRACTED] lib/state/store.dart:910
+lib/state/store.dart --defines--> lib/state/store.dart::_upsertMessage [EXTRACTED] lib/state/store.dart:1595
+lib/state/store.dart --defines--> lib/state/store.dart::_upsertPart [EXTRACTED] lib/state/store.dart:1621
+lib/state/store.dart --defines--> lib/state/store.dart::_upsertSession [EXTRACTED] lib/state/store.dart:1719
+lib/state/store.dart --defines--> lib/state/store.dart::_utilSession [EXTRACTED] lib/state/store.dart:1126
+lib/state/store.dart --defines--> lib/state/store.dart::_widenHistory [EXTRACTED] lib/state/store.dart:735
+lib/state/store.dart --defines--> lib/state/store.dart::abortSession [EXTRACTED] lib/state/store.dart:668
+lib/state/store.dart --defines--> lib/state/store.dart::addAttachment [EXTRACTED] lib/state/store.dart:801
+lib/state/store.dart --defines--> lib/state/store.dart::addMcp [EXTRACTED] lib/state/store.dart:1317
+lib/state/store.dart --defines--> lib/state/store.dart::answerPermission [EXTRACTED] lib/state/store.dart:1359
+lib/state/store.dart --defines--> lib/state/store.dart::answerQuestion [EXTRACTED] lib/state/store.dart:1373
+lib/state/store.dart --defines--> lib/state/store.dart::boot [EXTRACTED] lib/state/store.dart:271
+lib/state/store.dart --defines--> lib/state/store.dart::clearAttachments [EXTRACTED] lib/state/store.dart:811
+lib/state/store.dart --defines--> lib/state/store.dart::connect [EXTRACTED] lib/state/store.dart:312
+lib/state/store.dart --defines--> lib/state/store.dart::deleteEntry [EXTRACTED] lib/state/store.dart:1242
+lib/state/store.dart --defines--> lib/state/store.dart::deleteSession [EXTRACTED] lib/state/store.dart:620
+lib/state/store.dart --defines--> lib/state/store.dart::dispose [EXTRACTED] lib/state/store.dart:1770
+lib/state/store.dart --defines--> lib/state/store.dart::enableExternalDirectoryAccess [EXTRACTED] lib/state/store.dart:1301
+lib/state/store.dart --defines--> lib/state/store.dart::forkSession [EXTRACTED] lib/state/store.dart:638
+lib/state/store.dart --defines--> lib/state/store.dart::handleEvent [EXTRACTED] lib/state/store.dart:1397
+lib/state/store.dart --defines--> lib/state/store.dart::initAgents [EXTRACTED] lib/state/store.dart:1093
+lib/state/store.dart --defines--> lib/state/store.dart::loadOlderMessages [EXTRACTED] lib/state/store.dart:760
+lib/state/store.dart --defines--> lib/state/store.dart::loadPending [EXTRACTED] lib/state/store.dart:1344
+lib/state/store.dart --defines--> lib/state/store.dart::mkdirEntry [EXTRACTED] lib/state/store.dart:1253
+lib/state/store.dart --defines--> lib/state/store.dart::newSession [EXTRACTED] lib/state/store.dart:525
+lib/state/store.dart --defines--> lib/state/store.dart::openSession [EXTRACTED] lib/state/store.dart:543
+lib/state/store.dart --defines--> lib/state/store.dart::pauseConnections [EXTRACTED] lib/state/store.dart:1749
+lib/state/store.dart --defines--> lib/state/store.dart::reconnectStream [EXTRACTED] lib/state/store.dart:1745
+lib/state/store.dart --defines--> lib/state/store.dart::refreshCatalog [EXTRACTED] lib/state/store.dart:407
+lib/state/store.dart --defines--> lib/state/store.dart::refreshCommands [EXTRACTED] lib/state/store.dart:1268
+lib/state/store.dart --defines--> lib/state/store.dart::refreshConfig [EXTRACTED] lib/state/store.dart:1278
+lib/state/store.dart --defines--> lib/state/store.dart::refreshDiff [EXTRACTED] lib/state/store.dart:697
+lib/state/store.dart --defines--> lib/state/store.dart::refreshServerInfo [EXTRACTED] lib/state/store.dart:397
+lib/state/store.dart --defines--> lib/state/store.dart::refreshSessions [EXTRACTED] lib/state/store.dart:469
+lib/state/store.dart --defines--> lib/state/store.dart::refreshTodos [EXTRACTED] lib/state/store.dart:686
+lib/state/store.dart --defines--> lib/state/store.dart::rejectQuestion [EXTRACTED] lib/state/store.dart:1383
+lib/state/store.dart --defines--> lib/state/store.dart::removeAttachment [EXTRACTED] lib/state/store.dart:806
+lib/state/store.dart --defines--> lib/state/store.dart::renameSession [EXTRACTED] lib/state/store.dart:611
+lib/state/store.dart --defines--> lib/state/store.dart::resumeConnections [EXTRACTED] lib/state/store.dart:1761
+lib/state/store.dart --defines--> lib/state/store.dart::revert [EXTRACTED] lib/state/store.dart:1071
+lib/state/store.dart --defines--> lib/state/store.dart::runCommand [EXTRACTED] lib/state/store.dart:1034
+lib/state/store.dart --defines--> lib/state/store.dart::saveConfig [EXTRACTED] lib/state/store.dart:1290
+lib/state/store.dart --defines--> lib/state/store.dart::send [EXTRACTED] lib/state/store.dart:830
+lib/state/store.dart --defines--> lib/state/store.dart::setAgent [EXTRACTED] lib/state/store.dart:446
+lib/state/store.dart --defines--> lib/state/store.dart::setModel [EXTRACTED] lib/state/store.dart:439
+lib/state/store.dart --defines--> lib/state/store.dart::setServer [EXTRACTED] lib/state/store.dart:304
+lib/state/store.dart --defines--> lib/state/store.dart::setShowTokensInChat [EXTRACTED] lib/state/store.dart:101
+lib/state/store.dart --defines--> lib/state/store.dart::shareSession [EXTRACTED] lib/state/store.dart:649
+lib/state/store.dart --defines--> lib/state/store.dart::summarize [EXTRACTED] lib/state/store.dart:1061
+lib/state/store.dart --defines--> lib/state/store.dart::takeToast [EXTRACTED] lib/state/store.dart:1738
+lib/state/store.dart --defines--> lib/state/store.dart::toggleTool [EXTRACTED] lib/state/store.dart:452
+lib/state/store.dart --defines--> lib/state/store.dart::unrevert [EXTRACTED] lib/state/store.dart:1082
+lib/state/store.dart --defines--> lib/state/store.dart::unshareSession [EXTRACTED] lib/state/store.dart:659
+lib/state/store.dart --defines--> lib/state/store.dart::writeFile [EXTRACTED] lib/state/store.dart:1186
 lib/ui/about_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/about_page.dart:3
 lib/ui/about_page.dart --defines--> lib/ui/about_page.dart::AboutPage [EXTRACTED] lib/ui/about_page.dart:10
 lib/ui/about_page.dart --defines--> lib/ui/about_page.dart::build [EXTRACTED] lib/ui/about_page.dart:14
