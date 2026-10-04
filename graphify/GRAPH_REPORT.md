@@ -1,17 +1,17 @@
 # GRAPH REPORT
-27 files, 680 symbols, 1192 edges (813 EXTRACTED, 379 INFERRED)
+27 files, 682 symbols, 1197 edges (815 EXTRACTED, 382 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:464
-- mono (function) - 12 links - lib/ui/theme.dart:619
+- mono (function) - 12 links - lib/ui/theme.dart:627
 - OCButton (class) - 11 links - lib/ui/primitives.dart:98
 - showSnack (function) - 10 links - lib/ui/widgets.dart:134
 - read (function) - 9 links - lib/ui/app_scope.dart:17
-- EmptyHint (class) - 9 links - lib/ui/widgets.dart:149
+- EmptyHint (class) - 9 links - lib/ui/widgets.dart:162
 - clear (function) - 7 links - lib/ui/terminal_page.dart:42
-- LoadingView (class) - 7 links - lib/ui/widgets.dart:208
+- LoadingView (class) - 7 links - lib/ui/widgets.dart:221
+- asMap (function) - 6 links - lib/models/models.dart:5
 - LIcon (class) - 6 links - lib/ui/line_icons.dart:99
-- copyToClipboard (function) - 6 links - lib/ui/widgets.dart:138
 
 ## Communities (modules that talk to each other)
 1. 26 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...
