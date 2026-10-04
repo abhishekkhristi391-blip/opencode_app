@@ -1,3 +1,5 @@
+import '../l10n/strings.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
@@ -37,11 +39,26 @@ class _ToolTimelineState extends State<ToolTimeline> {
   Widget build(BuildContext context) {
     final tools = <Part>[];
     final rest = <Part>[];
+    // Consecutive reasoning parts become one collapsed row. Rendered
+    // individually they pushed the actual answer off screen and read like a
+    // wall of italic text.
+    final reasoning = <Part>[];
     for (final p in widget.parts) {
-      (p.type == 'tool' ? tools : rest).add(p);
+      if (p.type == 'tool') {
+        tools.add(p);
+        continue;
+      }
+      if (p.type == 'reasoning') {
+        reasoning.add(p);
+        continue;
+      }
+      rest.add(p);
     }
-    if (tools.isEmpty)
-      return Column(children: [for (final p in rest) PartTile(p)]);
+    final blocks = <Widget>[
+      if (reasoning.isNotEmpty) ThinkingGroup(parts: reasoning),
+      for (final p in rest) PartTile(p),
+    ];
+    if (tools.isEmpty) return Column(children: blocks);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +83,7 @@ class _ToolTimelineState extends State<ToolTimeline> {
             ],
           ),
         ),
-        for (final p in rest) PartTile(p),
+        ...blocks,
       ],
     );
   }
@@ -234,7 +251,7 @@ class PartTile extends StatelessWidget {
             ),
     'reasoning' => _Collapsible(
       icon: Icons.psychology_alt_outlined,
-      title: 'Thinking',
+      title: S.partsThinking,
       subtitle: _firstLine(part.text),
       color: Theme.of(context).colorScheme.tertiary,
       child: Padding(
@@ -258,7 +275,7 @@ class PartTile extends StatelessWidget {
     'file' => _FilePart(part),
     'patch' => _Collapsible(
       icon: Icons.difference_outlined,
-      title: 'Patch',
+      title: S.partsPatch,
       subtitle:
           '${part.patchText.split('\n').where((l) => l.startsWith('+') || l.startsWith('-')).length} lines',
       color: Theme.of(context).colorScheme.tertiary,
@@ -300,7 +317,7 @@ class PartTile extends StatelessWidget {
           const SizedBox(width: OCSpace.md),
           Expanded(
             child: Text(
-              'Context compact kiya gaya',
+              S.contextCompacted,
               style: OCTypography.caption.copyWith(color: OCColors.orangeInk),
             ),
           ),
@@ -347,7 +364,7 @@ class _CollapsibleState extends State<_Collapsible> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
       decoration: BoxDecoration(
-        color: OCColors.surfaceSubtle,
+        color: context.oc.surfaceElevated,
         borderRadius: shape,
       ),
       child: Material(
@@ -390,7 +407,7 @@ class _CollapsibleState extends State<_Collapsible> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: OCTypography.micro.copyWith(
-                                color: OCColors.textSecondary,
+                                color: context.oc.mute,
                               ),
                             ),
                         ],
@@ -399,7 +416,7 @@ class _CollapsibleState extends State<_Collapsible> {
                     Icon(
                       open ? Icons.expand_less : Icons.expand_more,
                       size: 18,
-                      color: OCColors.textTertiary,
+                      color: context.oc.faint,
                     ),
                   ],
                 ),
@@ -554,7 +571,8 @@ class _OutputBlockState extends State<_OutputBlock> {
     final shown = _expanded || !truncated
         ? widget.text
         : lines.take(_maxLines).join('\n');
-    final showPermissionPrompt = widget.isError && _isExternalPermissionError(widget.text);
+    final showPermissionPrompt =
+        widget.isError && _isExternalPermissionError(widget.text);
 
     // Reference `.out`: always the dark code surface, in both themes.
     return Container(
@@ -567,9 +585,46 @@ class _OutputBlockState extends State<_OutputBlock> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Copy lives on the header, always visible. Making the user select
+          // 40 lines of monospace output by hand was the only way to get at it
+          // before.
+          Row(
+            children: [
+              Text(
+                S.partsOutput,
+                style: OCTypography.micro.copyWith(color: t.mute),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () {
+                  copyToClipboard(context, shown);
+                  showSnack(context, S.copied);
+                },
+                borderRadius: BorderRadius.circular(OCRadius.xs),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: OCSpace.sm,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LIcon(LI.copy, size: 12, color: t.mute),
+                      const SizedBox(width: 4),
+                      Text(
+                        S.copy,
+                        style: OCTypography.micro.copyWith(color: t.mute),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: OCSpace.xs),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Text(
+            child: SelectableText(
               shown,
               style: OCTypography.mono(
                 size: 12,
@@ -618,7 +673,7 @@ class _OutputBlockState extends State<_OutputBlock> {
                     ),
                   ),
                   OCButton(
-                    label: 'Allow external access',
+                    label: S.partsExternalAccess,
                     variant: OCButtonVariant.smallInline,
                     onPressed: () => store.enableExternalDirectoryAccess(),
                   ),
@@ -694,7 +749,7 @@ class _AgentPart extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _Collapsible(
     icon: Icons.bolt,
-    title: 'Agent · ${part.subtaskAgent.isEmpty ? '?' : part.subtaskAgent}',
+    title: S.partsAgent(part.subtaskAgent),
     subtitle: part.text.isEmpty ? '' : part.text,
     color: Theme.of(context).colorScheme.primary,
     child: Padding(
@@ -814,6 +869,87 @@ class DiffText extends StatelessWidget {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// One collapsed row for a run of reasoning parts.
+///
+/// Collapsed by default. The previous behaviour showed every reasoning block
+/// inline, so a single turn could fill the viewport with italic text before the
+/// answer appeared.
+class ThinkingGroup extends StatelessWidget {
+  final List<Part> parts;
+  const ThinkingGroup({required this.parts, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final text = parts
+        .map((p) => p.text)
+        .where((s) => s.trim().isNotEmpty)
+        .join('\n\n');
+    final start = parts
+        .map((p) => p.timeStart)
+        .where((v) => v > 0)
+        .fold<int>(0, (a, b) => a == 0 ? b : (a < b ? a : b));
+    final end = parts.fold<int>(0, (a, p) => p.timeEnd > a ? p.timeEnd : a);
+    final secs = (end - start) / 1000;
+
+    if (text.trim().isEmpty) return const SizedBox.shrink();
+
+    return _Collapsible(
+      icon: Icons.psychology_alt_outlined,
+      title: S.partsThinking,
+      // Duration, not the first sentence: the first line of a reasoning block
+      // is usually "We need to look at…" and read as noise in a collapsed row.
+      subtitle: secs > 0.4 ? S.partsThoughtFor(secs.round()) : S.partsThinking,
+      color: t.mute,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          OCSpace.md,
+          OCSpace.md,
+          OCSpace.md,
+          OCSpace.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SelectableText(
+              text,
+              style: OCTypography.caption.copyWith(height: 1.5, color: t.mute),
+            ),
+            const SizedBox(height: OCSpace.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: InkWell(
+                onTap: () {
+                  copyToClipboard(context, text);
+                  showSnack(context, S.copied);
+                },
+                borderRadius: BorderRadius.circular(OCRadius.xs),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: OCSpace.sm,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LIcon(LI.copy, size: 12, color: t.mute),
+                      const SizedBox(width: 4),
+                      Text(
+                        S.copy,
+                        style: OCTypography.micro.copyWith(color: t.mute),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

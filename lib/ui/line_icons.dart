@@ -322,13 +322,7 @@ class LLinePainter extends CustomPainter {
 
       case LI.mic:
         // Five vertical bars, tallest in the middle: the reference's voice icon.
-        const bars = <int, double>{
-          4: 2.6,
-          8: 6.4,
-          12: 9.4,
-          16: 5.4,
-          20: 2.6,
-        };
+        const bars = <int, double>{4: 2.6, 8: 6.4, 12: 9.4, 16: 5.4, 20: 2.6};
         bars.forEach((x, h) {
           canvas.drawPath(
             _path((p) {

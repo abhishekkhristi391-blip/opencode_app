@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../l10n/strings.dart';
 import '../models/models.dart';
+import '../state/store.dart';
+import 'line_icons.dart';
 import 'primitives.dart';
 import 'theme.dart';
 
@@ -460,45 +462,381 @@ class Mono extends StatelessWidget {
 
 /// Tinted rounded cell (radius 16) that pairs an icon with a label, so status
 /// is never communicated by colour alone.
-class StatusPill extends StatelessWidget {
-  final String text;
-  final Color color;
-  final IconData? icon;
-  const StatusPill(this.text, this.color, {super.key, this.icon});
+/// Whether animation should be suppressed: the OS "remove animations"
+/// accessibility setting, or the platform asking for reduced motion.
+///
+/// Every looping or scale animation in the app must route through this. A
+/// pulsing dot is decorative; for a motion-sensitive user it is a hazard, and
+/// Flutter keeps animating unless something explicitly stops it.
+bool ocReduceMotion(BuildContext context) {
+  final mq = MediaQuery.maybeOf(context);
+  if (mq == null) return false;
+  return mq.disableAnimations || mq.accessibleNavigation;
+}
+
+/// Connection state for [StatusPill].
+enum OcLinkState {
+  connected(S.statusConnected),
+  reconnecting(S.statusReconnecting),
+  offline(S.statusOffline),
+  offlineCached(S.statusOfflineCached);
+
+  const OcLinkState(this.label);
+  final String label;
+}
+
+/// The app's one connection indicator: dot + label, in the header, nowhere else.
+///
+/// Four states, because "Offline" next to a full list of chats was misleading -
+/// the list was real, it came from the local cache, and the header said the
+/// server was gone. [offlineCached] says both things.
+///
+/// The dot pulses only while reconnecting, and only if the OS has animations on.
+class StatusPill extends StatefulWidget {
+  const StatusPill({
+    super.key,
+    required this.state,
+    this.detail,
+    this.cachedCount,
+    this.onRetry,
+  });
+
+  final OcLinkState state;
+
+  /// Secondary text, e.g. the server version.
+  final String? detail;
+
+  /// How many cached sessions are on screen, for the honest offline label.
+  final int? cachedCount;
+
+  /// When set, the pill grows a Retry button. Offline is only useful if the
+  /// user can do something about it.
+  final VoidCallback? onRetry;
+
+  @override
+  State<StatusPill> createState() => _StatusPillState();
+}
+
+class _StatusPillState extends State<StatusPill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: OCMotion.pulse,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(StatusPill old) {
+    super.didUpdateWidget(old);
+    if (old.state != widget.state) _sync();
+  }
+
+  void _sync() {
+    if (widget.state == OcLinkState.reconnecting && !ocReduceMotion(context)) {
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    } else {
+      _pulse.stop();
+      _pulse.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: OCSpace.sm + 2,
-        vertical: OCSpace.xs,
+    final t = context.oc;
+    final color = switch (widget.state) {
+      OcLinkState.connected => t.ok,
+      OcLinkState.reconnecting => t.warn,
+      OcLinkState.offline || OcLinkState.offlineCached => t.err,
+    };
+    final label =
+        widget.state == OcLinkState.offlineCached && widget.cachedCount != null
+        ? S.statusCached(widget.cachedCount!)
+        : widget.state.label;
+
+    return Semantics(
+      liveRegion: widget.state != OcLinkState.connected,
+      label: label,
+      excludeSemantics: true,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 260),
+        padding: EdgeInsets.fromLTRB(10, 5, widget.onRetry == null ? 10 : 4, 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(OCRadius.pill),
+          border: Border.all(color: color.withValues(alpha: 0.30)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FadeTransition(
+              opacity: widget.state == OcLinkState.reconnecting
+                  ? _pulse.drive(Tween(begin: 0.3, end: 1.0))
+                  : const AlwaysStoppedAnimation(1),
+              child: Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+            ),
+            const SizedBox(width: 7),
+            // Ellipsis, never wrap: this sits in a header row next to up to
+            // three 48px buttons, and at 1.3x text scale a long status would
+            // otherwise take the buttons off-screen.
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: OCTypography.meta.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (widget.detail != null && widget.detail!.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  widget.detail!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: OCTypography.caption.copyWith(color: t.mute),
+                ),
+              ),
+            ],
+            if (widget.onRetry != null) ...[
+              const SizedBox(width: 4),
+              Semantics(
+                button: true,
+                label: S.statusRetryTooltip,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: widget.onRetry,
+                  borderRadius: BorderRadius.circular(OCRadius.pill),
+                  child: Padding(
+                    // 48dp tall hit area on a 26dp pill: the visible dot is
+                    // small, the target must not be.
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: OCSpace.sm,
+                      vertical: 9,
+                    ),
+                    child: Text(
+                      S.statusRetry,
+                      style: OCTypography.meta.copyWith(
+                        color: t.ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(OCRadius.inner),
+    );
+  }
+}
+
+/// Header status from the store's three flags.
+///
+/// Offline with cached sessions is its own state: the screen still has real
+/// content, so saying only "Offline" makes the app look broken when it is not.
+OcLinkState ocLinkState(OcStore store) {
+  if (!store.online) {
+    final cached = store.sessions.where(
+      (s) => s.title != OcStore.utilSessionTitle,
+    );
+    return cached.isEmpty ? OcLinkState.offline : OcLinkState.offlineCached;
+  }
+  return store.reconnecting ? OcLinkState.reconnecting : OcLinkState.connected;
+}
+
+/// One header button. [label] is the tooltip AND the semantics label, so the
+/// two can never drift apart.
+class HeaderAction {
+  const HeaderAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badge = 0,
+    this.accent = false,
+  });
+
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+
+  /// Count bubble, e.g. open todos.
+  final int badge;
+
+  /// Uses the accent colour. Reserved for the single primary action.
+  final bool accent;
+}
+
+/// The app bar: title, one [StatusPill], and whatever actions this screen needs.
+///
+/// Actions are passed in per screen instead of being hard-coded, because the
+/// same three icons (Tasks / New chat / More) on Files and Terminal meant
+/// Tasks opened on the terminal and New chat discarded the terminal.
+class AppHeader extends StatelessWidget {
+  const AppHeader({
+    super.key,
+    required this.title,
+    required this.status,
+    this.actions = const [],
+    this.trailing,
+  });
+
+  final String title;
+  final StatusPill status;
+  final List<HeaderAction> actions;
+
+  /// Anything that does not fit the icon row, e.g. a search field.
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        OCSpace.screenX,
+        OCSpace.sm,
+        OCSpace.sm,
+        OCSpace.sm,
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: OCSpace.xs),
-          ] else ...[
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: OCSpace.xs + 2),
-          ],
-          Text(
-            text,
-            style: OCTypography.micro.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: OCTypography.title.copyWith(
+                    color: t.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: OCSpace.xs),
+                status,
+              ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: OCSpace.sm),
+            trailing!,
+          ],
+          for (final a in actions)
+            HeaderButton(
+              icon: a.icon,
+              label: a.label,
+              onTap: a.onTap,
+              badge: a.badge,
+              accent: a.accent,
+            ),
         ],
+      ),
+    );
+  }
+}
+
+/// A header icon button. Exactly 48x48, with a tooltip and a semantics label.
+class HeaderButton extends StatelessWidget {
+  const HeaderButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badge = 0,
+    this.accent = false,
+  });
+
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+  final int badge;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Tooltip(
+          message: label,
+          child: Semantics(
+            button: true,
+            label: label,
+            excludeSemantics: true,
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: onTap,
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: OCSpace.tapTarget,
+                  height: OCSpace.tapTarget,
+                  child: Center(
+                    child: LIcon(icon, size: 22, color: accent ? t.acc : t.ink),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (badge > 0)
+          Positioned(right: 2, top: 2, child: CountBadge(n: badge)),
+      ],
+    );
+  }
+}
+
+/// Small count bubble, e.g. 4 open todos.
+class CountBadge extends StatelessWidget {
+  const CountBadge({super.key, required this.n});
+  final int n;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Semantics(
+      label: '$n',
+      excludeSemantics: true,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: t.acc,
+          borderRadius: BorderRadius.circular(OCRadius.pill),
+          border: Border.all(color: t.bg, width: 1.5),
+        ),
+        child: Text(
+          n > 99 ? '99+' : '$n',
+          style: OCTypography.caption.copyWith(
+            color: t.onAcc,
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
       ),
     );
   }

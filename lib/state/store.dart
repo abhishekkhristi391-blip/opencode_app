@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/client.dart';
 import '../api/events.dart';
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../db/chat_db.dart';
 
@@ -100,6 +101,11 @@ class OcStore extends ChangeNotifier {
   String username = 'opencode';
   String password = '';
   bool online = false;
+
+  /// The event stream is down and the client is retrying, but reachability has
+  /// not been disproved yet. Presentation-only: the header shows a pulsing
+  /// "Reconnecting" between Connected and Offline.
+  bool reconnecting = false;
   String serverVersion = '';
   ServerPaths? paths;
   VcsInfo? vcs;
@@ -440,65 +446,181 @@ class OcStore extends ChangeNotifier {
   }
 
   Future<void> connect() async {
-    fatalError = null;
-    online = false;
-    api.baseUrl = baseUrl;
-    api.username = username;
-    api.password = password;
-    notifyListeners();
-
+    // A second tap on Retry must not race the first: two health checks, two
+    // streams and two session refreshes would interleave into a duplicate.
+    if (_connecting || _disposed) return;
+    _connecting = true;
     try {
-      final h = await api.health().timeout(const Duration(seconds: 8));
-      serverVersion = h.version;
-      online = true;
+      fatalError = null;
+      online = false;
+      api.baseUrl = baseUrl;
+      api.username = username;
+      api.password = password;
       notifyListeners();
 
-      _startStream();
-      await Future.wait([
-        refreshCatalog(),
-        refreshSessions(),
-        refreshServerInfo(),
-        refreshCommands(),
-        loadPending(),
-      ]);
-    } on ApiException catch (e) {
-      fatalError = e.message;
-      // Health check failed, so refreshSessions() above never ran. Populate the
-      // session list from disk anyway, otherwise the cached chat history has no
-      // entry point while the server is unreachable.
-      await _restoreSessionsFromCache();
-    } catch (e) {
-      fatalError = e.toString();
-      await _restoreSessionsFromCache();
+      try {
+        final h = await api.health().timeout(const Duration(seconds: 8));
+        serverVersion = h.version;
+        online = true;
+        fatalError = null;
+        notifyListeners();
+
+        _startStream();
+        await Future.wait([
+          refreshCatalog(),
+          refreshSessions(),
+          refreshServerInfo(),
+          refreshCommands(),
+          loadPending(),
+        ]);
+      } on ApiException catch (e) {
+        fatalError = e.message;
+        // Health check failed, so refreshSessions() above never ran. Populate
+        // the session list from disk anyway, otherwise the cached chat history
+        // has no entry point while the server is unreachable.
+        await _restoreSessionsFromCache();
+      } catch (e) {
+        // Anything the client did not already translate (a raw socket error
+        // from a half-open handshake, a format error from an HTTP 200 that was
+        // not JSON) becomes one actionable line instead of a stack trace.
+        if (kDebugMode) debugPrint('connect failed: $e');
+        fatalError = _offlineMessage();
+        await _restoreSessionsFromCache();
+      }
+      notifyListeners();
+    } finally {
+      _connecting = false;
     }
+  }
+
+  /// The single user-facing offline string. Kept identical everywhere so the
+  /// error screen and any toast agree on what to do about it.
+  String _offlineMessage() => S.netUnreachable(baseUrl);
+
+  /// True while a reachability probe is already in flight, so a dropped socket
+  /// that fires several triggers does not stack up health checks.
+  bool _reachProbeBusy = false;
+
+  /// Asks the server whether it is really gone.
+  ///
+  /// A dropped event stream is ambiguous: the socket can die while the server
+  /// is perfectly healthy (battery freeze, OS-reaped socket, wifi handover),
+  /// and the server can die while the socket still looks open. Only the server
+  /// can tell them apart, and the UI must not show "Offline" for the first one
+  /// or a green dot for the second.
+  Future<void> _verifyReachability({bool full = false}) async {
+    if (_reachProbeBusy || _disposed) return;
+    _reachProbeBusy = true;
+    var up = false;
+    String? err;
+    try {
+      final h = await api.health().timeout(const Duration(seconds: 6));
+      serverVersion = h.version;
+      up = true;
+    } on ApiException catch (e) {
+      err = e.message;
+    } catch (e) {
+      if (kDebugMode) debugPrint('reachability probe failed: $e');
+      err = _offlineMessage();
+    } finally {
+      _reachProbeBusy = false;
+    }
+    if (_disposed) return;
+
+    if (up) {
+      online = true;
+      // Still reconnecting if the SSE stream itself has not come back yet.
+      reconnecting = !(_stream?.live ?? false);
+      fatalError = null;
+      notifyListeners();
+      // The server is up, so the app stays usable and the dot stays green. The
+      // stream is simply retrying: if nothing is already connecting, kick it
+      // now to collapse its backoff, so a Termux that came back mid-backoff is
+      // picked up on the first try instead of up to 15s later.
+      final stream = _stream;
+      final live = stream?.live ?? false;
+      if (stream != null && !live) stream.reconnect();
+      // If the stream cannot come up at all (SSE refused while HTTP works),
+      // nothing else will ever re-sync, so do it here instead.
+      if (!live) {
+        unawaited(loadPending());
+        final id = current?.id;
+        if (id != null && !messagesLoading) unawaited(_resyncMessages(id));
+        if (busy) unawaited(_probeBusyState());
+      }
+      if (full) {
+        // Coming back from the background: sessions may have been created,
+        // renamed or deleted elsewhere while we were frozen.
+        unawaited(refreshSessions());
+        unawaited(refreshServerInfo());
+      }
+      return;
+    }
+
+    online = false;
+    reconnecting = false;
+    fatalError = err ?? _offlineMessage();
     notifyListeners();
   }
 
   void _startStream() {
-    _stream?.stop();
+    // The old stream is being replaced, not paused: make sure no late callback
+    // from it can reconnect into this store.
+    unawaited(_stream?.shutdown());
     _stream = EventStream(
       baseUrl: baseUrl,
       username: username,
       password: password,
       onEvent: handleEvent,
-      onStatus: (v) {
-        online = v;
-        notifyListeners();
-        if (v && !_disposed) {
-          unawaited(loadPending());
-          // Re-sync the open chat: events missed while disconnected are gone.
-          final id = current?.id;
-          if (id != null && !messagesLoading) unawaited(_resyncMessages(id));
-        }
-      },
+      onStatus: _onStreamStatus,
+      // The watchdog uses this to tell "the agent is quiet" from "the socket
+      // is gone" — without it every long tool call looks like a dead stream.
+      isBusy: () => busy,
     );
-    // Health check passed; avoid offline flicker while SSE connects.
-    online = true;
-    notifyListeners();
-    _stream!.start();
+    // `online` is not forced true here: the stream owns that signal from now
+    // on. Claiming it before the SSE handshake is what let the UI sit on a
+    // green dot over a stream that had never connected.
+    unawaited(_stream!.start());
   }
 
+  /// Stream up/down edges. See [_verifyReachability] for why a down edge is
+  /// never applied to `online` directly.
+  void _onStreamStatus(bool up) {
+    if (_disposed) return;
+    if (!up) {
+      // Stream dropped but the server may still be reachable. [online] keeps
+      // telling the last known truth until the probe decides, so the header has
+      // to say "reconnecting" rather than flip straight to "offline" and then
+      // back, which reads as two unrelated states.
+      reconnecting = true;
+      unawaited(_verifyReachability());
+      return;
+    }
+    online = true;
+    reconnecting = false;
+    fatalError = null;
+    notifyListeners();
+
+    // A permission or question asked while we were away has no event left to
+    // deliver it, so the prompt card would simply never appear.
+    unawaited(loadPending());
+    // Events missed while disconnected are gone and cannot be replayed, so the
+    // server's own page is the only authority on what really happened.
+    final id = current?.id;
+    if (id != null && !messagesLoading) unawaited(_resyncMessages(id));
+    // A run that finished while we were away never sent its idle event, so the
+    // dots would spin for a full 45s silence window before the probe noticed.
+    if (busy) unawaited(_probeBusyState());
+  }
+
+  bool _connecting = false;
+
   Future<void> _resyncMessages(String id) async {
+    // Resume, a socket re-established by the watchdog and a manual reconnect
+    // can all land here within the same second. One in-flight fetch covers
+    // them all, and a second would only fight it over `messages`.
+    if (_resyncing) return;
+    _resyncing = true;
     try {
       // Same page size as openSession — the 60 default silently truncated the
       // history of any long conversation on every resync.
@@ -521,8 +643,12 @@ class OcStore extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to resync messages: $e');
+    } finally {
+      _resyncing = false;
     }
   }
+
+  bool _resyncing = false;
 
   Future<void> refreshServerInfo() async {
     try {
@@ -639,11 +765,12 @@ class OcStore extends ChangeNotifier {
     try {
       final rows = await ChatDB.instance.loadSessions();
       if (rows.isEmpty) return;
-      final list = rows
-          .map((r) => Session.fromJson(r))
-          .where((s) => s.id.isNotEmpty)
-          .toList()
-        ..sort((a, b) => b.updated.compareTo(a.updated));
+      final list =
+          rows
+              .map((r) => Session.fromJson(r))
+              .where((s) => s.id.isNotEmpty)
+              .toList()
+            ..sort((a, b) => b.updated.compareTo(a.updated));
       if (list.isEmpty) return;
       sessions = list;
       if (kDebugMode) debugPrint('restored ${list.length} sessions from cache');
@@ -780,7 +907,7 @@ class OcStore extends ChangeNotifier {
     try {
       await api.share(id);
       await refreshSessions();
-      _toast('Share link ban gaya');
+      _toast(S.shareLinkCreated);
     } on ApiException catch (e) {
       _toast(e.message);
     }
@@ -869,7 +996,10 @@ class OcStore extends ChangeNotifier {
   /// build supports, so history stays reachable instead of stopping dead at
   /// the first page.
   Future<void> _widenHistory(String id, [int? gen]) async {
-    final wider = (_limit * 4).clamp(0, 5000); // Cap at 5000 to prevent unbounded growth
+    final wider = (_limit * 4).clamp(
+      0,
+      5000,
+    ); // Cap at 5000 to prevent unbounded growth
     final all = (await api.messages(id, limit: wider))
         .map((e) => ChatMessage(e.info, e.parts))
         .where((m) => !m.info.summary)
@@ -963,6 +1093,44 @@ class OcStore extends ChangeNotifier {
   }
 
   /// Send a chat message. Returns immediately; output streams in via SSE.
+  /// Prompts typed while a run is in flight, flushed in order when it ends.
+  ///
+  /// The composer used to swallow them: the send button is a Stop button while
+  /// busy, so anything typed during a long run was either discarded or sent as
+  /// a second concurrent prompt, which the server then interleaved.
+  final List<String> _queued = [];
+
+  List<String> get queued => List.unmodifiable(_queued);
+  bool get hasQueued => _queued.isNotEmpty;
+
+  /// Send now, or queue if a run is already in flight.
+  Future<void> sendOrQueue(
+    String text, {
+    List<Map<String, dynamic>> extraParts = const [],
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty && extraParts.isEmpty) return;
+    if (busy) {
+      _queued.add(text);
+      notifyListeners();
+      return;
+    }
+    await send(text, extraParts: extraParts);
+  }
+
+  /// Sends the next queued prompt. Called when a run ends.
+  Future<void> _flushQueue() async {
+    if (_queued.isEmpty || busy || _disposed) return;
+    final next = _queued.removeAt(0);
+    notifyListeners();
+    try {
+      await send(next);
+    } catch (_) {
+      // The failure path already surfaced an error bar; keep the rest queued.
+      return;
+    }
+  }
+
   Future<void> send(
     String text, {
     List<Map<String, dynamic>> extraParts = const [],
@@ -1072,8 +1240,7 @@ class OcStore extends ChangeNotifier {
         busy = false;
         busyStatus = '';
         _settleStuckStreaming();
-        sessionError =
-            'Server se 5 min tak koi activity nahi aayi. Server logs check karo ya dobara try karo.';
+        sessionError = S.errNoActivity;
         notifyListeners();
       }
     });
@@ -1153,15 +1320,14 @@ class OcStore extends ChangeNotifier {
 
   Future<void> _sendParts(String sid, List<Map<String, dynamic>> parts) async {
     if (providerId.isEmpty || modelId.isEmpty) {
-      _toast('Pehle model choose karo');
+      _toast(S.pickModelFirst);
       return;
     }
-    // System prompt: user communicates in Hindi/Hinglish using Roman script.
-    const systemPrompt =
-        'User baatein Hindi/Hinglish mein Roman script (English letters) se karta hai. '
-        'Jaise: "bana na" = "banana" (create), "kaise hoga" = "how to do". '
-        'Treat Roman Hindi as Hindi, NOT Turkish or other languages. '
-        'Reply naturally in the same script user uses.';
+    // Was: a system prompt instructing the model to treat Roman-script Hinglish
+    // as Hindi and reply in the same script. That is what produced the Hinglish
+    // UI strings in the first place - the app was asking the agent to be
+    // bilingual while its own chrome was supposed to be one language.
+    // One language, English, everywhere.
     // Instant feedback: show "working" right away, don't wait for the server.
     busy = true;
     busyStatus = '';
@@ -1273,7 +1439,7 @@ class OcStore extends ChangeNotifier {
   Future<void> initAgents() async {
     final id = current?.id;
     if (id == null || messages.isEmpty) {
-      _toast('Pehle kuch message bhejo');
+      _toast(S.sendMessageFirst);
       return;
     }
     final lastUser = messages.lastWhere(
@@ -1353,12 +1519,7 @@ class OcStore extends ChangeNotifier {
     if (!ran) {
       // No tool part at all: the server never executed anything. Returning 0
       // here is exactly what made writes/deletes fail *silently*.
-      return (
-        exit: 127,
-        output: out.isEmpty
-            ? 'Shell ne koi output nahi diya — command chalaya hi nahi gaya.'
-            : out,
-      );
+      return (exit: 127, output: out.isEmpty ? S.shellNoOutput : out);
     }
     return (exit: code, output: out);
   }
@@ -1425,7 +1586,7 @@ class OcStore extends ChangeNotifier {
       throw ApiException(
         1,
         'DeleteFailed',
-        r.output.isEmpty ? 'Delete nahi hua: $path' : r.output,
+        r.output.isEmpty ? S.filesDeleteFailed(path) : r.output,
       );
     }
   }
@@ -1436,7 +1597,7 @@ class OcStore extends ChangeNotifier {
       throw ApiException(
         1,
         'MkdirFailed',
-        r.output.isEmpty ? 'Folder nahi bana: $path' : r.output,
+        r.output.isEmpty ? S.filesFolderFailed(path) : r.output,
       );
     }
   }
@@ -1470,7 +1631,7 @@ class OcStore extends ChangeNotifier {
   Future<void> saveConfig(Map<String, dynamic> patch) async {
     try {
       config = await api.patchConfig(patch);
-      _toast('Config save ho gaya');
+      _toast(S.configSaved);
     } on ApiException catch (e) {
       _toast(e.message);
     }
@@ -1488,7 +1649,7 @@ class OcStore extends ChangeNotifier {
         },
       });
       await refreshConfig();
-      _toast('External directory access enabled');
+      _toast(S.externalPermEnabled);
     } on ApiException catch (e) {
       _toast(e.message);
     }
@@ -1510,7 +1671,7 @@ class OcStore extends ChangeNotifier {
             };
       await api.mcpAdd(name, cfg);
       mcp = await api.mcp();
-      _toast('$name add ho gaya');
+      _toast(S.added(name));
     } on ApiException catch (e) {
       _toast(e.message);
     }
@@ -1613,7 +1774,12 @@ class OcStore extends ChangeNotifier {
           final wasBusy = busy;
           busy = t == 'busy';
           busyStatus = busy ? asStr(st['message'], 'busy') : '';
-          if (wasBusy && !busy) _clearBusyTimer();
+          if (wasBusy && !busy) {
+            _clearBusyTimer();
+            // The server declared the session idle, so a prompt typed during
+            // the run is safe to release.
+            unawaited(_flushQueue());
+          }
           if (busy) _startBusyTimer();
           notifyListeners();
         }
@@ -1628,6 +1794,7 @@ class OcStore extends ChangeNotifier {
           // The run is over: commit the tail now instead of waiting out the
           // flush debounce, so killing the app here still keeps the answer.
           unawaited(_flushHistory());
+          unawaited(_flushQueue());
           if (!_disposed) {
             unawaited(refreshTodos());
             unawaited(refreshDiff());
@@ -1644,6 +1811,7 @@ class OcStore extends ChangeNotifier {
           // A failed run's message never gets a completion stamp either.
           _settleStuckStreaming();
           notifyListeners();
+          unawaited(_flushQueue());
         }
         break;
       case 'session.updated':
@@ -1947,12 +2115,19 @@ class OcStore extends ChangeNotifier {
 
   /// Call this on app resume to reconnect the SSE stream if needed.
   void reconnectStream() {
+    if (_disposed) return;
+    // `reconnect` now really does revive a paused stream. It used to bail out
+    // on the `_stopped` flag that `pauseConnections` had set, so the very first
+    // background/foreground cycle left the app permanently deaf: no events, no
+    // streaming, red dot, and no retry loop because the timers were gone too.
     _stream?.reconnect();
   }
 
   void pauseConnections() {
+    if (_disposed) return;
     try {
-      _stream?.stop();
+      // Reversible: the socket is released now, `reconnect` brings it back.
+      unawaited(_stream?.stop());
     } catch (e) {
       debugPrint('Failed to pause connections: $e');
     }
@@ -1962,12 +2137,15 @@ class OcStore extends ChangeNotifier {
     unawaited(_flushHistory());
   }
 
+  /// Foreground again. Android may have frozen the process for minutes, so the
+  /// socket is assumed dead rather than trusted: reconnect at once (which also
+  /// collapses the retry backoff) and re-verify the server, because a Termux
+  /// restart means a new process, possibly a new version and a fresh session
+  /// list.
   void resumeConnections() {
-    try {
-      _stream?.reconnect();
-    } catch (e) {
-      debugPrint('Failed to resume connections: $e');
-    }
+    if (_disposed) return;
+    reconnectStream();
+    unawaited(_verifyReachability(full: true));
   }
 
   @override
@@ -1978,7 +2156,9 @@ class OcStore extends ChangeNotifier {
     _msgNotifyTimer?.cancel();
     _todoTimer?.cancel();
     _flushTimer?.cancel();
-    _stream?.stop();
+    // Final, not a pause: a lifecycle callback that still arrives after this
+    // must not be able to build a new stream into a disposed store.
+    unawaited(_stream?.shutdown());
     unawaited(_flushHistory());
     api.close();
     super.dispose();

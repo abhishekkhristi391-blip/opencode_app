@@ -908,6 +908,7 @@ class OCProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = value.clamp(0.0, 1.0);
+    final ring = color ?? context.oc.acc;
     return Semantics(
       label: semanticLabel,
       value: '${(target * 100).round()}%',
@@ -944,8 +945,9 @@ class OCProgressRing extends StatelessWidget {
     required this.value,
     this.size = 28,
     this.stroke = 4,
-    this.fill = OCColors.orangeBright,
-    this.track = OCColors.orangeTrack,
+    this.fill,
+    this.track,
+    this.color,
     this.animate = true,
     this.child,
     this.semanticLabel,
@@ -955,8 +957,11 @@ class OCProgressRing extends StatelessWidget {
   final double value;
   final double size;
   final double stroke;
-  final Color fill;
-  final Color track;
+  final Color? fill;
+  final Color? track;
+
+  /// Single-colour ring. [fill]/[track] stay for the two-tone variant.
+  final Color? color;
   final bool animate;
   final Widget? child;
   final String? semanticLabel;
@@ -982,8 +987,10 @@ class OCProgressRing extends StatelessWidget {
                 painter: _RingPainter(
                   value: v,
                   stroke: stroke,
-                  fill: fill,
-                  track: track,
+                  // A single-colour ring uses a muted track; the two-tone
+                  // variant keeps its own.
+                  fill: fill ?? ring,
+                  track: track ?? ring.withValues(alpha: 0.22),
                 ),
               ),
             ),
@@ -1158,6 +1165,7 @@ class OCListRow extends StatelessWidget {
       horizontal: OCSpace.screenX,
       vertical: OCSpace.tapGap / 2,
     ),
+    this.minHeight,
   });
 
   final String title;
@@ -1176,6 +1184,10 @@ class OCListRow extends StatelessWidget {
   final TextStyle? subtitleStyle;
   final EdgeInsetsGeometry margin;
 
+  /// Row height floor. Rows are denser than the 48dp touch minimum, which is
+  /// correct for a list but was too cramped to read titles in.
+  final double? minHeight;
+
   @override
   Widget build(BuildContext context) {
     final shape = BorderRadius.circular(OCRadius.inner);
@@ -1188,7 +1200,9 @@ class OCListRow extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: shape,
           child: Container(
-            constraints: const BoxConstraints(minHeight: OCSpace.tapTarget),
+            constraints: BoxConstraints(
+              minHeight: minHeight ?? OCSpace.tapTarget,
+            ),
             padding: const EdgeInsets.symmetric(
               horizontal: OCSpace.md,
               vertical: OCSpace.sm,
@@ -1196,7 +1210,7 @@ class OCListRow extends StatelessWidget {
             decoration: BoxDecoration(
               color:
                   background ??
-                  (selected ? OCColors.orangeTint : OCColors.surface),
+                  (selected ? context.oc.accSoft : Colors.transparent),
               borderRadius: shape,
             ),
             child: Row(
@@ -1221,14 +1235,14 @@ class OCListRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style:
                             titleStyle ??
-                            OCTypography.bodyStrong.copyWith(
-                              color: OCColors.textPrimary,
-                            ),
+                            OCTypography.title.copyWith(color: context.oc.ink),
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: OCSpace.xxs),
                         DefaultTextStyle.merge(
-                          style: OCTypography.micro,
+                          style: OCTypography.caption.copyWith(
+                            color: context.oc.mute,
+                          ),
                           child: subtitle!,
                         ),
                       ],

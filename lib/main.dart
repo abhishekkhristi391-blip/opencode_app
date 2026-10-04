@@ -37,8 +37,11 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // resumeConnections() owns the whole resume path: it reconnects the
+      // stream *and* re-verifies the server. Calling reconnectStream() here as
+      // well raced two connects against each other, which could orphan a socket
+      // and leave a stale generation listening.
       store.resumeConnections();
-      store.reconnectStream();
       // Do NOT re-open the session here. Re-opening reloads the message list,
       // which wiped the on-screen chat and made an in-flight reply vanish. The
       // reconnected stream re-syncs the session in place instead.
@@ -58,11 +61,11 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
       child: MaterialApp(
         title: 'OpenCode',
         debugShowCheckedModeBanner: false,
-        // Follow the OS. The dark palette lives in OCTokens, which every
-        // redesigned widget reads through `context.oc`.
-        themeMode: ThemeMode.system,
-        theme: buildLightTheme(),
-        darkTheme: buildDarkTheme(),
+        // One palette, always. ThemeMode.system is what let a light ThemeData
+        // paint white cards and sheets into an otherwise dark app.
+        themeMode: ThemeMode.dark,
+        theme: buildAppTheme(),
+        darkTheme: buildAppTheme(),
         home: const HomeShell(),
       ),
     );

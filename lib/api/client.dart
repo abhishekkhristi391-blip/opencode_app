@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
 import '../models/models.dart';
+import '../l10n/strings.dart';
 
 class ApiException implements Exception {
   final int status;
@@ -117,7 +118,7 @@ class OcClient {
     return body;
   }
 
-  Future<dynamic> _send(
+  Future<dynamic> _sendOnce(
     Future<http.Response> Function() run,
     Duration timeout,
   ) async {
@@ -127,21 +128,57 @@ class OcClient {
     } on ApiException {
       rethrow;
     } on TimeoutException {
-      throw ApiException(
-        0,
-        'Timeout',
-        'Server ne ${timeout.inSeconds}s me reply nahi diya',
-      );
+      throw ApiException(0, 'Timeout', S.netTimeout(timeout.inSeconds));
     } on SocketException {
+      throw ApiException(0, 'NoConnection', S.netUnreachable(root));
+    } on TlsException {
+      // Listed before HandshakeException: it is a subtype, so the other order
+      // would make this branch unreachable.
       throw ApiException(
         0,
-        'NoConnection',
-        'Server se connect nahi ho raha.\n\n$root reachable hai?\nTermux me chal raha hai?',
+        'BadProtocol',
+        'Could not verify the server certificate.\n\nCheck the URL for $root.',
+      );
+    } on HandshakeException catch (e) {
+      // https:// against a plain http server, or a hostname that resolves
+      // somewhere unexpected. Without this it escaped as a raw exception and
+      // every caller that only catches ApiException printed a stack trace.
+      debugPrint('TLS handshake failed: ${e.message}');
+      throw ApiException(
+        0,
+        'BadProtocol',
+        'Could not open a secure connection.\n\n'
+            'Check the URL and protocol (http/https) for $root.',
       );
     } on http.ClientException catch (e) {
       throw ApiException(0, 'Network', e.message);
     } on FormatException {
-      throw ApiException(0, 'BadResponse', 'Server ka reply samajh nahi aaya');
+      throw ApiException(0, 'BadResponse', 'Could not read the server reply');
+    }
+  }
+
+  /// Sends [run], mapping every transport failure onto an [ApiException].
+  ///
+  /// [idempotent] buys one transparent retry: this client pools keep-alive
+  /// sockets, and a Termux restart (or a server-side idle reap) closes them
+  /// while they sit in the pool. The next request then fails on a socket that
+  /// was already dead when the call started, so every call after a server
+  /// restart failed until the pool aged out. Reads are safe to repeat, so one
+  /// fresh-socket attempt turns that into a non-event. Deliberately *not*
+  /// retried on a timeout: a 30s agent turn must not silently become 60s.
+  Future<dynamic> _send(
+    Future<http.Response> Function() run,
+    Duration timeout, {
+    bool idempotent = false,
+  }) async {
+    try {
+      return await _sendOnce(run, timeout);
+    } on ApiException catch (e) {
+      final transport = e.name == 'NoConnection' || e.name == 'Network';
+      if (!idempotent || !transport) rethrow;
+      if (kDebugMode) debugPrint('retrying once over a fresh socket: $e');
+      await Future.delayed(const Duration(milliseconds: 250));
+      return _sendOnce(run, timeout);
     }
   }
 
@@ -152,6 +189,7 @@ class OcClient {
   }) => _send(
     () => _client.get(_u(path, q), headers: _headers()),
     timeout ?? const Duration(seconds: 30),
+    idempotent: true,
   );
 
   Future<dynamic> post(
@@ -211,74 +249,6 @@ class OcClient {
   );
 
   void close() => _client.close();
-
-  // ---------------- live events (SSE) ----------------
-
-  /// Live event stream. Each item is one decoded event: `{type, properties}`.
-  /// Use this for streaming chat instead of polling `messages()`.
-  Stream<Map<String, dynamic>> events({bool global = false}) async* {
-    final req = http.Request('GET', _u(global ? '/global/event' : '/event'));
-    req.headers.addAll({
-      'Accept': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      if (password.isNotEmpty)
-        'Authorization':
-            'Basic ${base64Encode(utf8.encode('$username:$password'))}',
-    });
-
-    http.StreamedResponse resp;
-    try {
-      resp = await _client.send(req).timeout(const Duration(seconds: 30));
-    } on TimeoutException {
-      throw ApiException(0, 'Timeout', 'Event stream connect nahi hua');
-    } on SocketException {
-      throw ApiException(0, 'NoConnection', 'Server se connect nahi ho raha.');
-    }
-    if (resp.statusCode >= 400) {
-      throw ApiException(
-        resp.statusCode,
-        'HTTP ${resp.statusCode}',
-        'Event stream error ${resp.statusCode}',
-      );
-    }
-
-    final buf = StringBuffer();
-    final lines = resp.stream
-        .transform(utf8.decoder)
-        .transform(const LineSplitter());
-    await for (final line in lines) {
-      if (line.isEmpty) {
-        if (buf.isEmpty) continue;
-        final raw = buf.toString();
-        buf.clear();
-        try {
-          final j = jsonDecode(raw);
-          if (j is Map) yield asMap(j);
-        } catch (e) {
-          debugPrint('Failed to parse event JSON: $e');
-        }
-      } else if (line.startsWith('data:')) {
-        if (buf.isNotEmpty) buf.write('\n');
-        buf.write(line.substring(5).trimLeft());
-      }
-    }
-  }
-
-  /// Same as [events] but reconnects automatically if the connection drops.
-  Stream<Map<String, dynamic>> eventsAutoReconnect({
-    bool global = false,
-  }) async* {
-    while (true) {
-      try {
-        await for (final e in events(global: global)) {
-          yield e;
-        }
-      } catch (e) {
-        debugPrint('Event stream error: $e');
-      }
-      await Future.delayed(const Duration(seconds: 2));
-    }
-  }
 
   // ---------------- global ----------------
 

@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/strings.dart';
 import 'theme.dart';
 import 'line_icons.dart';
 
@@ -547,13 +548,13 @@ class _CodeBlock extends StatelessWidget {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   iconSize: 16,
-                  tooltip: 'Copy',
+                  tooltip: S.copy,
                   icon: LIcon(LI.copy, size: 16, color: t.codeInk),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: code));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Code copy ho gaya'),
+                        content: Text(S.codeCopied),
                         duration: Duration(seconds: 1),
                       ),
                     );

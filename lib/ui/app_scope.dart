@@ -9,14 +9,14 @@ class AppScope extends InheritedNotifier<OcStore> {
 
   static OcStore of(BuildContext context) {
     final s = context.dependOnInheritedWidgetOfExactType<AppScope>();
-    assert(s != null, 'AppScope nahi mila');
+    assert(s != null, 'AppScope is missing above this widget');
     return s!.notifier!;
   }
 
   /// Read without subscribing to rebuilds (for callbacks).
   static OcStore read(BuildContext context) {
     final s = context.getInheritedWidgetOfExactType<AppScope>();
-    assert(s != null, 'AppScope nahi mila');
+    assert(s != null, 'AppScope is missing above this widget');
     return s!.notifier!;
   }
 }

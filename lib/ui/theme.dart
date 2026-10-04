@@ -7,386 +7,451 @@ import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 
 /// Semantic colour roles used across the app.
-/// All widgets should reference these, never hard-code colours.
+/// All widgets should reference these, never hard-code colours./// Compile-time palette.
+///
+/// This app is dark-only (see [buildAppTheme]), so these are the dark values.
+/// They exist as `const`s only so the few widgets that cannot reach a
+/// [BuildContext] can still read a token instead of writing a hex literal.
+/// Anything inside a widget MUST use `context.oc`.
 class OCColors {
-  // --- the single brand accent (design/clean-chat-ui.html) ------------
-  /// Accent orange. Used by the chat redesign for the send button, the
-  /// running tool dot and the active bottom-nav tab.
-  static const acc = Color(0xFFF26A1B);
-  static const accInk = Color(0xFFB9460C);
-  static const accSoft = Color(0xFFFFF0E6);
+  // --- surfaces (dark, darkest to lightest) ------------------------------
+  /// Screen background.
+  static const bg = Color(0xFF121214);
 
-  // --- neutrals -------------------------------------------------------
-  static const canvas = Color(0xFFF0F0F7);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceSubtle = Color(0xFFF6F6FA);
-  static const surfaceMuted = Color(0xFFEFEFF5);
-  static const borderHairline = Color(0xFFECECF2);
-  static const divider = Color(0xFFF0F0F4);
-  // Contrast on the canvas (#F0F0F7) and on white:
-  // textPrimary 20.1:1 · textSecondary 6.3:1 · textTertiary 4.7:1 — all >= 4.5:1.
-  static const textPrimary = Color(0xFF0D0D12);
-  static const textSecondary = Color(0xFF565667);
-  static const textTertiary = Color(0xFF6B6B7B);
-  static const textInverse = Color(0xFFFFFFFF);
+  /// Cards, list rows, sheets.
+  static const surface = Color(0xFF1A1A1E);
 
-  // --- brand accents (base / soft / tint + accessible ink) -----------
-  static const purple = Color(0xFF8B5CF6);
-  static const purpleSoft = Color(0xFFC7B8F5);
-  static const purpleTint = Color(0xFFEDE7FD);
-  static const purpleInk = Color(0xFF5B21B6);
+  /// One step up: composer box, path bar, pressed rows, terminal input bar.
+  static const surfaceElevated = Color(0xFF232328);
 
-  static const orange = Color(0xFFFF8A1F);
+  /// Terminal viewport. Darker than [bg] on purpose - a terminal should read as
+  /// a recessed well, not a card.
+  static const terminalBg = Color(0xFF0B0B0D);
+
+  /// Terminal foreground.
+  static const terminalText = Color(0xFFD4D4D8);
+
+  // --- lines --------------------------------------------------------------
+  /// The only border colour in the app. 1dp, hairline.
+  static const border = Color(0xFF2E2E34);
+
+  // --- text ---------------------------------------------------------------
+  /// Body, titles, anything the user is meant to read first.
+  static const textPrimary = Color(0xFFF2F2F3);
+
+  /// Supporting text: subtitles, timestamps, hints, inactive nav labels.
+  /// 7.37:1 on [surface] - passes 4.5:1 comfortably.
+  static const textSecondary = Color(0xFFA8A8B3);
+
+  /// Tertiary: placeholders, disabled. 3.0:1 - decorative only, never load-bearing.
+  static const textTertiary = Color(0xFF6E6E7A);
+
+  // --- accent -------------------------------------------------------------
+  /// The single accent. ONLY: the primary action, the active nav tab, and the
+  /// selected state. Never a surface, never a border on an inert control.
+  static const accent = Color(0xFFFF8A3D);
+
+  /// Text/icon colour ON an accent fill. Dark, because the accent is light:
+  /// 7.98:1.
+  static const onAccent = Color(0xFF121214);
+
+  /// 12% accent wash for selected rows. Never a solid peach fill - that is what
+  /// made the Models and History tabs look like a light theme.
+  static const accentSoft = Color(0xFFFF8A3D).withValues(alpha: 0.14);
+
+  /// Border of a selected control.
+  static const accentLine = Color(0xFFFF8A3D).withValues(alpha: 0.55);
+
+  // --- status -------------------------------------------------------------
+  static const success = Color(0xFF34D399);
+  static const error = Color(0xFFF87171);
+  static const warning = Color(0xFFFBBF24);
+
+  /// 12% washes for status backgrounds.
+  static const successSoft = Color(0xFF34D399).withValues(alpha: 0.14);
+  static const errorSoft = Color(0xFFF87171).withValues(alpha: 0.14);
+  static const warningSoft = Color(0xFFFBBF24).withValues(alpha: 0.14);
+
+  // --- code ---------------------------------------------------------------
+  static const codeBg = terminalBg;
+  static const codeInk = textSecondary;
+
+  // --- terminal ANSI (dark, readable) -------------------------------------
+  static const ansiBlack = Color(0xFF4B4B55);
+  static const ansiRed = error;
+  static const ansiGreen = success;
+  static const ansiYellow = warning;
+  static const ansiBlue = Color(0xFF60A5FA);
+  static const ansiMagenta = Color(0xFFC084FC);
+  static const ansiCyan = Color(0xFF22D3EE);
+  static const ansiWhite = Color(0xFFE4E4E7);
+  static const ansiBrightBlack = Color(0xFF71717A);
+
+  // --- legacy aliases -----------------------------------------------------
+  //
+  // 221 call sites across 13 UI files still name these. They used to point at a
+  // LIGHT palette, which is the actual root cause: `OCColors.surfaceSubtle` was
+  // a near-white, so a card, a sheet or a text field asked for "surfaceSubtle"
+  // and got white. Every name below now resolves to a dark value, so switching
+  // the palette killed all 221 light surfaces at once instead of file by file.
+  // New code reads `context.oc.*`; these exist so the conversion can be
+  // incremental and so nothing has to be renamed in the same commit as its colour.
+  static const canvas = bg;
+  static const surfaceSubtle = surfaceElevated;
+  static const surfaceMuted = surfaceElevated;
+  static const surfaceHigh = surfaceElevated;
+  static const surfaceHighest = surfaceElevated;
+  static const surfaceLow = surface;
+  static const borderHairline = border;
+  static const divider = border;
+  static const textInverse = bg;
+  static const textOnAccent = onAccent;
+  static const textMuted = textSecondary;
+  static const ctaSolid = accent;
+  static const ctaAlt = accent;
+  static const toggleOn = accent;
+  static const toggleOff = surfaceElevated;
+  static const danger = error;
+  static const successSoft = Color(0x1434D399);
+  static const info = Color(0xFF60A5FA);
+  static const codeBorder = border;
+  static const selection = accent;
+
+  // Status hues, dark-legible. Used for tool icons, diff sides and capability
+  // chips - never for a surface.
+  static const purple = Color(0xFFA78BFA);
+  static const purpleSoft = Color(0xFFC4B5FD);
+  static const purpleTint = Color(0xFF241F33);
+  static const purpleInk = Color(0xFFC4B5FD);
+
+  static const orange = accent;
   static const orangeDeep = Color(0xFFF97316);
-  static const orangeBright = Color(0xFFFFA033);
-  static const orangeTrack = Color(0xFFFFE6B8);
-  static const orangeTint = Color(0xFFFFF1E3);
-  static const orangeInk = Color(0xFF9A3412);
+  static const orangeBright = Color(0xFFFFA45C);
+  static const orangeTrack = Color(0xFF4A2E1A);
+  static const orangeTint = Color(0xFF2A1B10);
+  static const orangeInk = accent;
 
   static const pink = Color(0xFFF472B6);
   static const pinkHot = Color(0xFFE879F9);
-  static const pinkTint = Color(0xFFFCE7F3);
-  static const pinkInk = Color(0xFFA21CAF);
+  static const pinkTint = Color(0xFF2E1B2A);
+  static const pinkInk = Color(0xFFF9A8D4);
 
-  static const yellow = Color(0xFFFFD23F);
-  static const yellowSoft = Color(0xFFFFE48A);
-  static const yellowTint = Color(0xFFFFF7D6);
-  static const yellowInk = Color(0xFF854D0E);
+  static const yellow = warning;
+  static const yellowSoft = Color(0xFFFDE68A);
+  static const yellowTint = Color(0xFF2E2612);
+  static const yellowInk = Color(0xFFFCD34D);
 
-  static const blue = Color(0xFF4C9AFF);
-  static const blueSky = Color(0xFFBFE3FF);
-  static const blueTint = Color(0xFFE6F2FF);
-  static const blueInk = Color(0xFF1D4ED8);
+  static const blue = Color(0xFF60A5FA);
+  static const blueSky = Color(0xFF93C5FD);
+  static const blueTint = Color(0xFF16233A);
+  static const blueInk = Color(0xFF93C5FD);
 
-  static const green = Color(0xFF34C759);
-  static const greenTint = Color(0xFFE4F8E8);
-  static const greenInk = Color(0xFF166534);
+  static const green = success;
+  static const greenTint = Color(0xFF10261F);
+  static const greenInk = Color(0xFF6EE7B7);
 
-  static const red = Color(0xFFEF4444);
-  static const redTint = Color(0xFFFEE8E8);
-  static const redInk = Color(0xFFB42318);
-
-  // --- semantic -------------------------------------------------------
-  static const ctaSolid = textPrimary; // dominant CTA is black
-  static const ctaAlt = orange;
-  static const success = green;
-  static const danger = red;
-  static const warning = Color(0xFFFFB020);
-  static const info = blue;
-  static const toggleOn = orangeDeep;
-  static const toggleOff = Color(0xFFD9D9E3);
-
-  /// Tonal steps of the single secondary hue, used for tracks and fills.
-  static const orangeWash = Color(0xFFFFF7EC);
-
-  // --- code surfaces --------------------------------------------------
-  static const codeBg = surfaceSubtle;
-  static const codeBorder = borderHairline;
-
-  // --- aliases kept so existing call sites keep compiling -------------
-  static const accent = ctaSolid;
-  static const accentHover = Color(0xFF2A2A35);
-  static const accentSoft = orange;
-  static const error = danger;
-  static const textOnAccent = textInverse;
-  static const textMuted = textSecondary;
-  static const surfaceLow = surfaceSubtle;
-  static const surfaceHigh = surfaceMuted;
-  static const surfaceHighest = surfaceMuted;
-  static const border = borderHairline;
-  static const borderFocus = orange;
-  static const selection = orange;
+  static const red = error;
+  static const redTint = Color(0xFF2E1618);
+  static const redInk = Color(0xFFFCA5A5);
 }
 
-/// Brightness-aware palette taken straight from the visual reference
-/// (`design/clean-chat-ui.html`). [OCColors] is a set of compile-time light
-/// constants, so anything that must survive a dark theme reads from here
-/// instead.
+/// Brightness-aware token set, read with `context.oc`.
 ///
 /// ```
-/// :root                 {--bg:#f4f3f1;--card:#fff;--ink:#1c1b1a;--mute:#847f78;
-///                        --line:#e7e4df;--acc:#f26a1b;--accink:#b9460c;
-///                        --accsoft:#fff0e6;--ok:#2f9e44;--err:#c92a2a;
-///                        --errsoft:#fdecec;--code:#26241f}
-/// prefers-color-scheme  {--bg:#161517;--card:#212024;--ink:#f2efeb;--mute:#8e8993;
-///                         --line:#333138;--accsoft:#3b2616;--accink:#ff9a5c;
-///                         --errsoft:#3a1c1c;--code:#0f0e10}
+/// --bg #121214   --surface #1A1A1E   --surfaceElevated #232328
+/// --border #2E2E34   --ink #F2F2F3   --mute #A8A8B3
+/// --accent #FF8A3D   --success #34D399  --error #F87171  --warning #FBBF24
+/// --terminal #0B0B0D   --terminalText #D4D4D8
 /// ```
 class OCTokens extends ThemeExtension<OCTokens> {
   const OCTokens({
     required this.bg,
     required this.card,
+    required this.surfaceElevated,
     required this.ink,
     required this.mute,
+    required this.faint,
     required this.line,
     required this.acc,
     required this.accInk,
     required this.accSoft,
+    required this.accLine,
+    required this.onAcc,
     required this.ok,
+    required this.warn,
     required this.err,
+    required this.okSoft,
     required this.errSoft,
+    required this.warnSoft,
     required this.code,
     required this.codeInk,
+    required this.terminalBg,
+    required this.terminalInk,
   });
 
   /// Screen background.
   final Color bg;
 
-  /// Raised surfaces: composer box, suggestion cards, bottom sheet, nav bar.
+  /// Cards, list rows, sheets.
   final Color card;
+
+  /// One step above [card]: the composer, the path bar, the terminal input bar.
+  ///
+  /// Separate from [card] because the composer used to share the cards' fill, so
+  /// the bottom of the chat looked like one flat slab with no input area.
+  final Color surfaceElevated;
 
   /// Primary text.
   final Color ink;
 
-  /// Secondary text (status line, timestamps, tool subtitles).
+  /// Secondary text.
   final Color mute;
 
-  /// Hairlines and the tool-timeline rail.
+  /// Tertiary text. Placeholders and disabled states only.
+  final Color faint;
+
+  /// The only border colour.
   final Color line;
 
-  /// Accent fill (send button, running dot, active tab).
+  /// Accent fill.
   final Color acc;
 
-  /// Accent text/icon colour that stays readable on [accSoft] or on [card].
+  /// Accent that stays readable on [bg] / [card] (selected icon, active label).
   final Color accInk;
 
-  /// Tinted accent background (model pill, selected nav tab).
+  /// Accent wash for selected rows.
   final Color accSoft;
 
-  /// "Tool finished" green.
-  final Color ok;
+  /// Border of a selected control.
+  final Color accLine;
 
-  /// Failure red.
-  final Color err;
+  /// Text on an accent fill.
+  final Color onAcc;
 
-  /// Tinted failure background.
-  final Color errSoft;
+  /// Success, warning and error, plus their washes.
+  final Color ok, warn, err, okSoft, errSoft, warnSoft;
 
-  /// Terminal / tool-output surface. Always dark in both themes.
-  final Color code;
+  /// Code block background and foreground.
+  final Color code, codeInk;
 
-  /// Foreground on [code].
-  final Color codeInk;
-
-  static const light = OCTokens(
-    bg: Color(0xFFF4F3F1),
-    card: Color(0xFFFFFFFF),
-    ink: Color(0xFF1C1B1A),
-    mute: Color(0xFF847F78),
-    line: Color(0xFFE7E4DF),
-    acc: OCColors.acc,
-    accInk: Color(0xFFB9460C),
-    accSoft: Color(0xFFFFF0E6),
-    ok: Color(0xFF2F9E44),
-    err: Color(0xFFC92A2A),
-    errSoft: Color(0xFFFDECEC),
-    code: Color(0xFF26241F),
-    codeInk: Color(0xFFE9E5DD),
-  );
+  /// Terminal viewport and foreground.
+  final Color terminalBg, terminalInk;
 
   static const dark = OCTokens(
-    bg: Color(0xFF161517),
-    card: Color(0xFF212024),
-    ink: Color(0xFFF2EFEB),
-    mute: Color(0xFF8E8993),
-    line: Color(0xFF333138),
-    acc: OCColors.acc,
-    accInk: Color(0xFFFF9A5C),
-    accSoft: Color(0xFF3B2616),
-    ok: Color(0xFF51CF66),
-    err: Color(0xFFFF8787),
-    errSoft: Color(0xFF3A1C1C),
-    code: Color(0xFF0F0E10),
-    codeInk: Color(0xFFE9E5DD),
+    bg: OCColors.bg,
+    card: OCColors.surface,
+    surfaceElevated: OCColors.surfaceElevated,
+    ink: OCColors.textPrimary,
+    mute: OCColors.textSecondary,
+    faint: OCColors.textTertiary,
+    line: OCColors.border,
+    acc: OCColors.accent,
+    accInk: OCColors.accent,
+    accSoft: OCColors.accentSoft,
+    accLine: OCColors.accentLine,
+    onAcc: OCColors.onAccent,
+    ok: OCColors.success,
+    warn: OCColors.warning,
+    err: OCColors.error,
+    okSoft: OCColors.successSoft,
+    errSoft: OCColors.errorSoft,
+    warnSoft: OCColors.warningSoft,
+    code: OCColors.codeBg,
+    codeInk: OCColors.codeInk,
+    terminalBg: OCColors.terminalBg,
+    terminalInk: OCColors.terminalText,
   );
 
-  /// Never throws: a missing extension falls back to the palette that matches
-  /// the ambient brightness.
-  static OCTokens of(BuildContext context) {
-    final t = Theme.of(context);
-    return t.extension<OCTokens>() ??
-        (t.brightness == Brightness.dark ? dark : light);
-  }
+  /// The app has one palette. Kept as an alias so a light theme can be added
+  /// later without touching every call site.
+  static const light = dark;
 
-  bool get isDark => ink.computeLuminance() > 0.5;
-
-  @override
   OCTokens copyWith({
     Color? bg,
     Color? card,
+    Color? surfaceElevated,
     Color? ink,
     Color? mute,
+    Color? faint,
     Color? line,
     Color? acc,
     Color? accInk,
     Color? accSoft,
+    Color? accLine,
+    Color? onAcc,
     Color? ok,
+    Color? warn,
     Color? err,
+    Color? okSoft,
     Color? errSoft,
+    Color? warnSoft,
     Color? code,
     Color? codeInk,
+    Color? terminalBg,
+    Color? terminalInk,
   }) => OCTokens(
     bg: bg ?? this.bg,
     card: card ?? this.card,
+    surfaceElevated: surfaceElevated ?? this.surfaceElevated,
     ink: ink ?? this.ink,
     mute: mute ?? this.mute,
+    faint: faint ?? this.faint,
     line: line ?? this.line,
     acc: acc ?? this.acc,
     accInk: accInk ?? this.accInk,
     accSoft: accSoft ?? this.accSoft,
+    accLine: accLine ?? this.accLine,
+    onAcc: onAcc ?? this.onAcc,
     ok: ok ?? this.ok,
+    warn: warn ?? this.warn,
     err: err ?? this.err,
+    okSoft: okSoft ?? this.okSoft,
     errSoft: errSoft ?? this.errSoft,
+    warnSoft: warnSoft ?? this.warnSoft,
     code: code ?? this.code,
     codeInk: codeInk ?? this.codeInk,
+    terminalBg: terminalBg ?? this.terminalBg,
+    terminalInk: terminalInk ?? this.terminalInk,
   );
 
   @override
-  OCTokens lerp(covariant OCTokens? other, double t) {
-    if (other == null || t == 0) return this;
-    if (t == 1) return other;
-    Color c(Color a, Color b) => Color.lerp(a, b, t)!;
+  OCTokens lerp(covariant OCTokens? other, double k) {
+    if (other == null || k == 0) return this;
+    if (k == 1) return other;
+    Color c(Color a, Color b) => Color.lerp(a, b, k)!;
     return OCTokens(
       bg: c(bg, other.bg),
       card: c(card, other.card),
+      surfaceElevated: c(surfaceElevated, other.surfaceElevated),
       ink: c(ink, other.ink),
       mute: c(mute, other.mute),
+      faint: c(faint, other.faint),
       line: c(line, other.line),
       acc: c(acc, other.acc),
       accInk: c(accInk, other.accInk),
       accSoft: c(accSoft, other.accSoft),
+      accLine: c(accLine, other.accLine),
+      onAcc: c(onAcc, other.onAcc),
       ok: c(ok, other.ok),
+      warn: c(warn, other.warn),
       err: c(err, other.err),
+      okSoft: c(okSoft, other.okSoft),
       errSoft: c(errSoft, other.errSoft),
+      warnSoft: c(warnSoft, other.warnSoft),
       code: c(code, other.code),
       codeInk: c(codeInk, other.codeInk),
+      terminalBg: c(terminalBg, other.terminalBg),
+      terminalInk: c(terminalInk, other.terminalInk),
     );
   }
 }
 
-/// Shortcut so widgets read `context.oc.ink` instead of digging for the
-/// extension by hand.
+// ---------------------------------------------------------------------------
+// Compatibility shims.
+//
+// These predate the dark redesign and are still referenced by primitives.dart.
+// They are re-declared here, pointed at dark tokens, so no call site has to
+// change and no light value survives.
+// ---------------------------------------------------------------------------
+
+class OCShadow {
+  const OCShadow._();
+  static const none = <BoxShadow>[];
+
+  /// Cards: a hairline, not a drop shadow. A shadow on a dark surface reads as
+  /// a smudge because there is no lighter background to lift it off.
+  static const card = <BoxShadow>[
+    BoxShadow(color: Color(0x14000000), offset: Offset(0, 1), blurRadius: 2),
+  ];
+
+  static const cardHover = <BoxShadow>[
+    BoxShadow(color: Color(0x1F000000), offset: Offset(0, 2), blurRadius: 6),
+  ];
+
+  static const floatingCta = <BoxShadow>[
+    BoxShadow(color: Color(0x4D000000), offset: Offset(0, 4), blurRadius: 12),
+  ];
+
+  static const coloredCtaGlow = <BoxShadow>[
+    BoxShadow(color: Color(0x33FF8A3D), offset: Offset(0, 2), blurRadius: 8),
+  ];
+
+  static const segmentedActive = <BoxShadow>[];
+  static const toggleThumb = <BoxShadow>[
+    BoxShadow(color: Color(0x33000000), offset: Offset(0, 1), blurRadius: 2),
+  ];
+}
+
+class OCGradient {
+  const OCGradient._();
+
+  /// Accent fills only. The pastel ones are gone: a soft peach gradient is
+  /// exactly what made the primary button read as a light-theme surface.
+  static const ctaOrangeSoft = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFF8A3D), Color(0xFFFFA45C)],
+  );
+
+  static const ctaSunset = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFF8A3D), Color(0xFFFF6B35)],
+  );
+
+  static const heroSky = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF232328), Color(0xFF1A1A1E)],
+  );
+
+  static const heroPastelBlend = heroSky;
+  static const progressWarm = LinearGradient(
+    colors: [Color(0xFFFF8A3D), Color(0xFF34D399)],
+  );
+}
+
+/// Shortcut: `context.oc.ink` instead of digging out the extension.
 extension OCTokensX on BuildContext {
   OCTokens get oc => OCTokens.of(this);
 }
 
-/// Soft, low-opacity, slightly purple-tinted shadows. Prefer shadow over borders.
-class OCShadow {
-  static const card = [
-    BoxShadow(color: Color(0x0F141432), blurRadius: 20, offset: Offset(0, 4)),
-  ];
-  static const cardHover = [
-    BoxShadow(color: Color(0x1A141432), blurRadius: 28, offset: Offset(0, 8)),
-  ];
-  static const floatingCta = [
-    BoxShadow(color: Color(0x2E000000), blurRadius: 24, offset: Offset(0, 10)),
-  ];
-  static const coloredCtaGlow = [
-    BoxShadow(color: Color(0x59FF6FA8), blurRadius: 20, offset: Offset(0, 8)),
-  ];
-  static const sheet = [
-    BoxShadow(color: Color(0x1A141432), blurRadius: 40, offset: Offset(0, -8)),
-  ];
-  static const segmentedActive = [
-    BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
-  ];
-  static const toggleThumb = [
-    BoxShadow(color: Color(0x2E141432), blurRadius: 6, offset: Offset(0, 2)),
-  ];
-  static const none = <BoxShadow>[];
-}
-
-/// Pastel gradients for heroes, CTAs, meters and highlight numbers.
-class OCGradient {
-  static const heroSky = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFBFE3FF), Color(0xFFE9F3FF), Color(0xFFFFFFFF)],
-    stops: [0, 0.6, 1],
-  );
-  static const heroPastelBlend = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFFFD6E8), Color(0xFFE1D4FF), Color(0xFFC9F0FF)],
-  );
-  static const heroMintToCream = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFE5F7D8), Color(0xFFFFF6D9)],
-  );
-  static const heroPurple = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFC9B5FF), Color(0xFFA78BFA)],
-  );
-  static const heroWarmCream = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFFFF3C9), Color(0xFFFFFFFF)],
-  );
-  static const ctaSunset = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFFFF9A5A), Color(0xFFFF6FA8), Color(0xFFE879F9)],
-    stops: [0, 0.6, 1],
-  );
-  static const ctaOrangeSoft = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [OCColors.orangeBright, OCColors.orange],
-  );
-  static const cardVisualPink = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFF9A8E8), Color(0xFFE879F9)],
-  );
-  static const progressWarm = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFFFFB84D), Color(0xFFFFD58A)],
-  );
-  static const meterMulti = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [
-      Color(0xFFFF9A5A),
-      Color(0xFFFFD23F),
-      Color(0xFF7EE0A8),
-      Color(0xFF8B5CF6),
-    ],
-    stops: [0, 0.35, 0.7, 1],
-  );
-  static const number = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFF8B5CF6), Color(0xFFF472B6)],
-  );
-}
-
-/// 4pt spacing scale + layout roles.
+/// The 4/8/12/16/24/32 scale. Nothing else.
 class OCSpace {
-  static const xxs = 2.0;
   static const xs = 4.0;
   static const sm = 8.0;
   static const md = 12.0;
   static const lg = 16.0;
-  static const xl = 20.0;
-  static const xxl = 24.0;
-  static const xxxl = 32.0;
+  static const xl = 24.0;
+  static const xxl = 32.0;
 
-  static const scale = [4.0, 8.0, 12.0, 16.0, 20.0, 24.0, 32.0, 40.0];
+  /// The scale, in order. For pickers and chips.
+  static const scale = [xs, sm, md, lg, xl, xxl];
+
+  /// THE horizontal screen padding. 16dp, on every screen, without exception.
+  ///
+  /// The app had three different insets at once (header 18, content 18, composer
+  /// 12, and 16 in the primitives), so no two things on a screen lined up. This
+  /// constant plus [screenX] as its legacy alias is the only inset in the app.
   static const screenX = 16.0;
-  static const card = 16.0;
-  static const cardLarge = 20.0;
-  static const gapCards = 12.0;
-  static const gapRows = 8.0;
-  static const gapIconText = 12.0;
-  static const gapGrid = 12.0;
-  static const sectionGap = 20.0;
-  static const ctaBottom = 24.0;
-  static const safeBottom = 24.0;
+  static const screenGutter = screenX;
 
-  /// Accessibility: every tappable element is at least 48x48dp.
+  /// Vertical gap under the app bar, before a list starts.
+  static const sectionTop = 8.0;
+
+  /// Card padding.
+  static const cardPad = 16.0;
+
+  /// Gap above the bottom nav.
+  static const navGap = 8.0;
+
+  /// Legacy 6/10/14 steps. Kept so nothing has to be retuned in one pass; the
+  /// redesign does not introduce them.
+  static const xxs = 6.0;
+  static const xxxl = 40.0;
+  static const ctaBottom = 24.0;
+
+  /// Accessibility: every tappable element is at least 48x48.
   static const tapTarget = 48.0;
 
   /// Minimum gap between two tappable elements.
@@ -397,47 +462,78 @@ class OCSpace {
 class OCRadius {
   static const xs = 8.0;
   static const sm = 12.0;
-  static const md = 16.0; // inner cells, icon tiles
+  static const md = 16.0;
   static const lg = 20.0;
   static const xl = 28.0;
-  static const full = 9999.0; // pills
+  static const full = 9999.0;
 
-  // named roles
-  static const card = 24.0;
+  // --- named roles --------------------------------------------------------
+  /// Cards and list rows. 12dp.
+  static const card = 12.0;
+
+  /// Compact rows: suggestion cards, file rows, session rows.
+  static const row = 12.0;
+
+  /// Alias for [row]; the chat empty state's cards use it.
+  static const suggestion = row;
+
+  /// The composer field.
+  static const composer = 20.0;
+
+  /// Top corners of a bottom sheet.
+  static const sheet = 20.0;
+
+  /// Icon tiles, chips.
+  static const tile = 12.0;
+
+  /// Pills: status pill, nav indicator, jump-to-latest.
+  static const pill = full;
+
+  /// Inner cells kept for existing call sites.
   static const inner = 16.0;
-  static const icon = 16.0;
-  static const tile = 16.0;
-  static const sheet = 32.0;
 
   static const avatarRadius = Radius.circular(full);
 }
 
 /// Springy, playful, quick.
 class OCMotion {
-  static const pressScale = 0.97; // buttons scale to 0.97 on press
+  static const pressScale = 0.97; // small controls
   static const micro = Duration(milliseconds: 120);
-  static const base = Duration(milliseconds: 220);
-  static const emphasis = Duration(milliseconds: 360);
+  static const quick = Duration(milliseconds: 180);
+  static const normal = Duration(milliseconds: 240);
+  static const slow = Duration(milliseconds: 400);
 
-  /// cubic-bezier(0.2, 0.8, 0.2, 1)
-  static const standard = Cubic(0.2, 0.8, 0.2, 1);
-  static const enter = Curves.easeOutBack; // springy overshoot
+  /// Press feedback for large surfaces: cards, list rows, the composer box.
+  ///
+  /// Shallower than [pressScale] on purpose - 0.97 on a 64dp row shifts its edges
+  /// ~2dp and the card reads as a glitch rather than a response.
+  static const pressScaleSoft = 0.98;
 
-  // spring: stiffness 300, damping 22
-  static const springStiffness = 300.0;
-  static const springDamping = 22.0;
+  /// The reconnecting pulse.
+  static const pulse = Duration(milliseconds: 1100);
 
-  static SpringDescription get spring => const SpringDescription(
-    mass: 1,
-    stiffness: springStiffness,
-    damping: springDamping,
-  );
+  /// The 2dp indeterminate progress line under the header.
+  static const progress = Duration(milliseconds: 1600);
+
+  /// Legacy aliases.
+  static const base = normal;
+  static const standard = normal;
+  static const emphasis = slow;
 }
 
-/// Typography — Plus Jakarta Sans, with Poppins / Inter fallbacks.
+/// Typography - Plus Jakarta Sans with Poppins / Inter fallbacks.
 class OCTypography {
   static const _uiFamily = 'PlusJakartaSans';
   static const _fallback = ['Poppins', 'Inter', 'Roboto'];
+
+  /// Code, paths, commands, terminal output.
+  ///
+  /// `monospace` is Flutter's generic family: it resolves to Roboto Mono on
+  /// Android and the platform's own mono elsewhere, so it is already the
+  /// second choice named in the brief. Shipping JetBrains Mono proper would mean
+  /// adding a ~200 KB .ttf under `assets/fonts/` and one pubspec entry - no new
+  /// dependency, just a binary. Left as `monospace` until that file exists;
+  /// swapping this one constant upgrades every mono call site at once.
   static const _monoFamily = 'monospace';
 
   static const fontFamily = _uiFamily;
@@ -461,76 +557,55 @@ class OCTypography {
     fontStyle: style,
   );
 
-  // --- scale -----------------------------------------------------------
+  // --- the four steps the brief defines ----------------------------------
 
-  /// 32 / 800 / 1.05 / -0.03em — hero headlines.
-  static final displayXl = _sans(
-    size: 32,
-    weight: FontWeight.w800,
-    height: 1.05,
-    spacing: -0.96,
-  );
-
-  /// 36 / 700 / 1.1 / -0.02em — big amounts, may use gradient text.
-  static final displayAmount = _sans(
-    size: 36,
-    weight: FontWeight.w700,
-    height: 1.1,
-    spacing: -0.72,
-  );
-
-  /// 24 / 700 / 1.2 / -0.02em
-  static final h1 = _sans(
-    size: 24,
-    weight: FontWeight.w700,
-    height: 1.2,
-    spacing: -0.48,
-  );
-
-  /// 20 / 700 / 1.25 / -0.01em — card headings.
-  static final h2 = _sans(
-    size: 20,
-    weight: FontWeight.w700,
-    height: 1.25,
-    spacing: -0.2,
-  );
-
-  /// 16 / 600 / 1.3 — card titles, list row titles.
-  static final h3 = _sans(size: 16, weight: FontWeight.w600, height: 1.3);
-
-  /// 14 / 500 / 1.4
-  static final body = _sans(size: 14, weight: FontWeight.w500, height: 1.4);
-
-  /// 14 / 600 / 1.4
-  static final bodyStrong = _sans(
-    size: 14,
+  /// 28 / 34 / 600 - screen headline. One per screen, at most.
+  static final headline = _sans(
+    size: 28,
     weight: FontWeight.w600,
-    height: 1.4,
+    height: 34 / 28,
+    spacing: -0.5,
   );
 
-  /// 12 / 500 / 1.35 — grey supporting text.
+  /// 16 / 22 / 500 - row titles, section headings.
+  static final title = _sans(
+    size: 16,
+    weight: FontWeight.w500,
+    height: 22 / 16,
+  );
+
+  /// 15 / 22 / 400 - body copy and message text.
+  static final body = _sans(size: 15, weight: FontWeight.w400, height: 22 / 15);
+
+  /// 12 / 16 - captions: timestamps, meta, hints.
   static final caption = _sans(
     size: 12,
-    weight: FontWeight.w500,
-    height: 1.35,
-    color: OCColors.textSecondary,
+    weight: FontWeight.w400,
+    height: 16 / 12,
   );
 
-  /// 10 / 500 / 1.3 — helper text, sub-labels.
-  static final micro = _sans(
-    size: 10,
-    weight: FontWeight.w500,
-    height: 1.3,
-    color: OCColors.textTertiary,
+  // --- weights the screens need on top of the four steps -----------------
+
+  /// 15 / 600 - buttons.
+  static final button = _sans(size: 15, weight: FontWeight.w600, height: 1.2);
+
+  /// 13 / 18 / 500 - chip and pill labels.
+  static final meta = _sans(size: 13, weight: FontWeight.w500, height: 18 / 13);
+
+  /// 13 / 18 / 600 - selected chip labels.
+  static final metaStrong = _sans(
+    size: 13,
+    weight: FontWeight.w600,
+    height: 18 / 13,
   );
 
-  /// 15 / 700 / 1.0 — button labels.
-  static final button = _sans(size: 15, weight: FontWeight.w700, height: 1.0);
+  /// 15 / 600 - message sender label.
+  static final label = _sans(size: 15, weight: FontWeight.w600, height: 1.2);
 
-  /// Tabular figures for prices / balances.
+  /// Tabular figures for counts, sizes and durations.
   static TextStyle numeric({
     double size = 14,
-    FontWeight weight = FontWeight.w600,
+    FontWeight weight = FontWeight.w500,
     Color? color,
   }) => _sans(
     size: size,
@@ -539,35 +614,41 @@ class OCTypography {
     color: color,
   ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 
-  // --- mono ------------------------------------------------------------
+  // --- mono ---------------------------------------------------------------
 
-  static TextStyle mono({Color? color, double size = 12.5}) => TextStyle(
+  static TextStyle mono({
+    Color? color,
+    double size = 13,
+    double height = 1.45,
+  }) => TextStyle(
     fontFamily: _monoFamily,
-    fontFamilyFallback: _fallback,
+    fontFamilyFallback: const ['RobotoMono', 'monospace', 'Menlo', 'Consolas'],
     fontSize: size,
-    height: 1.45,
+    height: height,
     color: color,
   );
 
-  static TextStyle monoSmall({Color? color}) => mono(color: color, size: 11.5);
+  static TextStyle monoSmall({Color? color}) =>
+      mono(color: color, size: 12, height: 1.4);
 
-  // --- legacy aliases (kept for existing call sites) -------------------
+  static TextStyle monoLarge({Color? color}) =>
+      mono(color: color, size: 14, height: 1.5);
 
-  static TextStyle get displayLarge => displayXl;
-  static TextStyle get headline => h1;
-  static TextStyle get title => h2;
-  static TextStyle get bodyLarge => h3;
+  // --- legacy aliases, so existing call sites keep compiling --------------
+  static TextStyle get h1 => headline;
+  static TextStyle get h2 => title;
+  static TextStyle get h3 => title;
+  static TextStyle get displayXl => headline;
+  static TextStyle get displayAmount => headline;
+  static TextStyle get displayLarge => headline;
+  static TextStyle get bodyLarge => body;
+  static TextStyle get bodyStrong =>
+      _sans(size: 15, weight: FontWeight.w600, height: 22 / 15);
   static TextStyle get bodySmall => caption;
-  static TextStyle get label => _sans(
-    size: 12,
-    weight: FontWeight.w500,
-    height: 1.35,
-    color: OCColors.textSecondary,
-  );
-
-  /// Helper to create a TextStyle with a specific color from the base style.
-  static TextStyle withColor(TextStyle base, Color color) =>
-      base.copyWith(color: color);
+  static TextStyle get micro => caption;
+  static TextStyle get heroTitle => headline;
+  static TextStyle get subtitle => caption;
+  static TextStyle get overline => caption;
 }
 
 extension _TextStyleExt on TextStyle {
@@ -576,414 +657,266 @@ extension _TextStyleExt on TextStyle {
 
 /// Light theme — the design system's default. Pale warm-grey canvas, matching
 /// the visual reference (`--bg:#f4f3f1`).
-ThemeData buildLightTheme() {
-  final cs = ColorScheme(
-    brightness: Brightness.light,
-    // One primary colour (ink) + one tonal secondary (orange family).
-    primary: OCColors.ctaSolid,
-    onPrimary: OCColors.textInverse,
-    primaryContainer: Color(0xFFFAF9F8),
-    onPrimaryContainer: OCColors.textPrimary,
-    secondary: OCColors.acc,
-    onSecondary: Color(0xFFFFFFFF),
-    secondaryContainer: OCColors.accSoft,
-    onSecondaryContainer: Color(0xFFB9460C),
-    tertiary: OCColors.acc,
-    onTertiary: Color(0xFFFFFFFF),
-    tertiaryContainer: Color(0xFFFFE6D2),
-    onTertiaryContainer: Color(0xFFB9460C),
-    error: OCTokens.light.err,
-    onError: OCColors.textInverse,
-    errorContainer: OCTokens.light.errSoft,
-    onErrorContainer: OCTokens.light.err,
-    surface: Color(0xFFFFFFFF),
-    onSurface: Color(0xFF1C1B1A),
-    onSurfaceVariant: Color(0xFF847F78),
-    surfaceContainerLowest: Color(0xFFFFFFFF),
-    surfaceContainerLow: Color(0xFFFAF9F8),
-    surfaceContainer: OCTokens.light.bg,
-    surfaceContainerHigh: Color(0xFFFAF9F8),
-    surfaceContainerHighest: Color(0xFFEFEDE9),
-    surfaceBright: Color(0xFFFFFFFF),
-    surfaceDim: Color(0xFFEAE7E2),
-    outline: Color(0xFF847F78),
-    outlineVariant: OCTokens.light.line,
-    shadow: const Color(0xFF1C1B1A),
-    scrim: const Color(0xFF1C1B1A),
-    inverseSurface: Color(0xFF1C1B1A),
-    onInverseSurface: Color(0xFFFFFFFF),
-    inversePrimary: Color(0xFFF4F3F1),
-    surfaceTint: Colors.transparent,
-  );
-  return _baseTheme(cs);
-}
+/// The app has exactly one theme: dark.
+///
+/// Previously this returned [buildLightTheme] when the OS was light, which is
+/// how white cards, a white sheet and a peach selection ended up inside an app
+/// whose own palette was dark: every light surface in the app was a system
+/// surface leaking through [buildLightTheme]. There is no longer a light branch
+/// to leak.
+ThemeData buildAppTheme() => _buildTheme();
 
-/// Semantic aliases so widgets read one vocabulary instead of raw colours.
-extension OCColorSchemeX on ColorScheme {
-  /// Tonal surface used behind selected rows, chips and menus.
-  Color get tonalSurface => secondaryContainer;
-
-  /// Text-safe colour for content placed on [tonalSurface].
-  Color get onTonalSurface => onSecondaryContainer;
-
-  /// Hairline that separates stacked rows on a card surface.
-  Color get hairline => outlineVariant;
-}
-
-/// Dark theme — the reference dark palette (`--bg:#161517`, `--card:#212024`).
-/// Picked automatically when the OS is in dark mode.
-ThemeData buildDarkTheme() {
-  final cs = ColorScheme(
+ThemeData _buildTheme() {
+  const t = OCTokens.dark;
+  const cs = ColorScheme(
     brightness: Brightness.dark,
-    primary: Color(0xFFF2EFEB),
-    onPrimary: Color(0xFF161517),
-    primaryContainer: Color(0xFF2B2A2E),
-    onPrimaryContainer: Color(0xFFF2EFEB),
-    secondary: OCColors.acc,
-    onSecondary: Color(0xFF161517),
-    secondaryContainer: Color(0xFF3B2616),
-    onSecondaryContainer: Color(0xFFFF9A5C),
-    tertiary: OCColors.acc,
-    onTertiary: Color(0xFF161517),
-    tertiaryContainer: Color(0xFF3B2616),
-    onTertiaryContainer: Color(0xFFFF9A5C),
-    error: OCTokens.dark.err,
-    onError: Color(0xFF161517),
-    errorContainer: Color(0xFF3A1C1C),
-    onErrorContainer: Color(0xFFFF8787),
-    surface: Color(0xFF161517),
-    onSurface: Color(0xFFF2EFEB),
-    onSurfaceVariant: Color(0xFF8E8993),
-    surfaceContainerLowest: Color(0xFF100F11),
-    surfaceContainerLow: Color(0xFF1B1A1C),
-    surfaceContainer: Color(0xFF212024),
-    surfaceContainerHigh: Color(0xFF262527),
-    surfaceContainerHighest: Color(0xFF2E2D30),
-    surfaceBright: Color(0xFF3A383C),
-    surfaceDim: Color(0xFF0C0B0D),
-    outline: Color(0xFF8E8993),
-    outlineVariant: Color(0xFF333138),
-    shadow: Colors.black,
-    scrim: Colors.black,
-    inverseSurface: Color(0xFFF2EFEB),
-    onInverseSurface: Color(0xFF161517),
-    inversePrimary: Color(0xFF262527),
+    primary: OCColors.accent,
+    onPrimary: OCColors.onAccent,
+    primaryContainer: OCColors.accentSoft,
+    onPrimaryContainer: OCColors.accent,
+    secondary: OCColors.textSecondary,
+    onSecondary: OCColors.bg,
+    error: OCColors.error,
+    onError: OCColors.bg,
+    errorContainer: OCColors.errorSoft,
+    onErrorContainer: OCColors.error,
+    surface: OCColors.bg,
+    onSurface: OCColors.textPrimary,
+    onSurfaceVariant: OCColors.textSecondary,
+    surfaceContainerHighest: OCColors.surface,
+    outline: OCColors.border,
+    outlineVariant: OCColors.border,
     surfaceTint: Colors.transparent,
+    inverseSurface: OCColors.textPrimary,
+    onInverseSurface: OCColors.bg,
+    inversePrimary: OCColors.accent,
   );
-  return _baseTheme(cs);
-}
-
-/// The single entry point that turns [cs] into the app's ThemeData.
-ThemeData _baseTheme(ColorScheme cs) {
-  final isLight = cs.brightness == Brightness.light;
-  final tt = isLight
-      ? OCTypography.label
-      : OCTypography.label.withColor(cs.onSurfaceVariant);
 
   return ThemeData(
     useMaterial3: true,
+    brightness: Brightness.dark,
     colorScheme: cs,
-    // The brightness-aware reference palette. Read it with `context.oc`.
-    extensions: <ThemeExtension<dynamic>>[
-      isLight ? OCTokens.light : OCTokens.dark,
-    ],
-    // Design system: the screen background is the canvas tint, cards sit on top of it.
-    canvasColor: isLight ? OCTokens.light.bg : cs.surface,
-    scaffoldBackgroundColor: isLight ? OCTokens.light.bg : cs.surface,
+    scaffoldBackgroundColor: t.bg,
+    canvasColor: t.bg,
+    extensions: const <ThemeExtension<dynamic>>[t],
+
     fontFamily: OCTypography.fontFamily,
     fontFamilyFallback: OCTypography._fallback,
     splashFactory: InkSparkle.splashFactory,
 
-    // --- type scale -----------------------------------------------------
-    textTheme: TextTheme(
-      displayLarge: OCTypography.displayXl.withColor(cs.onSurface),
-      displayMedium: OCTypography.displayAmount.withColor(cs.onSurface),
-      headlineLarge: OCTypography.h1.withColor(cs.onSurface),
-      headlineMedium: OCTypography.h1.withColor(cs.onSurface),
-      headlineSmall: OCTypography.h2.withColor(cs.onSurface),
-      titleLarge: OCTypography.h2.withColor(cs.onSurface),
-      titleMedium: OCTypography.h3.withColor(cs.onSurface),
-      titleSmall: OCTypography.bodyStrong.withColor(cs.onSurface),
-      bodyLarge: OCTypography.h3.withColor(cs.onSurface),
-      bodyMedium: OCTypography.body.withColor(cs.onSurface),
-      bodySmall: OCTypography.caption.withColor(cs.onSurfaceVariant),
-      labelLarge: OCTypography.button.withColor(cs.onPrimary),
-      labelMedium: tt,
-      labelSmall: OCTypography.micro.withColor(cs.onSurfaceVariant),
-    ),
+    textTheme: _textTheme(t),
+    primaryTextTheme: _textTheme(t),
 
-    // --- AppBar ---------------------------------------------------------
+    // Every Material surface reads a token. This is the single most important
+    // line in the file: a dialog, a menu or a text selection that paints
+    // itself white is now impossible.
     appBarTheme: AppBarTheme(
-      backgroundColor: isLight ? OCColors.canvas : cs.surface,
+      backgroundColor: t.bg,
+      foregroundColor: t.ink,
       surfaceTintColor: Colors.transparent,
-      foregroundColor: cs.onSurface,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: OCTypography.h3.withColor(cs.onSurface),
-      iconTheme: IconThemeData(color: cs.onSurface, size: 22),
-      actionsIconTheme: IconThemeData(color: cs.onSurface, size: 22),
+      titleTextStyle: OCTypography.title.copyWith(color: t.ink),
     ),
-
-    // --- Cards ----------------------------------------------------------
     cardTheme: CardThemeData(
-      elevation: 0,
-      color: cs.surface,
+      color: t.card,
       surfaceTintColor: Colors.transparent,
+      elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(OCRadius.card),
+        side: BorderSide(color: t.line),
       ),
     ),
-
-    // --- Inputs ---------------------------------------------------------
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: cs.surfaceContainerHigh,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: OCSpace.md,
-        vertical: OCSpace.md,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
-        borderSide: const BorderSide(color: OCColors.borderHairline),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
-        borderSide: const BorderSide(color: OCColors.orange, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
-        borderSide: const BorderSide(color: OCColors.danger, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
-        borderSide: const BorderSide(color: OCColors.danger, width: 1.5),
-      ),
-      labelStyle: OCTypography.caption.withColor(cs.onSurfaceVariant),
-      hintStyle: OCTypography.body.withColor(
-        cs.onSurfaceVariant.withValues(alpha: 0.7),
-      ),
-      floatingLabelStyle: OCTypography.bodyStrong.withColor(OCColors.orangeInk),
-    ),
-
-    // --- Buttons --------------------------------------------------------
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: cs.primary,
-        foregroundColor: cs.onPrimary,
-        disabledBackgroundColor: cs.primary.withValues(alpha: 0.4),
-        disabledForegroundColor: cs.onPrimary.withValues(alpha: 0.4),
-        padding: const EdgeInsets.symmetric(
-          horizontal: OCSpace.lg,
-          vertical: OCSpace.md,
-        ),
-        minimumSize: const Size(0, OCSpace.tapTarget),
-        shape: const StadiumBorder(),
-        textStyle: OCTypography.button,
-        elevation: 0,
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: cs.primary,
-        foregroundColor: cs.onPrimary,
-        elevation: 0,
-        minimumSize: const Size(0, OCSpace.tapTarget),
-        shape: const StadiumBorder(),
-        textStyle: OCTypography.button,
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: cs.onSurface,
-        backgroundColor: cs.surfaceContainer,
-        side: const BorderSide(color: OCColors.borderHairline),
-        padding: const EdgeInsets.symmetric(
-          horizontal: OCSpace.lg,
-          vertical: OCSpace.sm,
-        ),
-        minimumSize: const Size(0, OCSpace.tapTarget),
-        shape: const StadiumBorder(),
-        textStyle: OCTypography.button.copyWith(fontSize: 13),
-      ),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: cs.onSurface,
-        padding: const EdgeInsets.symmetric(
-          horizontal: OCSpace.md,
-          vertical: OCSpace.sm,
-        ),
-        minimumSize: const Size(0, OCSpace.tapTarget),
-        shape: const StadiumBorder(),
-        textStyle: OCTypography.button.copyWith(fontSize: 13),
-      ),
-    ),
-    iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(
-        foregroundColor: cs.onSurface,
-        minimumSize: const Size(OCSpace.tapTarget, OCSpace.tapTarget),
-      ),
-    ),
-
-    // --- Chips ----------------------------------------------------------
-    chipTheme: ChipThemeData(
-      backgroundColor: cs.surfaceContainerHigh,
-      selectedColor: OCColors.orangeTint,
-      disabledColor: cs.surfaceContainerHigh.withValues(alpha: 0.5),
-      labelStyle: OCTypography.caption.withColor(cs.onSurface),
-      secondaryLabelStyle: OCTypography.bodyStrong.withColor(
-        OCColors.orangeInk,
-      ),
-      checkmarkColor: OCColors.orangeInk,
-      iconTheme: IconThemeData(color: cs.onSurfaceVariant, size: 16),
-      padding: const EdgeInsets.symmetric(
-        horizontal: OCSpace.sm,
-        vertical: OCSpace.xs,
-      ),
-      shape: const StadiumBorder(),
-      side: BorderSide.none,
-      brightness: cs.brightness,
-    ),
-
-    // --- Dividers -------------------------------------------------------
     dividerTheme: DividerThemeData(
-      color: isLight ? OCColors.divider : cs.outlineVariant,
+      color: t.line,
       thickness: 1,
-      space: OCSpace.sm,
+      space: 1,
       indent: 0,
       endIndent: 0,
     ),
-
-    // --- Lists ----------------------------------------------------------
-    listTileTheme: ListTileThemeData(
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: OCSpace.screenX,
-        vertical: OCSpace.xs,
-      ),
-      titleTextStyle: OCTypography.body.withColor(cs.onSurface),
-      subtitleTextStyle: OCTypography.micro.withColor(cs.onSurfaceVariant),
-      leadingAndTrailingTextStyle: OCTypography.caption.withColor(
-        cs.onSurfaceVariant,
-      ),
-      iconColor: cs.onSurfaceVariant,
-      textColor: cs.onSurface,
-      selectedTileColor: OCColors.orangeTint.withValues(alpha: 0.6),
-      selectedColor: cs.onSurface,
-      minVerticalPadding: OCSpace.sm,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
-      ),
-    ),
-
-    // --- Dialogs / sheets -----------------------------------------------
     dialogTheme: DialogThemeData(
-      backgroundColor: cs.surface,
+      backgroundColor: t.card,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      titleTextStyle: OCTypography.h3.withColor(cs.onSurface),
-      contentTextStyle: OCTypography.body.withColor(cs.onSurfaceVariant),
-      insetPadding: const EdgeInsets.all(OCSpace.lg),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(OCRadius.card),
+        borderRadius: BorderRadius.circular(OCRadius.lg),
       ),
+      titleTextStyle: OCTypography.title.copyWith(color: t.ink),
+      contentTextStyle: OCTypography.body.copyWith(color: t.mute),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: cs.surface,
+      backgroundColor: t.card,
       surfaceTintColor: Colors.transparent,
+      modalBackgroundColor: t.card,
       elevation: 0,
+      // 20dp top corners, square bottom: the sheet is anchored to the screen
+      // edge, so rounding the bottom would show the scaffold through it.
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(OCRadius.sheet),
         ),
       ),
-      modalBarrierColor: cs.shadow.withValues(alpha: 0.35),
-      dragHandleColor: cs.outlineVariant,
+      dragHandleColor: t.line,
+      dragHandleSize: 36,
       showDragHandle: true,
     ),
-
-    // --- Navigation -----------------------------------------------------
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: cs.surface,
-      // M3 destinations are already 48dp tall targets.
+    menuTheme: MenuThemeData(
+      color: t.card,
       surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      height: 66,
-      indicatorColor: OCColors.orangeTint,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => states.contains(WidgetState.selected)
-            ? OCTypography.micro.copyWith(
-                fontWeight: FontWeight.w700,
-                color: cs.onSurface,
-              )
-            : OCTypography.micro.withColor(cs.onSurfaceVariant),
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(OCRadius.card),
+        side: BorderSide(color: t.line),
       ),
-      iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(
-          color: states.contains(WidgetState.selected)
-              ? OCColors.orangeInk
-              : cs.onSurfaceVariant,
-          size: 22,
-        ),
-      ),
+      textStyle: OCTypography.body.copyWith(color: t.ink),
     ),
-    drawerTheme: DrawerThemeData(
-      backgroundColor: cs.surface,
+    popupMenuTheme: PopupMenuThemeData(
+      color: t.card,
       surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(
-          right: Radius.circular(OCRadius.card),
-        ),
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(OCRadius.card),
+        side: BorderSide(color: t.line),
       ),
+      textStyle: OCTypography.body.copyWith(color: t.ink),
     ),
-
-    // --- Tooltips / snackbars -------------------------------------------
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: cs.inverseSurface,
+        color: t.surfaceElevated,
         borderRadius: BorderRadius.circular(OCRadius.xs),
+        border: Border.all(color: t.line),
       ),
-      textStyle: OCTypography.caption.withColor(cs.onInverseSurface),
-      padding: const EdgeInsets.symmetric(
-        horizontal: OCSpace.sm,
-        vertical: OCSpace.xs,
-      ),
-      verticalOffset: 8,
-      preferBelow: true,
+      textStyle: OCTypography.caption.copyWith(color: t.ink),
+      waitDuration: const Duration(milliseconds: 500),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: cs.inverseSurface,
-      contentTextStyle: OCTypography.body.withColor(cs.onInverseSurface),
-      actionTextColor: OCColors.orangeBright,
+      backgroundColor: t.surfaceElevated,
+      contentTextStyle: OCTypography.body.copyWith(color: t.ink),
+      actionTextColor: OCColors.accent,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(OCRadius.inner),
+        borderRadius: BorderRadius.circular(OCRadius.card),
+        side: BorderSide(color: t.line),
       ),
-      elevation: 2,
+      insetPadding: const EdgeInsets.all(OCSpace.lg),
+      elevation: 8,
     ),
-
-    // --- Progress --------------------------------------------------------
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: t.surfaceElevated,
+      hintStyle: OCTypography.body.copyWith(color: t.faint),
+      labelStyle: OCTypography.meta.copyWith(color: t.mute),
+      floatingLabelStyle: OCTypography.meta.copyWith(color: t.mute),
+      helperStyle: OCTypography.caption.copyWith(color: t.mute),
+      prefixIconColor: t.mute,
+      suffixIconColor: t.mute,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: OCSpace.md,
+        vertical: OCSpace.md,
+      ),
+      border: _fieldBorder(t.line),
+      enabledBorder: _fieldBorder(t.line),
+      focusedBorder: _fieldBorder(OCColors.accent, width: 2),
+      errorBorder: _fieldBorder(t.err),
+      focusedErrorBorder: _fieldBorder(t.err, width: 2),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? OCColors.onAccent : t.mute,
+      ),
+      trackColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected)
+            ? OCColors.accent
+            : t.surfaceElevated,
+      ),
+      trackOutlineColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? OCColors.accent : t.line,
+      ),
+    ),
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected)
+            ? OCColors.accent
+            : Colors.transparent,
+      ),
+      checkColor: const WidgetStatePropertyAll(OCColors.onAccent),
+      side: BorderSide(color: t.line),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(OCRadius.xs),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: t.card,
+      selectedColor: t.accSoft,
+      side: BorderSide(color: t.line),
+      labelStyle: OCTypography.meta.copyWith(color: t.ink),
+      secondaryLabelStyle: OCTypography.meta.copyWith(color: t.ink),
+      iconTheme: IconThemeData(color: t.mute, size: 16),
+      shape: const StadiumBorder(),
+      padding: const EdgeInsets.symmetric(horizontal: OCSpace.sm),
+    ),
     progressIndicatorTheme: ProgressIndicatorThemeData(
-      color: OCColors.orangeDeep,
-      linearTrackColor: OCColors.orangeTrack,
-      circularTrackColor: OCColors.orangeTrack,
+      color: OCColors.accent,
+      linearTrackColor: Colors.transparent,
+      circularTrackColor: Colors.transparent,
     ),
-
-    // --- Selection -------------------------------------------------------
-    textSelectionTheme: TextSelectionThemeData(
-      cursorColor: cs.onSurface,
-      selectionColor: OCColors.orange.withValues(alpha: 0.25),
-      selectionHandleColor: OCColors.orangeDeep,
+    // One scrollbar for the whole app: right edge, 3dp, muted, fades out when
+    // idle. Nothing else in the app paints a bar. `thumbVisibility: false` means
+    // it can only appear in response to a scroll or a drag, so a list that does
+    // not overflow can never show one - which is the whole point.
+    scrollbarTheme: ScrollbarThemeData(
+      thumbColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.dragged) ? OCColors.accent : t.mute,
+      ),
+      trackColor: const WidgetStatePropertyAll(null),
+      thickness: const WidgetStatePropertyAll(3),
+      radius: const Radius.circular(OCRadius.full),
+      thumbVisibility: const WidgetStatePropertyAll(false),
+      interactive: true,
     ),
-
-    visualDensity: VisualDensity.standard,
+    splashColor: OCColors.accent.withValues(alpha: 0.12),
+    highlightColor: OCColors.accent.withValues(alpha: 0.06),
+    listTileTheme: ListTileThemeData(
+      textColor: t.ink,
+      iconColor: t.mute,
+      titleTextStyle: OCTypography.title.copyWith(color: t.ink),
+      subtitleTextStyle: OCTypography.caption.copyWith(color: t.mute),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? OCColors.accent : t.line,
+      ),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 }
+
+OutlineInputBorder _fieldBorder(Color color, {double width = 1}) =>
+    OutlineInputBorder(
+      borderRadius: BorderRadius.circular(OCRadius.row),
+      borderSide: BorderSide(color: color, width: width),
+    );
+
+TextTheme _textTheme(OCTokens t) => TextTheme(
+  displayLarge: OCTypography.headline.copyWith(color: t.ink),
+  displayMedium: OCTypography.headline.copyWith(color: t.ink),
+  displaySmall: OCTypography.headline.copyWith(color: t.ink),
+  headlineMedium: OCTypography.headline.copyWith(color: t.ink),
+  headlineSmall: OCTypography.title.copyWith(color: t.ink),
+  titleLarge: OCTypography.title.copyWith(color: t.ink),
+  titleMedium: OCTypography.title.copyWith(color: t.ink),
+  titleSmall: OCTypography.meta.copyWith(color: t.ink),
+  bodyLarge: OCTypography.body.copyWith(color: t.ink),
+  bodyMedium: OCTypography.body.copyWith(color: t.ink),
+  bodySmall: OCTypography.caption.copyWith(color: t.mute),
+  labelLarge: OCTypography.button.copyWith(color: t.ink),
+  labelMedium: OCTypography.meta.copyWith(color: t.ink),
+  labelSmall: OCTypography.caption.copyWith(color: t.mute),
+);

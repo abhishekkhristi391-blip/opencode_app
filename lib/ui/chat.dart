@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -63,6 +64,9 @@ class _ChatPageState extends State<ChatPage> {
   bool _scrollQueued = false;
 
   bool _showJump = false;
+
+  /// New assistant messages that arrived while the user was scrolled away.
+  int _unread = 0;
   int _lastCount = 0;
   String _lastTailId = '';
   bool _wasLoading = false;
@@ -105,7 +109,22 @@ class _ChatPageState extends State<ChatPage> {
 
   void _onStoreChange() {
     if (!mounted) return;
+    // Count the growth while detached, then decide what follow mode should do.
+    final before = _lastCount;
     _syncFollow();
+    if (_lastCount != null && _lastCount != before) {
+      _bumpUnread();
+      // The badge lives in the build below, so repaint only when it changed.
+      if (_unread != 0) setState(() {});
+    }
+    _lastCount = _chatMessageCount();
+  }
+
+  int? _lastCount;
+  int? _chatMessageCount() {
+    final st = _store;
+    if (st == null) return null;
+    return st.messages.length;
   }
 
   double get _gap {
@@ -116,7 +135,18 @@ class _ChatPageState extends State<ChatPage> {
   void _onScroll() {
     if (!scroll.hasClients) return;
     final show = _gap > _jumpThreshold;
-    if (show != _showJump && mounted) setState(() => _showJump = show);
+    // Reaching the bottom is the only thing that clears the badge, so it can
+    // never disagree with what the user can actually see.
+    if (!show) _unread = 0;
+    if (show != _showJump || !show) {
+      if (mounted) setState(() => _showJump = show);
+    }
+  }
+
+  /// Counts a message that arrived off-screen. Called from the store listener.
+  void _bumpUnread() {
+    if (!_showJump || !mounted) return;
+    _unread++;
   }
 
   /// Distinguishes a drag from a fling/keyboard/programmatic scroll.
@@ -183,6 +213,7 @@ class _ChatPageState extends State<ChatPage> {
   void _jumpToLatest() {
     _setFollow(true);
     _showJump = false;
+    _unread = 0;
     if (!scroll.hasClients) return;
     _programmatic = true;
     scroll
@@ -235,7 +266,9 @@ class _ChatPageState extends State<ChatPage> {
     // Keyed on the tail *id*, not the count: prepending an older page also
     // raises the count, and that used to yank the reader back to the bottom
     // mid-history whenever the last message happened to be theirs.
-    if (tailId.isNotEmpty && tailId != _lastTailId && messages.last.info.isUser) {
+    if (tailId.isNotEmpty &&
+        tailId != _lastTailId &&
+        messages.last.info.isUser) {
       _setFollow(true);
     }
     _lastTailId = tailId;
@@ -262,11 +295,16 @@ class _ChatPageState extends State<ChatPage> {
     return Column(
       children: [
         const _ErrorBarWidget(),
+        // 2dp accent hairline pinned under the header. The old busy bar was a
+        // full-width strip with text, which pushed the transcript down and
+        // scrolled out of view during exactly the runs that needed watching.
+        const _RunProgressLine(),
         const _BusyBarWidget(),
         Expanded(
           child: _ChatMessages(
             scroll: scroll,
             showJump: _showJump,
+            unread: _unread,
             onNotification: _handleNotification,
             onJump: _jumpToLatest,
             onLoadOlder: _loadOlderMessages,
@@ -318,7 +356,8 @@ class _ChatPageState extends State<ChatPage> {
     focus.requestFocus();
 
     try {
-      await store.send(text);
+      // Queues when a run is in flight, so a prompt typed mid-run is not lost.
+      await store.sendOrQueue(text);
     } catch (e) {
       input.text = text;
       input.selection = TextSelection.collapsed(offset: text.length);
@@ -374,6 +413,7 @@ class _BusyBarWidget extends StatelessWidget {
 class _ChatMessages extends StatelessWidget {
   final ScrollController scroll;
   final bool showJump;
+  final int unread;
   final bool Function(ScrollNotification) onNotification;
   final VoidCallback onJump;
   final Future<void> Function(OcStore) onLoadOlder;
@@ -382,6 +422,7 @@ class _ChatMessages extends StatelessWidget {
   const _ChatMessages({
     required this.scroll,
     required this.showJump,
+    required this.unread,
     required this.onNotification,
     required this.onJump,
     required this.onLoadOlder,
@@ -406,7 +447,10 @@ class _ChatMessages extends StatelessWidget {
     final messages = store.messages;
 
     if (store.messagesLoading && messages.isEmpty) {
-      return const LoadingView(label: S.chatLoading);
+      // A centred spinner for ~1s tells the user nothing about what is coming.
+      // OCSkeletonList is the same shape as the list that replaces it, so the
+      // page does not jump when the messages arrive.
+      return const OCSkeletonList(rows: 6, semanticLabel: S.chatLoading);
     }
     if (messages.isEmpty) {
       return _Welcome(store, onPick: onPickSuggestion);
@@ -429,34 +473,63 @@ class _ChatMessages extends StatelessWidget {
       children: [
         NotificationListener<ScrollNotification>(
           onNotification: onNotification,
-          child: ListView.builder(
+          // An explicit scrollbar, on the right, that only exists while the
+          // transcript is actually taller than the viewport.
+          //
+          // Nothing in the app attached one before, so the bar a user reported
+          // on the left edge was the platform's own scroll overlay — it draws
+          // outside our layout, ignores the theme, and is bright enough to be
+          // mistaken for UI. Owning it here means one thin muted thumb that
+          // appears only when there is something to scroll and stays clear of
+          // the left edge and the message text.
+          child: Scrollbar(
             controller: scroll,
-            padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
-            itemCount: messages.length + leading,
-            cacheExtent: 600,
-            itemBuilder: (_, i) {
-              if (hasOlder && i == 0) {
-                return _LoadOlderButton(
-                  onTap: () => onLoadOlder(store),
-                  loading: store.messagesLoading,
+            // Not thumbVisibility:true. That keeps a full-height thumb on screen
+            // even when four messages fit, which is the same "bar that means
+            // nothing" problem as the one being fixed. Left false, the thumb can
+            // only appear in response to a scroll or a drag — and a list that
+            // does not overflow never produces either.
+            thumbVisibility: false,
+            trackVisibility: false,
+            thickness: 3,
+            radius: const Radius.circular(OCRadius.full),
+            interactive: true,
+            child: ListView.builder(
+              controller: scroll,
+              // Interactive Scrollbar insets its own 3dp, so the transcript
+              // keeps the same gutter as the hero and the composer.
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenGutter,
+                6,
+                OCSpace.screenGutter,
+                OCSpace.md,
+              ),
+              itemCount: messages.length + leading,
+              cacheExtent: 600,
+              itemBuilder: (_, i) {
+                if (hasOlder && i == 0) {
+                  return _LoadOlderButton(
+                    onTap: () => onLoadOlder(store),
+                    loading: store.messagesLoading,
+                  );
+                }
+                final index = i - leading;
+                final m = messages[index];
+                return _MessageTile(
+                  key: ValueKey(m.info.id),
+                  msg: m,
+                  isLastReply: index == lastAssistantIndex,
+                  showTokens: store.showTokensInChat,
                 );
-              }
-              final index = i - leading;
-              final m = messages[index];
-              return _MessageTile(
-                key: ValueKey(m.info.id),
-                msg: m,
-                isLastReply: index == lastAssistantIndex,
-                showTokens: store.showTokensInChat,
-              );
-            },
+              },
+            ),
           ),
         ),
         if (showJump)
           Positioned(
-            right: 18,
-            bottom: 14,
-            child: _JumpToLatest(onTap: onJump),
+            right: OCSpace.screenGutter,
+            bottom: OCSpace.md,
+            child: _JumpToLatest(onTap: onJump, unread: unread),
           ),
       ],
     );
@@ -466,7 +539,8 @@ class _ChatMessages extends StatelessWidget {
 /// Floating pill that appears once the reader scrolls away from the tail.
 class _JumpToLatest extends StatelessWidget {
   final VoidCallback onTap;
-  const _JumpToLatest({required this.onTap});
+  final int unread;
+  const _JumpToLatest({required this.onTap, this.unread = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -500,6 +574,26 @@ class _JumpToLatest extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (unread > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: t.acc,
+                      borderRadius: BorderRadius.circular(OCRadius.pill),
+                    ),
+                    child: Text(
+                      '$unread',
+                      style: OCTypography.micro.copyWith(
+                        color: t.onAcc,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -586,100 +680,448 @@ class _BusyBar extends StatelessWidget {
   );
 }
 
-/// Reference `.empty`: a big question, a muted line, then four bordered cards
-/// with a title and a subtitle. Tapping one sends it immediately.
+/// Empty chat: headline, model/mode chips, workspace bar, then the four
+/// suggestion cards anchored to the bottom of the screen.
+///
+/// Tapping a card sends it immediately.
 class _Welcome extends StatelessWidget {
   final OcStore store;
   final void Function(String) onPick;
   const _Welcome(this.store, {required this.onPick});
 
-  static const _suggestions = <(String, String)>[
-    (S.chatSuggestionStructure, S.chatSuggestionStructureSub),
-    (S.chatSuggestionTests, S.chatSuggestionTestsSub),
-    (S.chatSuggestionTodo, S.chatSuggestionTodoSub),
-    (S.chatSuggestionPlan, S.chatSuggestionPlanSub),
+  /// Title + icon per card. The old second line was a subtitle on every card;
+  /// one of them ("And explain any failures") restated the title above it.
+  static const _suggestions = <(LI, String)>[
+    (LI.folder, S.chatSuggestionStructure),
+    (LI.done, S.chatSuggestionTests),
+    (LI.search, S.chatSuggestionTodo),
+    (LI.spark, S.chatSuggestionPlan),
   ];
 
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
-    return ListView(
-      // The parent wraps the body in a SafeArea, so only inset the top.
-      padding: const EdgeInsets.fromLTRB(18, 36, 18, 18),
-      children: [
-        Text(
-          S.chatWelcomeTitle,
-          style: OCTypography.h1.copyWith(
-            color: t.ink,
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          store.modelId.isEmpty
-              ? S.chatWelcomeEmptySubtitle
-              : S.chatWelcomeSubtitle(
-                  '${store.providerId}/${store.modelId}',
-                  store.agent,
-                ),
-          style: OCTypography.body.copyWith(color: t.mute),
-        ),
-        const SizedBox(height: 22),
-        for (final (title, sub) in _suggestions)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _SuggestionCard(
-              title: title,
-              subtitle: sub,
-              onTap: () => onPick(title),
+    // With the keyboard up the cards no longer fit under the hero, and their
+    // whole job is to be tapped. Hide them rather than let the list scroll and
+    // leave a half-visible card under the keyboard.
+    final showCards = MediaQuery.of(context).viewInsets.bottom <= 0;
+
+    return LayoutBuilder(
+      builder: (context, box) => SingleChildScrollView(
+        child: ConstrainedBox(
+          // Pin the content to the full viewport so the cards sit on the bottom
+          // edge. The old top-aligned ListView left the dead gap at the BOTTOM
+          // instead, which is what made the screen look unfinished.
+          //
+          // IntrinsicHeight is required, not decorative: a scroll view hands its
+          // child an unbounded height, and a Column distributing free space
+          // under unbounded constraints throws. IntrinsicHeight measures the
+          // column first; ConstrainedBox then stretches it to the viewport.
+          constraints: BoxConstraints(minHeight: box.maxHeight),
+          child: IntrinsicHeight(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: OCSpace.screenGutter,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: OCSpace.xl),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          S.chatWelcomeTitle,
+                          style: OCTypography.heroTitle.copyWith(color: t.ink),
+                        ),
+                        const SizedBox(height: OCSpace.sm),
+                        Text(
+                          S.chatWelcomeHint,
+                          style: OCTypography.body.copyWith(color: t.mute),
+                        ),
+                        const SizedBox(height: OCSpace.md),
+                        // Two outlined chips instead of one muted sentence that
+                        // read "Model provider/id - agent build": the id wrapped
+                        // on narrow screens and buried the useful word, "Model".
+                        _ModelModeChips(store: store),
+                      ],
+                    ),
+                  ),
+                  if (showCards)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: OCSpace.lg),
+                        _ProjectBar(store: store),
+                        const SizedBox(height: OCSpace.md),
+                        for (final (icon, title) in _suggestions)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: OCSpace.sm),
+                            child: SuggestionCard(
+                              icon: icon,
+                              title: title,
+                              onTap: () => onPick(title),
+                            ),
+                          ),
+                        const SizedBox(height: OCSpace.sm),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Outlined Model / Mode chips. Both open the existing pickers, so the app
+/// gains no new controls — only a reachable place to see the current pair.
+class _ModelModeChips extends StatelessWidget {
+  const _ModelModeChips({required this.store});
+  final OcStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final model = store.modelId.isEmpty ? S.chipPickModel : store.modelId;
+    return Wrap(
+      spacing: OCSpace.sm,
+      runSpacing: OCSpace.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedChip(
+          icon: LI.tune,
+          label: '${S.chatChipModel}: $model',
+          // No such thing as a decorative "Model:" prefix in the reference:
+          // the chip reads "Opus 4.5", the sheet carries the label.
+          badge: isFreeModel(store.modelId) ? S.badgeFree : null,
+          tooltip: S.chatChipModel,
+          onTap: () => showModelSheet(context, store),
+        ),
+        OutlinedChip(
+          icon: LI.spark,
+          label:
+              '${S.chatChipMode}: ${store.agent.isEmpty ? S.chipAgent : store.agent}',
+          tooltip: S.chatChipMode,
+          onTap: () => showAgentSheet(context, store),
+        ),
       ],
     );
   }
 }
 
-class _SuggestionCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  const _SuggestionCard({
-    required this.title,
-    required this.subtitle,
+/// Neutral outlined chip used by the hero and the composer. Accent is reserved
+/// for the primary action, so the model/mode chips use `line`, not `accInk`.
+class OutlinedChip extends StatelessWidget {
+  const OutlinedChip({
+    super.key,
+    required this.label,
     required this.onTap,
+    this.icon,
+    this.tooltip,
+    this.badge,
   });
+
+  final String label;
+  final VoidCallback onTap;
+  final LI? icon;
+  final String? tooltip;
+
+  /// Small trailing tag, e.g. "Free". Lets the row stay 32dp instead of
+  /// growing a second line.
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
-    return Material(
-      color: t.card,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: t.line),
+    final chip = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Material(
+        color: t.card,
+        borderRadius: BorderRadius.circular(OCRadius.full),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(OCRadius.full),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(OCRadius.full),
+              border: Border.all(color: t.line),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  LIcon(icon!, size: 14, color: t.mute, strokeWidth: 1.9),
+                  const SizedBox(width: 6),
+                ],
+                if (badge != null) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: t.accSoft,
+                      borderRadius: BorderRadius.circular(OCRadius.xs),
+                      border: Border.all(color: t.accLine),
+                    ),
+                    child: Text(
+                      badge!,
+                      style: OCTypography.micro.copyWith(color: t.acc),
+                    ),
+                  ),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: OCTypography.meta.copyWith(
+                      color: t.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                LIcon(LI.chevronDown, size: 14, color: t.mute, strokeWidth: 2),
+              ],
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: OCTypography.body.copyWith(
-                  color: t.ink,
-                  fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+    return tooltip == null ? chip : Tooltip(message: tooltip!, child: chip);
+  }
+}
+
+/// Which folder and branch the server is working in.
+///
+/// The app has no API to change the server's working directory, so this opens
+/// the workspace's actual values instead of a switcher that could only ever
+/// have one option.
+class _ProjectBar extends StatelessWidget {
+  const _ProjectBar({required this.store});
+  final OcStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final dir = store.paths?.worktree.isNotEmpty == true
+        ? store.paths!.worktree
+        : (store.paths?.directory ?? '');
+    final name = dir.isEmpty ? S.projectUnknown : baseName(dir);
+    final branch = (store.vcs?.branch ?? '').isEmpty ? null : store.vcs!.branch;
+
+    return Semantics(
+      button: true,
+      label: '${S.projectDetailsTitle}, $name',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(OCRadius.full),
+        child: InkWell(
+          onTap: () => _showDetails(context),
+          borderRadius: BorderRadius.circular(OCRadius.full),
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(OCRadius.full),
+              border: Border.all(color: t.line),
+            ),
+            child: Row(
+              children: [
+                LIcon(LI.folder, size: 15, color: t.mute, strokeWidth: 1.9),
+                const SizedBox(width: OCSpace.sm),
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: OCTypography.meta.copyWith(
+                      color: t.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (branch != null) ...[
+                  const SizedBox(width: OCSpace.sm),
+                  Container(width: 1, height: 12, color: t.line),
+                  const SizedBox(width: OCSpace.sm),
+                  LIcon(LI.fork, size: 14, color: t.mute, strokeWidth: 1.9),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      branch,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: OCTypography.meta.copyWith(color: t.mute),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDetails(BuildContext context) async {
+    final p = store.paths;
+    final v = store.vcs;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenGutter,
+                0,
+                OCSpace.screenGutter,
+                OCSpace.sm,
+              ),
+              child: Text(
+                S.projectDetailsTitle,
+                style: OCTypography.bodyStrong.copyWith(
+                  color: sheetCtx.oc.mute,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(subtitle, style: OCTypography.body.copyWith(color: t.mute)),
-            ],
+            ),
+            InfoRow(
+              S.projectDirectory,
+              value: (p?.directory ?? '').isEmpty
+                  ? S.projectUnknown
+                  : p!.directory,
+              mono: true,
+            ),
+            InfoRow(
+              S.projectWorktree,
+              value: (p?.worktree ?? '').isEmpty
+                  ? S.projectUnknown
+                  : p!.worktree,
+              mono: true,
+            ),
+            InfoRow(
+              S.projectBranch,
+              value: (v?.branch ?? '').isEmpty ? S.projectNoBranch : v!.branch,
+              mono: true,
+            ),
+            const SizedBox(height: OCSpace.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One tappable suggestion: 36dp icon tile, title, chevron.
+///
+/// Was a two-line card at a 16dp radius and ~76dp tall with no icon and no
+/// press feedback, so four of them read as a stack of dialogs rather than a
+/// set of shortcuts. One line, 12dp, 64dp tall.
+class SuggestionCard extends StatefulWidget {
+  const SuggestionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final LI icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  State<SuggestionCard> createState() => _SuggestionCardState();
+}
+
+class _SuggestionCardState extends State<SuggestionCard> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final pressed = _down && !ocReduceMotion(context);
+    return AnimatedScale(
+      // 0.98, not the global 0.97: on a 64dp row that is a 1.3dp edge shift and
+      // the card looks like it is resizing rather than being pressed.
+      scale: pressed ? OCMotion.pressScaleSoft : 1,
+      duration: OCMotion.micro,
+      curve: Curves.easeOut,
+      child: AnimatedContainer(
+        duration: OCMotion.micro,
+        decoration: BoxDecoration(
+          color: _down ? t.surfaceElevated : t.card,
+          borderRadius: BorderRadius.circular(OCRadius.suggestion),
+          border: Border.all(
+            color: _down ? t.acc.withValues(alpha: 0.4) : t.line,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(OCRadius.suggestion),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onTap();
+            },
+            onHighlightChanged: (v) => setState(() => _down = v),
+            borderRadius: BorderRadius.circular(OCRadius.suggestion),
+            child: Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: t.bg,
+                      borderRadius: BorderRadius.circular(OCRadius.md),
+                    ),
+                    child: LIcon(
+                      widget.icon,
+                      size: 18,
+                      color: t.mute,
+                      strokeWidth: 1.9,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: OCTypography.h3.copyWith(
+                        color: t.ink,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: OCSpace.sm),
+                  LIcon(
+                    LI.chevronRight,
+                    size: 16,
+                    color: t.mute,
+                    strokeWidth: 2,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -778,14 +1220,25 @@ class _MessageTileState extends State<_MessageTile> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
-      child: InkWell(
-        // Long press is the only entry point to fork / delete, which is what
-        // lets the inline row shrink to the two actions the reference shows.
-        onLongPress: _openMenu,
-        borderRadius: BorderRadius.circular(12),
-        child: user
-            ? _userBubble(context, t, text, files, hasContent)
-            : _assistantBlock(context, t, text, others, m, hasContent),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            // Long press stays as the full menu; the inline row carries the two
+            // actions that are actually used, so they are not hidden behind a
+            // gesture nobody discovers.
+            onLongPress: _openMenu,
+            borderRadius: BorderRadius.circular(12),
+            child: user
+                ? _userBubble(context, t, text, files, hasContent)
+                : _assistantBlock(context, t, text, others, m, hasContent),
+          ),
+          if (hasContent)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: _MessageActions(msg: m, text: text),
+            ),
+        ],
       ),
     );
   }
@@ -1033,17 +1486,25 @@ Future<void> showMessageMenu(BuildContext context, ChatMessage msg) async {
             danger: true,
             onTap: () async {
               Navigator.pop(sheetCtx);
-              final ok = await confirmDialog(
-                context,
-                title: S.messageDeleteTitle,
-                message: S.messageDeleteBody,
-                confirm: S.delete,
-                danger: true,
-              );
-              if (!ok) return;
               try {
                 await store.api.deleteMessage(store.current!.id, msg.info.id);
                 await store.openSession(store.current!.id);
+                if (!context.mounted) return;
+                // Reversible, so it is not confirmed: the old confirm dialog
+                // asked about an action that the undo bar already covers.
+                showSnack(
+                  context,
+                  S.messageDeleted,
+                  action: SnackBarAction(
+                    label: S.historyUndo,
+                    onPressed: () {
+                      // The server has no restore endpoint; re-running undo on the
+                      // message is the closest honest recovery, so the bar says
+                      // so rather than pretending.
+                      store.revert(msg.info.id);
+                    },
+                  ),
+                );
               } catch (e) {
                 if (context.mounted) showSnack(context, '$e', error: true);
               }
@@ -1265,13 +1726,21 @@ class _Composer extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.oc;
     return Container(
-      // Reference `.composer`: 6px 12px 10px around a single 24px-radius box.
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      // The composer insets by the same gutter as the header, hero and cards, so
+      // all four share one left edge. It was 12px against their 18px.
+      padding: const EdgeInsets.fromLTRB(
+        OCSpace.screenGutter,
+        OCSpace.sm,
+        OCSpace.screenGutter,
+        OCSpace.sm,
+      ),
       child: Container(
         padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
         decoration: BoxDecoration(
-          color: t.card,
-          borderRadius: BorderRadius.circular(24),
+          // surfaceElevated, not card: the input box used to share its fill with
+          // the suggestion cards, so the bottom of the screen read as one slab.
+          color: t.surfaceElevated,
+          borderRadius: BorderRadius.circular(OCRadius.composer),
           border: Border.all(color: t.line),
           boxShadow: [
             BoxShadow(color: t.line, offset: const Offset(0, 1), blurRadius: 0),
@@ -1288,14 +1757,21 @@ class _Composer extends StatelessWidget {
               focusNode: focus,
               store: store,
               onSubmit: onSend,
+              // The placeholder used to always read "Ask Codex...", so an active
+              // conversation looked identical to a cold start.
+              placeholder: store.messages.isEmpty
+                  ? S.composerPlaceholderStart
+                  : S.composerPlaceholderReply,
             ),
+            if (store.busy) _WorkingStrip(agent: store.agent, onStop: onStop),
+            if (store.hasQueued) _QueuedStrip(store: store),
             const SizedBox(height: 2),
             Row(
               children: [
-                LIconButton(
+                _CircleButton(
                   icon: LI.attach,
-                  size: 22,
-                  color: t.mute,
+                  bg: Colors.transparent,
+                  fg: t.mute,
                   semanticLabel: S.composerAttachTooltip,
                   onTap: () => _showAttachSheet(context),
                 ),
@@ -1324,6 +1800,24 @@ class _Composer extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Titled, so the three bare rows below are not read as page content.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenGutter,
+                0,
+                OCSpace.screenGutter,
+                OCSpace.sm,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  S.attachSheetTitle,
+                  style: OCTypography.bodyStrong.copyWith(
+                    color: sheetCtx.oc.mute,
+                  ),
+                ),
+              ),
+            ),
             _SheetRow(
               icon: LI.attach,
               label: S.attachImage,
@@ -1503,50 +1997,81 @@ class _AttachmentStrip extends StatelessWidget {
 /// Reference `.pill`: one accent-tinted chip reading `model · agent` that
 /// opens the model / agent / tools sheet. This replaces the old three-chip
 /// quick bar; there is no separate tools chip or dropdown anymore.
+/// The composer's model/agent pill.
+///
+/// Was `accSoft` fill with `accInk` text — an accent-coloured control sitting
+/// next to the accent send button, so the two competed and the pill looked like
+/// the primary action. Now a neutral outlined chip with an explicit chevron,
+/// which is what makes it read as "opens a picker".
+///
+/// It stays in the composer rather than moving under the hero: that hero only
+/// exists on an empty chat, so moving it would remove the only way to switch
+/// model once a message has been sent.
 class _ModelPill extends StatelessWidget {
   final OcStore store;
   const _ModelPill({required this.store});
 
   @override
-  Widget build(BuildContext context) {
-    final t = context.oc;
-    final label = store.modelId.isEmpty
+  Widget build(BuildContext context) => OutlinedChip(
+    icon: LI.tune,
+    label: store.modelId.isEmpty
         ? S.chipPickModel
-        : S.composerModelAgent(store.modelId, store.agent);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 200),
-      child: Material(
-        color: t.accSoft,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: () => showModelSheet(context, store),
-          borderRadius: BorderRadius.circular(999),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LIcon(LI.tune, size: 15, color: t.accInk, strokeWidth: 2),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: OCTypography.body.copyWith(
-                      color: t.accInk,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+        : S.composerModelAgent(store.modelId, store.agent),
+    tooltip: S.composerModelPill,
+    onTap: () => showModelSheet(context, store),
+  );
+}
+
+/// Agent ("mode") picker for the hero's Mode chip. Same list and the same
+/// `store.setAgent` call as the More sheet, surfaced where the pairing is
+/// visible.
+Future<void> showAgentSheet(BuildContext context, OcStore store) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheetCtx) => RadioGroup<String>(
+      groupValue: store.agent,
+      onChanged: (v) {
+        if (v != null) store.setAgent(v);
+        Navigator.pop(sheetCtx);
+      },
+      child: SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenGutter,
+                0,
+                OCSpace.screenGutter,
+                OCSpace.sm,
+              ),
+              child: Text(
+                S.moreAgent,
+                style: OCTypography.bodyStrong.copyWith(
+                  color: sheetCtx.oc.mute,
                 ),
-              ],
+              ),
             ),
-          ),
+            for (final a in store.agents)
+              RadioListTile<String>(
+                value: a.name,
+                dense: true,
+                title: Text(a.name, style: OCTypography.body),
+                subtitle: a.description.isEmpty
+                    ? null
+                    : Text(
+                        a.description,
+                        maxLines: 2,
+                        style: OCTypography.meta,
+                      ),
+              ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// Model / agent / tools, as the reference `.sheet` panel.
@@ -1778,7 +2303,9 @@ class _SendButton extends StatelessWidget {
         // the composer reads the same as the reference.
         return _CircleButton(
           icon: LI.mic,
-          bg: t.card,
+          // bg, not card: the composer box is surfaceElevated, so a card-filled
+          // circle would be darker than the box around it and read as a hole.
+          bg: t.bg,
           fg: t.ink,
           semanticLabel: S.composerVoiceTooltip,
           onTap: () => showSnack(context, S.composerVoiceTooltip),
@@ -1817,15 +2344,19 @@ class _CircleButton extends StatelessWidget {
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Container(
-            width: 40,
-            height: 40,
+            // 48dp, not 40: the attach / mic / send controls are the only
+            // things a thumb has to find without looking, and 40dp is under the
+            // minimum target. The glyph stays 20px so the row does not bloat.
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
             decoration: border == null
                 ? null
                 : BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: border!),
                   ),
-            child: Center(child: LIcon(icon, size: 20, color: fg)),
+            child: LIcon(icon, size: 20, color: fg),
           ),
         ),
       ),
@@ -1839,12 +2370,14 @@ class SlashTextField extends StatefulWidget {
   final FocusNode focusNode;
   final OcStore store;
   final VoidCallback onSubmit;
+  final String placeholder;
   const SlashTextField({
     super.key,
     required this.controller,
     required this.focusNode,
     required this.store,
     required this.onSubmit,
+    required this.placeholder,
   });
 
   @override
@@ -1911,17 +2444,17 @@ class _SlashTextFieldState extends State<SlashTextField> {
   }
 
   void _searchFiles(String q) async {
-try {
-        final list = await widget.store.api.findFiles(
-          q.isEmpty ? ' ' : q,
-          limit: 8,
-        );
-        if (!mounted || _mode != '@') return;
-        setState(() => _files = list);
-      } catch (e) {
-        debugPrint('File search failed: $e');
-      }
+    try {
+      final list = await widget.store.api.findFiles(
+        q.isEmpty ? ' ' : q,
+        limit: 8,
+      );
+      if (!mounted || _mode != '@') return;
+      setState(() => _files = list);
+    } catch (e) {
+      debugPrint('File search failed: $e');
     }
+  }
 
   void _set(List<String> s, {String mode = ''}) {
     if (!mounted) return;
@@ -1975,7 +2508,7 @@ try {
           onSubmitted: (_) => widget.onSubmit(),
           style: OCTypography.body.copyWith(color: t.ink, height: 1.4),
           decoration: InputDecoration(
-            hintText: S.chatPlaceholder,
+            hintText: widget.placeholder,
             hintStyle: OCTypography.body.copyWith(color: t.mute),
             // Borderless: the enclosing composer container already draws the
             // 24px rounded box and its focus ring.
@@ -2172,5 +2705,290 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
       'lock' => Icons.lock_outline,
       _ => Icons.insert_drive_file_outlined,
     };
+  }
+}
+
+/// "Codex is working…" under the composer, with a slow-run hint and a tap
+/// target that interrupts.
+///
+/// The busy bar used to sit *above* the transcript, so it scrolled away exactly
+/// when a long run most needed an escape hatch.
+class _WorkingStrip extends StatefulWidget {
+  final String agent;
+  final VoidCallback onStop;
+  const _WorkingStrip({required this.agent, required this.onStop});
+
+  @override
+  State<_WorkingStrip> createState() => _WorkingStripState();
+}
+
+class _WorkingStripState extends State<_WorkingStrip> {
+  /// Eight seconds: long enough that a normal tool run never trips it, short
+  /// enough to still be useful information.
+  static const _slowAfter = Duration(seconds: 8);
+  Timer? _timer;
+  bool _slow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_slowAfter, () {
+      if (mounted) setState(() => _slow = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Padding(
+      padding: const EdgeInsets.only(top: OCSpace.xs),
+      child: InkWell(
+        onTap: widget.onStop,
+        borderRadius: BorderRadius.circular(OCRadius.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: OCSpace.sm,
+            vertical: OCSpace.xs,
+          ),
+          child: Row(
+            children: [
+              OCProgressRing(value: 0.7, size: 12, stroke: 1.6, color: t.acc),
+              const SizedBox(width: OCSpace.sm),
+              Text(
+                S.composerWorking(widget.agent),
+                style: OCTypography.caption.copyWith(color: t.mute),
+              ),
+              const Spacer(),
+              Text(
+                _slow ? S.composerWorkingSlow : S.composerStopHint,
+                style: OCTypography.caption.copyWith(
+                  color: _slow ? t.warn : t.mute,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Prompts held while a run is in flight, with a one-tap release.
+class _QueuedStrip extends StatelessWidget {
+  final OcStore store;
+  const _QueuedStrip({required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Padding(
+      padding: const EdgeInsets.only(top: OCSpace.xs),
+      child: Row(
+        children: [
+          LIcon(LI.history, size: 12, color: t.mute),
+          const SizedBox(width: OCSpace.sm),
+          Expanded(
+            child: Text(
+              S.composerQueued(store.queued.length),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: OCTypography.caption.copyWith(color: t.mute),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Whether a model id/name advertises itself as free.
+///
+/// There is no cost field on the server's model list, so this is a label
+/// heuristic and nothing more: it never claims a price, only surfaces a "free"
+/// tier when the provider says so in the name. Anything uncertain stays
+/// unbadged rather than being wrong.
+bool isFreeModel(String id) {
+  final s = id.toLowerCase();
+  return s.contains(':free') ||
+      s.contains('-free') ||
+      s.endsWith(' free') ||
+      s.startsWith('free/') ||
+      s.contains('/free');
+}
+
+/// 2dp accent hairline that animates while a run is in flight.
+///
+/// It sits between the header and the transcript instead of taking a strip of
+/// vertical space, so following the tail is not interrupted by its own progress
+/// indicator.
+class _RunProgressLine extends StatelessWidget {
+  const _RunProgressLine();
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.of(context);
+    final t = context.oc;
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        if (!store.busy) return const SizedBox(height: 2);
+        return Semantics(
+          label: S.composerWorking(store.agent),
+          liveRegion: true,
+          child: SizedBox(
+            height: 2,
+            width: double.infinity,
+            child: _IndeterminateBar(color: t.acc),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Left-to-right sweep on an infinite-ish loop. Skipped entirely when the user
+/// has asked for reduced motion.
+class _IndeterminateBar extends StatefulWidget {
+  final Color color;
+  const _IndeterminateBar({required this.color});
+
+  @override
+  State<_IndeterminateBar> createState() => _IndeterminateBarState();
+}
+
+class _IndeterminateBarState extends State<_IndeterminateBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: OCMotion.progress,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (!ocReduceMotion(context)) _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _c,
+    builder: (context, _) => CustomPaint(
+      painter: _BarPainter(_c.value, widget.color),
+      size: Size.infinite,
+    ),
+  );
+}
+
+class _BarPainter extends CustomPainter {
+  final double t;
+  final Color color;
+  _BarPainter(this.t, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = color.withValues(alpha: 0.14),
+    );
+    final w = size.width * 0.32;
+    final x = (size.width + w) * t - w;
+    canvas.drawRect(
+      Rect.fromLTWH(x, 0, w, size.height),
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BarPainter old) => old.t != t || old.color != color;
+}
+
+/// Two 40dp actions under a message: copy and the overflow menu.
+///
+/// 40 rather than 48 because the row sits under every message; the hit area is
+/// padded back out to 48 with an InkWell so the tap target still meets the
+/// minimum even though the icon is smaller.
+class _MessageActions extends StatelessWidget {
+  final ChatMessage msg;
+  final String text;
+  const _MessageActions({required this.msg, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ActionDot(
+          tooltip: S.copy,
+          icon: LI.copy,
+          color: t.faint,
+          onTap: text.isEmpty
+              ? null
+              : () {
+                  copyToClipboard(context, text);
+                  showSnack(context, S.copied);
+                },
+        ),
+        const SizedBox(width: OCSpace.xxs),
+        _ActionDot(
+          tooltip: S.moreActions,
+          icon: LI.more,
+          color: t.faint,
+          onTap: () => showMessageMenu(context, msg),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionDot extends StatelessWidget {
+  final String tooltip;
+  final LI icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _ActionDot({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        enabled: onTap != null,
+        label: tooltip,
+        child: SizedBox(
+          width: OCSpace.tapTarget,
+          height: OCSpace.tapTarget,
+          child: Center(
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: LIcon(icon, size: 16, color: color),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

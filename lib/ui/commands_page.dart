@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
@@ -26,7 +27,7 @@ class CommandsPage extends StatelessWidget {
                 SizedBox(height: MediaQuery.of(context).size.height * 0.25),
                 const EmptyHint(
                   icon: Icons.code,
-                  title: 'Koi command nahi',
+                  title: S.cmdNoCommands,
                   message: 'Project me .opencode/command/ ya ~/.config/opencode/command/ me markdown command files daalo.',
                 ),
               ],
@@ -118,9 +119,9 @@ class _CommandTile extends StatelessWidget {
                   onPressed: () async {
                     final args = await promptText(
                       context,
-                      title: '/${cmd.name} ke arguments',
+                      title: S.cmdArgs(cmd.name),
                       hint: cmd.template.contains(r'$ARGUMENTS')
-                          ? 'arguments likho'
+                          ? S.cmdArgsHint
                           : 'optional',
                     );
                     if (args == null) return;
@@ -198,9 +199,7 @@ class SkillsSection extends StatelessWidget {
                     const SizedBox(height: OCSpace.sm),
                     OCButton(
                       onPressed: () async {
-                        await store.send(
-                          'Skill "${s.name}" use karke kaam karo.',
-                        );
+                        await store.send(S.cmdUseSkill(s.name));
                         if (context.mounted) {
                           Navigator.push(
                             context,
@@ -209,7 +208,7 @@ class SkillsSection extends StatelessWidget {
                         }
                       },
                       icon: Icons.bolt,
-                      label: '${s.name} use karo',
+                      label: S.cmdUseLabel(s.name),
                       variant: OCButtonVariant.primaryGradient,
                     ),
                   ],

@@ -1,35 +1,35 @@
 # GRAPH REPORT
-27 files, 584 symbols, 1022 edges (702 EXTRACTED, 320 INFERRED)
+27 files, 680 symbols, 1192 edges (813 EXTRACTED, 379 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:464
-- mono (function) - 12 links - lib/ui/theme.dart:544
+- mono (function) - 12 links - lib/ui/theme.dart:619
 - OCButton (class) - 11 links - lib/ui/primitives.dart:98
+- showSnack (function) - 10 links - lib/ui/widgets.dart:134
 - read (function) - 9 links - lib/ui/app_scope.dart:17
-- showSnack (function) - 9 links - lib/ui/widgets.dart:132
-- EmptyHint (class) - 9 links - lib/ui/widgets.dart:147
-- LoadingView (class) - 7 links - lib/ui/widgets.dart:206
-- send (function) - 6 links - lib/state/store.dart:966
-- confirmDialog (function) - 6 links - lib/ui/widgets.dart:370
-- SectionTitle (class) - 6 links - lib/ui/widgets.dart:405
+- EmptyHint (class) - 9 links - lib/ui/widgets.dart:149
+- clear (function) - 7 links - lib/ui/terminal_page.dart:42
+- LoadingView (class) - 7 links - lib/ui/widgets.dart:208
+- LIcon (class) - 6 links - lib/ui/line_icons.dart:99
+- copyToClipboard (function) - 6 links - lib/ui/widgets.dart:138
 
 ## Communities (modules that talk to each other)
 1. 26 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...
 
 ## Folder dependencies (who imports whom)
+- lib/ui -> lib/l10n  (15 imports)
+- lib/ui -> lib/state  (11 imports)
 - lib/ui -> lib/models  (11 imports)
-- lib/ui -> lib/state  (10 imports)
-- lib/ui -> lib/l10n  (5 imports)
 - lib -> lib/ui  (3 imports)
 - lib/api -> lib/models  (2 imports)
 - lib/state -> lib/api  (2 imports)
 - lib/ui -> lib/api  (2 imports)
+- lib/api -> lib/l10n  (1 imports)
 - lib -> lib/state  (1 imports)
-- lib/state -> lib/models  (1 imports)
-- lib/state -> lib/db  (1 imports)
+- lib/state -> lib/l10n  (1 imports)
 
 ## Circular imports (real import cycles only)
-- none found
+- lib/ui/chat.dart <-> lib/ui/models_page.dart
 
 ## Orphan files (nobody imports them: dead code?)
 - deploy.py
@@ -39,7 +39,7 @@
 
 ## Rationale / TODO notes
 - WHY: the raw message needs this before the UI can show anything. - lib/models/models.dart:189
-- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:393
+- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:399
 
 ## Suggested questions
 - What breaks if I change OCIconTile?   -> impact

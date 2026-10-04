@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
@@ -40,8 +41,8 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.only(bottom: OCSpace.xxxl),
         children: [
           // ---------------- server ----------------
-          const SectionTitle('Server'),
-          InfoRow('URL', store.baseUrl, mono: true),
+          const SectionTitle(S.setServerLabel),
+          InfoRow(S.setUrlLabel, store.baseUrl, mono: true),
           InfoRow(
             'Status',
             store.online
@@ -70,14 +71,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 OCButton(
                   onPressed: () => _editServer(context, store),
                   icon: Icons.edit,
-                  label: 'Change server',
+                  label: S.setChangeServer,
                   variant: OCButtonVariant.secondaryPill,
                   expand: false,
                 ),
                 OCButton(
                   onPressed: store.connect,
                   icon: Icons.refresh,
-                  label: 'Reconnect',
+                  label: S.setReconnect,
                   variant: OCButtonVariant.secondaryPill,
                   expand: false,
                 ),
@@ -90,24 +91,24 @@ class _SettingsPageState extends State<SettingsPage> {
           const SectionTitle('Current session'),
           _ActionTile(
             icon: Icons.auto_awesome,
-            title: 'AGENTS.md banao (/init)',
-            subtitle: 'Project ka instruction file generate karo',
+            title: S.setInitAgents,
+            subtitle: S.setInitAgentsSub,
             onTap: store.initAgents,
           ),
           _ActionTile(
             icon: Icons.compress,
-            title: 'Summarize karo',
-            subtitle: 'Chat ka context compact karo',
+            title: S.setSummarize,
+            subtitle: S.setSummarizeSub,
             onTap: store.summarize,
           ),
           _ActionTile(
             icon: Icons.undo,
-            title: 'Revert',
-            subtitle: 'Pichle message ke changes wapas lo',
+            title: S.setRevertLast,
+            subtitle: S.setRevertLastBody,
             onTap: () async {
               final id = store.current?.id;
               if (id == null || store.messages.isEmpty) {
-                showSnack(context, 'Koi message nahi');
+                showSnack(context, S.noMessagesYet);
                 return;
               }
               await store.revert(store.messages.last.info.id);
@@ -115,28 +116,27 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           _ActionTile(
             icon: Icons.redo,
-            title: 'Unrevert',
-            subtitle: 'Saare reverted changes wapas lo',
+            title: S.setUnrevert,
+            subtitle: S.setRevertAllBodyShort,
             onTap: store.unrevert,
           ),
           _ActionTile(
             icon: Icons.refresh,
-            title: 'Instance restart',
-            subtitle: 'Server ka current instance dispose karke fresh start',
+            title: S.setInstanceRestart,
+            subtitle: S.setUpgradeBody,
             danger: true,
             onTap: () async {
               final ok = await confirmDialog(
                 context,
-                title: 'Instance restart?',
-                message: 'Current instance dispose ho jayega. Active kaam ruk sakta hai.',
+                title: S.setInstanceRestartTitle,
+                message: S.setUpgradeConfirmBody,
                 confirm: 'Restart',
               );
               if (!ok) return;
               try {
                 await store.api.disposeInstance();
                 await store.connect();
-                if (context.mounted)
-                  showSnack(context, 'Instance restart ho gaya');
+                if (context.mounted) showSnack(context, S.instanceRestarted);
               } catch (e) {
                 if (context.mounted) showSnack(context, '$e', error: true);
               }
@@ -144,14 +144,14 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           _ActionTile(
             icon: Icons.system_update,
-            title: 'opencode upgrade',
-            subtitle: 'Server side opencode ko latest version pe le jao',
+            title: S.setUpgradeCmd,
+            subtitle: S.setUpgradeSub,
             danger: true,
             onTap: () async {
               final ok = await confirmDialog(
                 context,
-                title: 'Upgrade karein?',
-                message: 'Server restart ho sakta hai.',
+                title: S.setUpgradeTitle,
+                message: S.setUpgradeBody2,
                 confirm: 'Upgrade',
               );
               if (!ok) return;
@@ -166,14 +166,14 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           _ActionTile(
             icon: Icons.folder_open,
-            title: 'External folder likhne ki permission do',
-            subtitle: 'Project ke bahar bhi files create karne allow karega',
+            title: S.setExternalFolder,
+            subtitle: S.setExternalFolderSub,
             onTap: () async {
               final ok = await confirmDialog(
                 context,
-                title: 'External directory permission allow karein?',
-                message: 'Ye opencode ko project folder ke bahar bhi files likhne dega (jaise /storage/emulated/0/).',
-                confirm: 'Allow',
+                title: S.setPermExternalTitle(d.path),
+                message: S.setPermExternalNote,
+                confirm: S.permAllow,
               );
               if (!ok) return;
               try {
@@ -185,11 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 });
                 await store.refreshConfig();
-                if (context.mounted)
-                  showSnack(
-                    context,
-                    'External directory permission allow ho gaya',
-                  );
+                if (context.mounted) showSnack(context, S.externalPermGranted);
               } catch (e) {
                 if (context.mounted) showSnack(context, '$e', error: true);
               }
@@ -229,7 +225,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 OCSpace.screenX,
                 OCSpace.sm,
               ),
-              child: Text('Koi MCP server nahi.', style: OCTypography.caption),
+              child: Text(S.noMcpServers, style: OCTypography.caption),
             ),
           for (final e in store.mcp.entries)
             ListTile(
@@ -267,7 +263,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'connect', child: Text('Connect')),
+                  PopupMenuItem(value: 'connect', child: Text(S.setConnect)),
                   PopupMenuItem(value: 'disconnect', child: Text('Disconnect')),
                 ],
               ),
@@ -282,7 +278,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: OCButton(
               onPressed: () => _addMcp(context),
               icon: Icons.add,
-              label: 'MCP server add karo',
+              label: S.setAddMcp,
               variant: OCButtonVariant.secondaryPill,
               expand: false,
             ),
@@ -299,7 +295,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 OCSpace.screenX,
                 OCSpace.sm,
               ),
-              child: Text('Koi LSP active nahi.', style: OCTypography.caption),
+              child: Text(S.noLspActive, style: OCTypography.caption),
             ),
           for (final l in store.lsp) _StatusRow(l),
           const SectionTitle('Formatters'),
@@ -311,7 +307,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 OCSpace.screenX,
                 OCSpace.sm,
               ),
-              child: Text('Koi formatter nahi.', style: OCTypography.caption),
+              child: Text(S.noFormatters, style: OCTypography.caption),
             ),
           for (final f in store.formatters) _StatusRow(f),
           const Divider(height: OCSpace.xxl),
@@ -330,7 +326,7 @@ class _SettingsPageState extends State<SettingsPage> {
               0,
             ),
             child: Text(
-              'Is app ke liye Termux me opencode server chalna zaroori hai. Server ko usi project folder se start karo jise app me dekhna hai.',
+              S.termuxSetupNote(S.serverSetupCommand),
               style: OCTypography.micro.copyWith(height: 1.5),
             ),
           ),
@@ -346,27 +342,25 @@ class _SettingsPageState extends State<SettingsPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Server'),
+        title: const Text(S.setServerLabel),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: url,
-              decoration: const InputDecoration(labelText: 'URL'),
+              decoration: const InputDecoration(labelText: S.setUrlLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: user,
-              decoration: const InputDecoration(
-                labelText: 'Username (basic auth)',
-              ),
+              decoration: const InputDecoration(labelText: S.setUserLabel),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: pass,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'Password (OPENCODE_SERVER_PASSWORD)',
+                labelText: S.setPassword('OPENCODE_SERVER_PASSWORD'),
               ),
             ),
             const SizedBox(height: 10),
@@ -392,7 +386,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: const Text('Cancel'),
           ),
           OCButton(
-            label: 'Connect',
+            label: S.setConnect,
             variant: OCButtonVariant.primaryBlack,
             onPressed: () => Navigator.pop(context, true),
           ),
@@ -413,13 +407,13 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (dlg) => StatefulBuilder(
         builder: (c, setD) => AlertDialog(
-          title: const Text('MCP server add karo'),
+          title: const Text(S.setAddMcp),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: name,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: const InputDecoration(labelText: S.nameLabel),
               ),
               const SizedBox(height: 10),
               OCSegmentedControl<String>(
@@ -434,7 +428,7 @@ class _SettingsPageState extends State<SettingsPage> {
               TextField(
                 controller: value,
                 decoration: InputDecoration(
-                  labelText: type == 'local' ? 'Command (e.g. npx)' : 'URL',
+                  labelText: S.setMcpLabel(type),
                   hintText: type == 'local' ? 'npx' : 'https://example.com/mcp',
                 ),
               ),
@@ -446,7 +440,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text('Cancel'),
             ),
             OCButton(
-              label: 'Add',
+              label: S.setAdd,
               variant: OCButtonVariant.primaryBlack,
               onPressed: () {
                 if (name.text.trim().isEmpty || value.text.trim().isEmpty)
@@ -493,10 +487,7 @@ class _Providers extends StatelessWidget {
               OCSpace.screenX,
               OCSpace.sm,
             ),
-            child: Text(
-              'Koi provider connected nahi. Neeche se API key daal do.',
-              style: OCTypography.caption,
-            ),
+            child: Text(S.noProviderConnected, style: OCTypography.caption),
           ),
         for (final p in connected)
           ListTile(
@@ -563,7 +554,7 @@ class _Providers extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           OCButton(
-            label: 'Save',
+            label: S.save,
             variant: OCButtonVariant.primaryBlack,
             onPressed: () => Navigator.pop(context, true),
           ),
@@ -659,14 +650,11 @@ class _ConfigEditorState extends State<_ConfigEditor> {
               await AppScope.read(context).saveConfig(parsed);
             },
             icon: Icons.save_outlined,
-            label: 'Config save karo',
+            label: S.setSaveConfig,
             variant: OCButtonVariant.primaryBlack,
           ),
           const SizedBox(height: OCSpace.sm),
-          Text(
-            'PATCH /config — ye global opencode config update karta hai.',
-            style: OCTypography.micro,
-          ),
+          Text(S.patchConfigNote, style: OCTypography.micro),
         ],
       ),
     );

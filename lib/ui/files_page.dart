@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
@@ -11,10 +12,10 @@ class FilesPage extends StatefulWidget {
   const FilesPage({super.key});
 
   @override
-  State<FilesPage> createState() => _FilesPageState();
+  State<FilesPage> createState() => FilesPageState();
 }
 
-class _FilesPageState extends State<FilesPage> {
+class FilesPageState extends State<FilesPage> {
   final pathC = TextEditingController();
   String dir = '.';
   List<FileNode> nodes = [];
@@ -28,6 +29,13 @@ class _FilesPageState extends State<FilesPage> {
     super.initState();
     _load();
   }
+
+  /// Called by the shell header's refresh button.
+  void reload() => _load();
+
+  /// Called by the shell header's new-file button: opens the same menu the
+  /// in-page button does, so there is one behaviour, not two copies.
+  void promptCreate() => _createMenu();
 
   @override
   void dispose() {
@@ -72,7 +80,7 @@ class _FilesPageState extends State<FilesPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.note_add_outlined),
-              title: const Text('Naya file'),
+              title: const Text(S.filesNewFileItem),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 await _newFile();
@@ -80,7 +88,7 @@ class _FilesPageState extends State<FilesPage> {
             ),
             ListTile(
               leading: const Icon(Icons.create_new_folder_outlined),
-              title: const Text('Naya folder'),
+              title: const Text(S.filesNewFolderItem),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 await _newFolder();
@@ -93,16 +101,16 @@ class _FilesPageState extends State<FilesPage> {
   }
 
   Future<void> _newFile() async {
-    final name = await promptText(context, title: 'File ka naam');
+    final name = await promptText(context, title: S.filesNameLabel(false));
     if (name == null || !mounted) return;
     if (!_validName(name)) {
-      showSnack(context, 'Naam galat hai — "/" ya ".." allowed nahi', error: true);
+      showSnack(context, S.filesBadName, error: true);
       return;
     }
     final path = dir == '.' ? name : '$dir/$name';
     final exists = nodes.any((n) => n.name == name.trim());
     if (exists) {
-      showSnack(context, '$name pehle se exist karta hai', error: true);
+      showSnack(context, S.filesExists(name), error: true);
       return;
     }
     try {
@@ -124,10 +132,10 @@ class _FilesPageState extends State<FilesPage> {
   }
 
   Future<void> _newFolder() async {
-    final name = await promptText(context, title: 'Folder ka naam');
+    final name = await promptText(context, title: S.filesNameLabel(true));
     if (name == null || !mounted) return;
     if (!_validName(name)) {
-      showSnack(context, 'Naam galat hai — "/" ya ".." allowed nahi', error: true);
+      showSnack(context, S.filesBadName, error: true);
       return;
     }
     final path = dir == '.' ? name.trim() : '$dir/${name.trim()}';
@@ -188,7 +196,8 @@ class _FilesPageState extends State<FilesPage> {
         ? <String>['/', ...segs]
         : (segs.isEmpty ? <String>['.'] : segs);
     String crumbPath(int i) {
-      if (absolute) return i == 0 ? '/' : '/${crumbs.sublist(1, i + 1).join('/')}';
+      if (absolute)
+        return i == 0 ? '/' : '/${crumbs.sublist(1, i + 1).join('/')}';
       return i == 0 ? '.' : crumbs.sublist(0, i + 1).join('/');
     }
 
@@ -207,40 +216,41 @@ class _FilesPageState extends State<FilesPage> {
                 child: TextField(
                   controller: pathC,
                   onSubmitted: _load,
-                  style: OCTypography.mono(size: 12.5),
+                  style: OCTypography.mono(size: 12.5, color: t.ink),
                   decoration: InputDecoration(
                     isDense: true,
-                    hintText: 'path (project root se relative)',
-                    hintStyle: OCTypography.mono(
-                      color: OCColors.textTertiary,
-                      size: 12.5,
-                    ),
+                    hintText: S.filesPathHint,
+                    hintStyle: OCTypography.mono(color: t.mute, size: 12.5),
                     filled: true,
-                    fillColor: OCColors.surface,
-                    prefixIcon: const Icon(
+                    fillColor: t.surfaceElevated,
+                    prefixIcon: Icon(
                       Icons.folder_outlined,
                       size: 18,
-                      color: OCColors.textTertiary,
+                      color: t.mute,
                     ),
                     suffixIcon: IconButton(
+                      tooltip: S.filesGo,
                       iconSize: 18,
+                      color: t.mute,
                       icon: const Icon(Icons.arrow_forward),
                       onPressed: () => _load(pathC.text),
                     ),
-                    border: _pillBorder(),
-                    enabledBorder: _pillBorder(),
-                    focusedBorder: _pillBorder(focused: true),
+                    border: _pillBorder(t.acc),
+                    enabledBorder: _pillBorder(t.acc),
+                    focusedBorder: _pillBorder(t.acc, focused: true),
                   ),
                 ),
               ),
               const SizedBox(width: OCSpace.sm),
               IconButton(
-                tooltip: 'Naya file ya folder',
+                tooltip: S.filesNewTitle,
+                color: t.mute,
                 icon: const Icon(Icons.add),
                 onPressed: _createMenu,
               ),
               IconButton(
-                tooltip: 'Refresh',
+                tooltip: S.refresh,
+                color: t.mute,
                 icon: const Icon(Icons.refresh),
                 onPressed: () => _load(),
               ),
@@ -254,12 +264,7 @@ class _FilesPageState extends State<FilesPage> {
             padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
             children: [
               for (var i = 0; i < crumbs.length; i++) ...[
-                if (i > 0)
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 15,
-                    color: OCColors.textTertiary,
-                  ),
+                if (i > 0) Icon(Icons.chevron_right, size: 15, color: t.faint),
                 InkWell(
                   borderRadius: BorderRadius.circular(OCRadius.sm),
                   onTap: () => _load(crumbPath(i)),
@@ -269,11 +274,12 @@ class _FilesPageState extends State<FilesPage> {
                       vertical: OCSpace.sm,
                     ),
                     child: Text(
-                      i == 0 ? (absolute ? '/' : 'root') : crumbs[i],
+                      i == 0 ? (absolute ? '/' : S.filesRootCrumb) : crumbs[i],
                       style: OCTypography.caption.copyWith(
-                        color: i == crumbs.length - 1
-                            ? OCColors.orangeInk
-                            : OCColors.textPrimary,
+                        color: i == crumbs.length - 1 ? t.acc : t.ink,
+                        fontWeight: i == crumbs.length - 1
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -292,11 +298,12 @@ class _FilesPageState extends State<FilesPage> {
                   setState(() => showIgnored = v);
                   _load();
                 },
-                title: const Text(
-                  'Ignored files dikhao',
-                  style: TextStyle(fontSize: 12),
+                title: Text(
+                  S.filesShowIgnored,
+                  style: OCTypography.caption.copyWith(color: t.ink),
                 ),
-                activeThumbColor: OCColors.orange,
+                activeThumbColor: t.acc,
+                activeTrackColor: t.acc,
                 visualDensity: VisualDensity.compact,
               ),
             ),
@@ -308,27 +315,27 @@ class _FilesPageState extends State<FilesPage> {
                 ),
                 icon: const Icon(Icons.edit_note, size: 16),
                 label: Text(
-                  '$modifiedCount changed',
-                  style: OCTypography.caption,
+                  S.filesChangedCount(modifiedCount),
+                  style: OCTypography.caption.copyWith(color: t.ink),
                 ),
               ),
           ],
         ),
-        const Divider(height: 1, color: OCColors.borderHairline),
+        Divider(height: 1, color: t.line),
         Expanded(
           child: loading
               ? const LoadingView()
               : err != null
               ? EmptyHint(
                   icon: Icons.error_outline,
-                  title: 'Load nahi hua',
+                  title: S.filesLoadFailed,
                   message: err!,
                 )
               : nodes.isEmpty
               ? const EmptyHint(
                   icon: Icons.folder_off_outlined,
-                  title: 'Khaali folder',
-                  message: 'Yahan koi file nahi.',
+                  title: S.filesEmptyName(true),
+                  message: S.filesEmptyHere,
                 )
               : ListView.builder(
                   itemCount: nodes.length,
@@ -362,12 +369,12 @@ class _FilesPageState extends State<FilesPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.drive_file_rename_outline),
-              title: const Text('Rename'),
+              title: const Text(S.rename),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 final v = await promptText(
                   context,
-                  title: 'Rename',
+                  title: S.rename,
                   initial: n.name,
                 );
                 if (v == null || v.trim().isEmpty) return;
@@ -383,7 +390,7 @@ class _FilesPageState extends State<FilesPage> {
             ),
             ListTile(
               leading: const Icon(Icons.content_copy),
-              title: const Text('Duplicate'),
+              title: const Text(S.filesDuplicate),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 try {
@@ -399,10 +406,13 @@ class _FilesPageState extends State<FilesPage> {
             if (n.isDir)
               ListTile(
                 leading: const Icon(Icons.playlist_add),
-                title: const Text('Naya folder yahan'),
+                title: const Text(S.filesFolderExists),
                 onTap: () async {
                   Navigator.pop(sheetCtx);
-                  final v = await promptText(context, title: 'Folder ka naam');
+                  final v = await promptText(
+                    context,
+                    title: S.filesNameLabel(true),
+                  );
                   if (v == null || v.trim().isEmpty) return;
                   try {
                     await store.mkdirEntry('${n.path}/${v.trim()}');
@@ -415,24 +425,24 @@ class _FilesPageState extends State<FilesPage> {
             else
               ListTile(
                 leading: const Icon(Icons.send),
-                title: const Text('Chat me bhejo'),
+                title: const Text(S.filesSendToChat),
                 onTap: () async {
                   Navigator.pop(sheetCtx);
-                  await store.send('@${n.path} is file ko review karo');
+                  await store.send('@${n.path} review this file');
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: OCColors.red),
+              leading: Icon(Icons.delete_outline, color: context.oc.err),
               title: const Text(
-                'Delete',
-                style: TextStyle(color: OCColors.red),
+                S.deleteFile,
+                style: TextStyle(color: context.oc.err),
               ),
               onTap: () async {
                 Navigator.pop(sheetCtx);
                 final ok = await confirmDialog(
                   context,
-                  title: 'Delete karein?',
-                  message: '${n.path} permanently delete ho jayegi.',
+                  title: S.filesDeleteTitle,
+                  message: S.filesDeleteBody(n.path),
                   confirm: 'Delete',
                   danger: true,
                 );
@@ -455,12 +465,15 @@ class _FilesPageState extends State<FilesPage> {
   static String _q(String s) => "'${s.replaceAll("'", "'\\''")}'";
 }
 
-OutlineInputBorder _pillBorder({bool focused = false}) => OutlineInputBorder(
-  borderRadius: BorderRadius.circular(OCRadius.full),
-  borderSide: BorderSide(
-    color: focused ? OCColors.orange : OCColors.borderHairline,
-  ),
-);
+/// Takes the colour instead of reading `context`: this is a top-level helper,
+/// so it has no BuildContext of its own to hang `context.oc` off.
+OutlineInputBorder _pillBorder(Color line, {bool focused = false}) =>
+    OutlineInputBorder(
+      borderRadius: BorderRadius.circular(OCRadius.full),
+      borderSide: BorderSide(
+        color: focused ? line : line.withValues(alpha: 0.8),
+      ),
+    );
 
 class ChangedFilesPage extends StatelessWidget {
   const ChangedFilesPage({super.key});
@@ -469,7 +482,7 @@ class ChangedFilesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Changed files')),
+      appBar: AppBar(title: const Text(S.filesChangedTitle)),
       body: FutureBuilder<List<FileNode>>(
         future: store.api.fileStatus(),
         builder: (_, snap) {
@@ -478,8 +491,8 @@ class ChangedFilesPage extends StatelessWidget {
           if (list.isEmpty) {
             return const EmptyHint(
               icon: Icons.check_circle_outline,
-              title: 'Sab clean',
-              message: 'Koi tracked file change nahi hai.',
+              title: S.filesAllClean,
+              message: S.filesNoChanges,
             );
           }
           return ListView.builder(
@@ -496,7 +509,7 @@ class ChangedFilesPage extends StatelessWidget {
               trailing: const Icon(
                 Icons.open_in_new,
                 size: 16,
-                color: OCColors.textTertiary,
+                color: context.oc.mute,
               ),
               onTap: () => Navigator.push(
                 context,
@@ -530,7 +543,7 @@ class _FileTile extends StatelessWidget {
         vertical: OCSpace.xxs,
       ),
       decoration: BoxDecoration(
-        color: node.isDir ? OCColors.purpleTint : OCColors.surface,
+        color: node.isDir ? context.oc.surfaceElevated : context.oc.card,
         borderRadius: BorderRadius.circular(OCRadius.inner),
       ),
       child: ListTile(
@@ -549,7 +562,7 @@ class _FileTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: OCTypography.caption.copyWith(
-            color: node.ignored ? OCColors.textTertiary : OCColors.textPrimary,
+            color: node.ignored ? context.oc.faint : context.oc.ink,
           ),
         ),
         trailing: IconButton(
@@ -672,8 +685,8 @@ class _FileEditorPageState extends State<FileEditorPage> {
         if (didPop) return;
         final leave = await confirmDialog(
           context,
-          title: 'Changes save nahi kiye',
-          message: 'Aap bhool gaye. Exit karein?',
+          title: S.filesUnsaved,
+          message: S.filesUnsavedExit,
           confirm: 'Exit',
         );
         if (leave && mounted) Navigator.pop(context);
@@ -700,13 +713,13 @@ class _FileEditorPageState extends State<FileEditorPage> {
               const Center(
                 child: StatusPill(
                   'edited',
-                  OCColors.orange,
+                  context.oc.acc,
                   icon: Icons.edit_note,
                 ),
               ),
             IconButton(
               icon: const Icon(Icons.save_outlined),
-              tooltip: 'Save',
+              tooltip: S.save,
               onPressed: saving || !dirty ? null : _save,
             ),
             IconButton(
@@ -720,14 +733,14 @@ class _FileEditorPageState extends State<FileEditorPage> {
             : err != null
             ? EmptyHint(
                 icon: Icons.error_outline,
-                title: 'Padha nahi ja saka',
+                title: S.filesReadFailed,
                 message: err!,
               )
             : binary
             ? const EmptyHint(
                 icon: Icons.memory,
-                title: 'Binary file',
-                message: 'Ye text file nahi hai, edit nahi ho sakti.',
+                title: S.filesBinary,
+                message: S.filesNotText,
               )
             : Column(
                 children: [
@@ -756,10 +769,8 @@ class _FileEditorPageState extends State<FileEditorPage> {
                       OCSpace.sm,
                     ),
                     decoration: const BoxDecoration(
-                      color: OCColors.surface,
-                      border: Border(
-                        top: BorderSide(color: OCColors.borderHairline),
-                      ),
+                      color: context.oc.card,
+                      border: Border(top: BorderSide(color: context.oc.line)),
                     ),
                     child: Row(
                       children: [
@@ -771,7 +782,7 @@ class _FileEditorPageState extends State<FileEditorPage> {
                         if (dirty)
                           OCButton(
                             onPressed: _save,
-                            label: saving ? 'Saving…' : 'Save',
+                            label: saving ? S.saving : S.save,
                             variant: OCButtonVariant.primaryBlack,
                             expand: false,
                             height: 36,

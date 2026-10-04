@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
@@ -40,7 +41,7 @@ class _DiffPageState extends State<DiffPage> {
       if (source == 'session') {
         if (store.current == null) {
           setState(() {
-            err = 'Koi active session nahi.';
+            err = S.diffNoActiveSession;
             loading = false;
           });
           return;
@@ -105,7 +106,7 @@ class _DiffPageState extends State<DiffPage> {
               ),
               const Spacer(),
               IconButton(
-                tooltip: 'Refresh',
+                tooltip: S.diffRefresh,
                 icon: const Icon(Icons.refresh),
                 onPressed: _load,
               ),
@@ -162,7 +163,7 @@ class _DiffPageState extends State<DiffPage> {
                 const SizedBox(width: OCSpace.sm),
                 const Expanded(
                   child: Text(
-                    'Ye project git repo nahi hai, isliye git diff nahi hai.',
+                    S.diffNotARepo,
                     style: TextStyle(
                       fontSize: 12,
                       color: OCColors.textSecondary,
@@ -179,16 +180,15 @@ class _DiffPageState extends State<DiffPage> {
               : err != null
               ? EmptyHint(
                   icon: Icons.error_outline,
-                  title: 'Diff load nahi hua',
+                  title: S.diffLoadFailed,
                   message: err!,
                 )
               : source == 'session'
               ? (sessionFiles.isEmpty
                     ? const EmptyHint(
                         icon: Icons.check_circle_outline,
-                        title: 'Koi change nahi',
-                        message:
-                            'Is session me abhi tak koi file modify nahi hui.',
+                        title: S.diffNoChanges,
+                        message: S.diffNoFilesBody,
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.only(bottom: OCSpace.lg),
@@ -279,10 +279,7 @@ class _SessionDiffTile extends StatelessWidget {
           else
             Padding(
               padding: const EdgeInsets.all(OCSpace.md),
-              child: Text(
-                'Is file ka textual diff nahi hai.',
-                style: OCTypography.caption,
-              ),
+              child: Text(S.diffNotTextual, style: OCTypography.caption),
             ),
           const SizedBox(height: OCSpace.sm),
           Align(
@@ -303,9 +300,9 @@ class _SessionDiffTile extends StatelessWidget {
                     onPressed: () async {
                       final ok = await confirmDialog(
                         context,
-                        title: 'Patch apply karein?',
-                        message: '${d.file} par patch apply hoga.',
-                        confirm: 'Apply',
+                        title: S.diffApplyTitle,
+                        message: S.diffAppliesTo(d.file),
+                        confirm: S.diffApply,
                       );
                       if (!ok) return;
                       try {
@@ -317,15 +314,17 @@ class _SessionDiffTile extends StatelessWidget {
                                 : store.vcs!.defaultBranch,
                           ),
                         );
-                        if (context.mounted)
-                          showSnack(context, 'Apply ho gaya');
+                        if (context.mounted) showSnack(context, S.diffApplied);
                       } catch (e) {
                         if (context.mounted)
                           showSnack(context, '$e', error: true);
                       }
                     },
                     icon: const Icon(Icons.play_arrow, size: 15),
-                    label: const Text('Apply', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      S.diffApply,
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
               ],
             ),
@@ -415,8 +414,8 @@ class _GitDiffView extends StatelessWidget {
     if (files.isEmpty && raw.isEmpty) {
       return const EmptyHint(
         icon: Icons.check_circle_outline,
-        title: 'Koi diff nahi',
-        message: 'Worktree clean hai.',
+        title: S.diffNoneTitle,
+        message: S.diffCleanBody,
       );
     }
     if (raw.isEmpty) {
@@ -470,7 +469,7 @@ class _GitDiffView extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () => copyToClipboard(context, raw),
                   icon: const Icon(Icons.copy, size: 15),
-                  label: const Text('Copy', style: TextStyle(fontSize: 12)),
+                  label: const Text(S.copy, style: TextStyle(fontSize: 12)),
                 ),
               ],
             ),

@@ -28,6 +28,8 @@ Edge tags: **EXTRACTED** (literal import/call/route in code) · **INFERRED** (0.
 - `PartTile`/`ToolTimeline`/`ToolTile`/`DiffText` (`parts.dart:13,21,215,506`)
 - Custom markdown parser → `_Block` list (`markdown.dart:18,351`), global `_parseCache` (`markdown.dart:377`)
 - Custom-drawn icon system `LI` + `LIcon` + `LLinePainter` (`line_icons.dart:17,96,186`)
+- Empty state = `_Welcome` (`chat.dart:628`): hero → `_ModelModeChips` → `_ProjectBar` → 4 `SuggestionCard`s, pinned top/bottom by `IntrinsicHeight` + `ConstrainedBox(minHeight: viewport)` inside a `SingleChildScrollView`
+- `SuggestionCard` (`chat.dart:949`) and `OutlinedChip` (`chat.dart:757`) are public so the hero and the composer share one card/chip implementation
 
 ### 5. Session & Task Screens
 `lib/ui/sessions_page.dart` · `lib/ui/todos_page.dart` · `lib/ui/commands_page.dart` · `lib/ui/prompts.dart`
@@ -42,6 +44,9 @@ Edge tags: **EXTRACTED** (literal import/call/route in code) · **INFERRED** (0.
 - `OCColors`/`OCTokens`(ThemeExtension)/`OCSpace`/`OCRadius`/`OCMotion`/`OCTypography` (`theme.dart:11,115,367,397,416,438`)
 - 22 `OC*` primitives (`primitives.dart:98`…)
 - `pushScreen`/`showSnack`/`copyToClipboard`/`confirmDialog`/`promptText` (`widgets.dart:11,132,136,336`)
+- Chat-screen roles: `OCSpace.screenGutter` (the one horizontal inset), `OCRadius.suggestion/.composer`, `OCMotion.pressScaleSoft`, `OCTypography.heroTitle/.meta`, `OCTokens.surfaceElevated` (composer) and `.warn` (reconnecting). `screenX` is the older 16dp alias.
+- `ocReduceMotion` (`widgets.dart:469`) — the OS "remove animations" check every looping/scale animation must go through
+- `OcLinkState`/`ConnectionPill`/`ocLinkState` (`widgets.dart:476-608`) — the header's 3-state status chip; fed by `OcStore.online` + `OcStore.reconnecting`
 - `S` — 401 static strings (`strings.dart:9`); rule: "no string literals inside widgets" (`strings.dart:1-7`)
 
 ### 8. Shell & Settings
@@ -213,7 +218,7 @@ more_page _ConnectionCard (more_page.dart:94) ~ about_page.dart:59-114          
 - 0.3 `config.json` — whose config is it? Ignored by the app.
 - 0.3 `graphify_lite.py` (610 L, untracked) — a Python graph tool living in this repo; same job as this CODEMAP. Not wired into anything I can see.
 - 0.3 `project_structure.txt` — stale: lists 24 files, omits `about_page`, `more_page`, `primitives`, `theme`, `line_icons`, `l10n/`.
-- 0.2 `OcClient.events`/`eventsAutoReconnect` (`client.dart:217,264`) — appear unused; `EventStream` is the live path. Not verified by grep.
+- 0.0 `OcClient.events`/`eventsAutoReconnect` — RESOLVED 2026-10-04: grep-verified unused (`EventStream` in `api/events.dart` is the only live SSE path) and deleted. `OcClient` is now request/response only.
 
 ## Learned
 
@@ -221,6 +226,7 @@ more_page _ConnectionCard (more_page.dart:94) ~ about_page.dart:59-114          
 - 2026-10-02 — Live updates are 100% SSE-driven via `EventStream`; polling only on boot/reconnect (`store.dart:193-199`, `store.dart:229-242`).
 - 2026-10-02 — File writes have no API; they are shell commands over a private `__opencode_app_util__` session (`store.dart:768-829`).
 - 2026-10-02 — Repo is mid-refactor: 9 modified files + `line_icons.dart`, `design/`, `graphify_lite.py` untracked. `home.dart` moved from a NavigationBar+MoreTab to 4 IndexedStack tabs, orphaning `more_page.dart`.
+- 2026-10-04 — `OcClient` (`api/client.dart`) is strictly request/response now: the legacy `events()`/`eventsAutoReconnect()` generators are deleted, so there is exactly one SSE implementation in the repo — `EventStream` (`api/events.dart`), which owns reconnect, backoff, liveness probing and pause/shutdown.
 
 ## Last scan
 

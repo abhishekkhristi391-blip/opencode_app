@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import 'app_scope.dart';
 import 'primitives.dart';
@@ -23,10 +24,10 @@ class TodosPage extends StatelessWidget {
                 SizedBox(height: MediaQuery.of(context).size.height * 0.2),
                 EmptyHint(
                   icon: Icons.checklist,
-                  title: 'Task list khaali',
+                  title: S.todosEmptyTitle,
                   message: store.current == null
-                      ? 'Pehle koi chat start karo.'
-                      : 'Agent jab todowrite tool use karega, tasks yahan live dikhenge.',
+                      ? S.todosEmptyNoChat
+                      : S.todosEmptyHint,
                 ),
               ],
             )

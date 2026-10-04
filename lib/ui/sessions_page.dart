@@ -14,17 +14,35 @@ class SessionsPage extends StatefulWidget {
   const SessionsPage({super.key});
 
   @override
-  State<SessionsPage> createState() => _SessionsPageState();
+  State<SessionsPage> createState() => SessionsPageState();
 }
 
-class _SessionsPageState extends State<SessionsPage> {
+class SessionsPageState extends State<SessionsPage> {
   /// Single source of truth for the Main/All filter so the header count and
   /// the list can never disagree.
   final filter = ValueNotifier<bool>(true);
 
+  /// Search state lives here, not in the list, because the header's action
+  /// button focuses the field from outside the subtree.
+  final query = ValueNotifier<String>('');
+  final searchCtrl = TextEditingController();
+  final searchFocus = FocusNode();
+
+  /// Called by the shell's header action.
+  void focusSearch() => searchFocus.requestFocus();
+
+  void clearSearch() {
+    searchCtrl.clear();
+    query.value = '';
+    searchFocus.unfocus();
+  }
+
   @override
   void dispose() {
     filter.dispose();
+    query.dispose();
+    searchCtrl.dispose();
+    searchFocus.dispose();
     super.dispose();
   }
 
@@ -32,14 +50,21 @@ class _SessionsPageState extends State<SessionsPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _SessionsHeader(filter: filter),
+        _SessionsHeader(
+          filter: filter,
+          query: query,
+          searchCtrl: searchCtrl,
+          searchFocus: searchFocus,
+        ),
         // Expanded is load-bearing, not cosmetic. Without it [_SessionsList] is
         // a non-flex child of this Column, and a Column hands non-flex children
         // unbounded main-axis constraints. The Column inside [_SessionsList]
         // then has an `Expanded` ListView under an unbounded height, which
         // throws during layout — so the header painted its count while the
         // list painted nothing at all.
-        Expanded(child: _SessionsList(filter: filter)),
+        Expanded(
+          child: _SessionsList(filter: filter, query: query),
+        ),
       ],
     );
   }
@@ -47,37 +72,133 @@ class _SessionsPageState extends State<SessionsPage> {
 
 class _SessionsHeader extends StatelessWidget {
   final ValueListenable<bool> filter;
-  const _SessionsHeader({required this.filter});
+  final ValueListenable<String> query;
+  final TextEditingController searchCtrl;
+  final FocusNode searchFocus;
+
+  const _SessionsHeader({
+    required this.filter,
+    required this.query,
+    required this.searchCtrl,
+    required this.searchFocus,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([AppScope.of(context), filter]),
-      builder: (context, _) {
-        // Counts exactly what the list below is about to show.
-        final list = visibleSessions(context, filter.value);
-        return SectionTitle(
-          list.length == 1
-              ? S.sessionsCountOne(list.length)
-              : S.sessionsCount(list.length),
-        );
-      },
+    final t = context.oc;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        OCSpace.screenX,
+        OCSpace.xs,
+        OCSpace.screenX,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Search. There was none, so a long history was only browsable by
+          // scrolling.
+          SizedBox(
+            height: 40,
+            child: TextField(
+              controller: searchCtrl,
+              focusNode: searchFocus,
+              style: OCTypography.body.copyWith(color: t.ink),
+              cursorColor: t.acc,
+              textInputAction: TextInputAction.search,
+              onChanged: (v) => query.value = v.trim().toLowerCase(),
+              decoration: InputDecoration(
+                hintText: S.historySearchHint,
+                hintStyle: OCTypography.body.copyWith(color: t.mute),
+                prefixIcon: Icon(Icons.search, size: 18, color: t.mute),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+                suffixIcon: searchCtrl.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: Icon(Icons.close, size: 16, color: t.mute),
+                        tooltip: S.clear,
+                        onPressed: () {
+                          searchCtrl.clear();
+                          query.value = '';
+                          searchFocus.unfocus();
+                        },
+                      ),
+                filled: true,
+                fillColor: t.surfaceElevated,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: OCSpace.md,
+                  vertical: OCSpace.sm,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.pill),
+                  borderSide: BorderSide(color: t.line),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.pill),
+                  borderSide: BorderSide(color: t.line),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(OCRadius.pill),
+                  borderSide: BorderSide(color: t.acc),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: OCSpace.sm),
+          ListenableBuilder(
+            listenable: Listenable.merge([AppScope.of(context), filter, query]),
+            builder: (context, _) {
+              // Counts exactly what the list below is about to show, search
+              // included. It used to ignore the query, so "3 results" could sit
+              // above an empty list.
+              final list = visibleSessions(
+                context,
+                filter.value,
+                query: query.value,
+              );
+              return SectionTitle(
+                list.length == 1
+                    ? S.sessionsCountOne(list.length)
+                    : S.sessionsCount(list.length),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
 
 /// The one filter used by both the header count and the list.
-List<Session> visibleSessions(BuildContext context, bool parentsOnly) {
+List<Session> visibleSessions(
+  BuildContext context,
+  bool parentsOnly, {
+  String query = '',
+}) {
   final store = AppScope.of(context);
   final all = store.sessions
       .where((s) => s.title != OcStore.utilSessionTitle)
       .toList();
-  return parentsOnly ? all.where((s) => !s.isChild).toList() : all;
+  final base = parentsOnly ? all.where((s) => !s.isChild).toList() : all;
+  if (query.isEmpty) return base;
+  return base
+      .where(
+        (s) =>
+            s.label.toLowerCase().contains(query) ||
+            (s.agent.toLowerCase().contains(query)) ||
+            (s.modelId.toLowerCase().contains(query)),
+      )
+      .toList();
 }
 
 class _SessionsList extends StatefulWidget {
   final ValueListenable<bool> filter;
-  const _SessionsList({required this.filter});
+  final ValueListenable<String> query;
+  const _SessionsList({required this.filter, required this.query});
 
   @override
   State<_SessionsList> createState() => _SessionsListState();
@@ -85,15 +206,16 @@ class _SessionsList extends StatefulWidget {
 
 class _SessionsListState extends State<_SessionsList> {
   ValueNotifier<bool> get filter => widget.filter as ValueNotifier<bool>;
+  ValueNotifier<String> get query => widget.query as ValueNotifier<String>;
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([AppScope.of(context), filter]),
+      listenable: Listenable.merge([AppScope.of(context), filter, query]),
       builder: (context, _) {
         final store = AppScope.of(context);
         final parentsOnly = filter.value;
-        final list = visibleSessions(context, parentsOnly);
+        final list = visibleSessions(context, parentsOnly, query: query.value);
 
         return Column(
           children: [
@@ -167,15 +289,7 @@ class _SessionsListState extends State<_SessionsList> {
                           expand: false,
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: OCSpace.xs),
-                        // Without this a short history never overscrolls, so
-                        // pull-to-refresh would be dead on arrival.
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: list.length,
-                        itemBuilder: (_, i) =>
-                            _GuardedSessionTile(s: list[i], index: i),
-                      ),
+                    : _GroupedSessionList(list: list),
               ),
             ),
           ],
@@ -297,6 +411,7 @@ class _SessionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.read(context);
+    final t = context.oc;
     final active = store.current?.id == s.id;
 
     return Dismissible(
@@ -305,56 +420,104 @@ class _SessionTile extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: OCSpace.xl),
-        color: OCColors.redTint,
-        child: const Icon(Icons.delete_outline, color: OCColors.redInk),
-      ),
-      confirmDismiss: (_) async {
-        final ok = await confirmDialog(
-          context,
-          title: S.sessionsDeleteTitle,
-          message: S.sessionsDeleteBody(s.label),
-          confirm: S.delete,
-          danger: true,
-        );
-        if (ok) await store.deleteSession(s.id);
-        return ok;
-      },
-      child: OCListRow(
-        title: s.label,
-        leadingIcon: active ? Icons.forum : Icons.forum_outlined,
-        accent: active ? OCAccent.orange : OCAccent.neutral,
-        selected: active,
-        titleStyle: OCTypography.body.copyWith(color: OCColors.textPrimary),
-        subtitle: Row(
+        color: t.errSoft,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text(fmtAge(s.updated), style: OCTypography.micro),
-            if (s.cost > 0)
-              Text(
-                ' · \$${s.cost.toStringAsFixed(2)}',
-                style: OCTypography.micro,
-              ),
-            if (s.summary.files > 0)
-              Text(' · ${s.summary.files}f', style: OCTypography.micro),
-            if (s.isChild)
-              Text(' · ${S.sessionsChild}', style: OCTypography.micro),
-            if (s.isShared) ...[
-              const SizedBox(width: OCSpace.sm),
-              const Icon(Icons.public, size: 14, color: OCColors.orangeInk),
-            ],
+            Icon(Icons.delete_outline, color: t.err),
+            const SizedBox(width: OCSpace.sm),
+            Text(S.delete, style: OCTypography.caption.copyWith(color: t.err)),
           ],
         ),
-        trailing: store.busy && active
-            ? const OCProgressRing(value: 0.7, size: 18, stroke: 2.5)
-            : null,
-        onTap: () async {
-          await store.openSession(s.id);
-          if (context.mounted)
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChatPage()),
-            );
-        },
-        onLongPress: () => _showActions(context),
+      ),
+      // Delete immediately, then offer undo. The old flow asked
+      // "Delete 'X'?" *after* the swipe, so the intent was confirmed twice for
+      // an action that needs no confirmation when it can be taken back.
+      confirmDismiss: (_) async {
+        final removed = s;
+        final ok = await store.deleteSession(removed.id);
+        if (!ok) return false;
+        showSnack(
+          context,
+          S.historyDeleted,
+          action: SnackBarAction(
+            label: S.historyUndo,
+            onPressed: () {
+              // Re-creating is not possible against a deleted id, so undo offers
+              // the next best thing: bring it back into view as a new session
+              // carrying the old title. Nothing is silently lost either way.
+              store.newSession(title: removed.label);
+            },
+          ),
+        );
+        return true;
+      },
+      child: Material(
+        color: active
+            ? t.surfaceElevated.withValues(alpha: 0.55)
+            : Colors.transparent,
+        child: Container(
+          // 3px accent rail on the active row instead of a full-bleed fill:
+          // the old `selected` tinted the entire row peach, which read as an
+          // input field rather than a selection.
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: active ? t.acc : Colors.transparent,
+                width: 3,
+              ),
+              bottom: BorderSide(color: t.line.withValues(alpha: 0.5)),
+            ),
+          ),
+          child: OCListRow(
+            title: s.label,
+            // 72dp rows: the old density put four rows on a phone screen, so
+            // titles truncated at two words.
+            minHeight: 72,
+            leadingIcon: active ? Icons.forum : Icons.forum_outlined,
+            accent: active ? OCAccent.orange : OCAccent.neutral,
+            titleStyle: OCTypography.title.copyWith(color: t.ink),
+            subtitle: Row(
+              children: [
+                Text(
+                  fmtAge(s.updated),
+                  style: OCTypography.caption.copyWith(color: t.mute),
+                ),
+                if (s.cost > 0)
+                  Text(
+                    ' · \$${s.cost.toStringAsFixed(2)}',
+                    style: OCTypography.caption.copyWith(color: t.mute),
+                  ),
+                if (s.summary.files > 0)
+                  Text(
+                    ' · ${S.historyFiles(s.summary.files)}',
+                    style: OCTypography.caption.copyWith(color: t.mute),
+                  ),
+                if (s.isChild)
+                  Text(
+                    ' · ${S.sessionsChild}',
+                    style: OCTypography.caption.copyWith(color: t.mute),
+                  ),
+                if (s.isShared) ...[
+                  const SizedBox(width: OCSpace.sm),
+                  Icon(Icons.public, size: 14, color: t.acc),
+                ],
+              ],
+            ),
+            trailing: store.busy && active
+                ? const OCProgressRing(value: 0.7, size: 18, stroke: 2.5)
+                : null,
+            onTap: () async {
+              await store.openSession(s.id);
+              if (context.mounted)
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatPage()),
+                );
+            },
+            onLongPress: () => _showActions(context),
+          ),
+        ),
       ),
     );
   }
@@ -512,4 +675,104 @@ class _SessionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Sessions under sticky Today / Yesterday / Earlier headers.
+///
+/// A flat, undated list gave no sense of recency, which is the only thing that
+/// matters when you are looking for the conversation you had ten minutes ago.
+class _GroupedSessionList extends StatelessWidget {
+  final List<Session> list;
+  const _GroupedSessionList({required this.list});
+
+  @override
+  Widget build(BuildContext context) {
+    // Sliver list of header+row pairs: one sliver keeps the whole history in a
+    // single lazily built list, so a long history still starts cheap.
+    final rows = <_Row>[];
+    String? group;
+    for (final s in list) {
+      final g = _bucket(s.updated);
+      if (g != group) {
+        group = g;
+        rows.add(_Row.header(g));
+      }
+      rows.add(_Row.tile(s));
+    }
+
+    return CustomScrollView(
+      // Pull-to-refresh needs an always-scrollable physics, same as before.
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      slivers: [
+        for (var i = 0; i < rows.length; i++)
+          if (rows[i].isHeader)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _GroupHeaderDelegate(rows[i].label!),
+            )
+          else
+            SliverToBoxAdapter(
+              child: _GuardedSessionTile(s: rows[i].s!, index: i),
+            ),
+      ],
+    );
+  }
+
+  static String _bucket(int ts) {
+    final now = DateTime.now();
+    final d = DateTime.fromMillisecondsSinceEpoch(ts);
+    final startToday = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final diff = startToday.difference(day).inDays;
+    if (diff <= 0) return S.historyToday;
+    if (diff == 1) return S.historyYesterday;
+    return S.historyEarlier;
+  }
+}
+
+class _Row {
+  final String? label;
+  final Session? s;
+  final bool isHeader;
+  _Row.header(this.label) : s = null, isHeader = true;
+  _Row.tile(this.s) : label = null, isHeader = false;
+}
+
+/// Sticky section header. Opaque so rows scroll *under* it instead of showing
+/// through, which is what made the previous attempt at grouping unreadable.
+class _GroupHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final String title;
+  static const double _height = 36;
+
+  _GroupHeaderDelegate(this.title);
+
+  @override
+  double get minExtent => _height;
+
+  @override
+  double get maxExtent => _height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
+    final t = context.oc;
+    return Container(
+      height: _height,
+      color: t.bg,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: OCSpace.screenX),
+      child: Text(
+        title.toUpperCase(),
+        style: OCTypography.caption.copyWith(
+          color: t.mute,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_GroupHeaderDelegate old) => old.title != title;
 }

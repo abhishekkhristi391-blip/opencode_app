@@ -145,9 +145,18 @@ class S {
   static const chatLoading = 'Loading messages';
   static const chatLoadOlder = 'Load older messages';
   static const chatWelcomeTitle = 'What should we build?';
-  static String chatWelcomeSubtitle(String model, String agent) =>
-      'Model $model · agent $agent';
-  static const chatWelcomeEmptySubtitle = 'Pick a model to get started';
+
+  /// `chatWelcomeSubtitle` ("Model x/y - agent build") and
+  /// `chatWelcomeEmptySubtitle` are gone: both strings now live in the two
+  /// chips below, so nothing renders them any more.
+  static const chatWelcomeHint =
+      'Describe a change and we’ll make it. Or start from a card below.';
+
+  /// Outlined chips under the headline. Replacing one muted sentence that read
+  /// "Model x/y · agent z": the identifiers were too long to scan, wrapped on
+  /// narrow screens, and were the only place the current model was visible.
+  static const chatChipModel = 'Model';
+  static const chatChipMode = 'Mode';
   static const chatLoadOlderFailed = 'Could not load older messages';
 
   static const chatSuggestionStructure =
@@ -156,11 +165,11 @@ class S {
   static const chatSuggestionTodo = 'Find the biggest TODO in the repo';
   static const chatSuggestionPlan = 'Draft a plan for a new feature';
 
-  // Empty-state cards mirror the reference: a title plus a muted subtitle.
-  static const chatSuggestionStructureSub = 'Short tour of the folders';
-  static const chatSuggestionTestsSub = 'And explain any failures';
-  static const chatSuggestionTodoSub = 'Search the whole repo';
-  static const chatSuggestionPlanSub = 'Draft steps before coding';
+  // Cards are title-only on purpose. "Run the tests and explain failures" already
+  // said "explain failures", so the subtitle repeated the card it sat under.
+
+  // Header.
+  static const headerReconnecting = 'Reconnecting';
 
   // Header.
   static const headerTasks = 'Tasks';
@@ -168,6 +177,14 @@ class S {
   static const headerMore = 'More';
   static const headerConnected = 'Connected';
   static const headerOffline = 'Offline';
+
+  // Project / workspace bar.
+  static const projectNoBranch = 'No git branch';
+  static const projectDetailsTitle = 'Workspace';
+  static const projectDirectory = 'Directory';
+  static const projectWorktree = 'Worktree';
+  static const projectBranch = 'Branch';
+  static const projectUnknown = 'Unknown';
 
   // Composer.
   static const composerModelPill = 'Model and agent';
@@ -210,6 +227,7 @@ class S {
   static const chipHideRow = 'Hide options';
   static const chipShowRow = 'Show options';
 
+  static const attachSheetTitle = 'Attach';
   static const attachImage = 'Attach an image';
   static const attachFile = 'Send a file';
   static const attachFileHint = 'Pick a file from the project';
@@ -263,6 +281,222 @@ class S {
 
   static String sessionsDeleteBody(String label) =>
       '"$label" and its entire history are permanently deleted.';
+
+  // ---- history / sessions ----
+  static const String historySearchHint = 'Search conversations';
+  static const String historyToday = 'Today';
+  static const String historyYesterday = 'Yesterday';
+  static const String historyEarlier = 'Earlier';
+  static const String historyNoResults = 'No conversations found';
+  static const String historyNoResultsBody =
+      'Nothing matches that search. Try a different word.';
+  static const String historyDeleted = 'Conversation deleted';
+  static const String historyUndo = 'Undo';
+  static const String historyPin = 'Pin';
+  static const String historyUnpin = 'Unpin';
+  static const String historyPinned = 'Pinned';
+  static const String historyFilterTip =
+      'Main shows top-level chats. All sessions includes sub-sessions.';
+  static const String clear = 'Clear';
+  static String historyFiles(int n) => n == 1 ? '1 file' : '$n files';
+
+  // ---- composer ----
+  static const String badgeFree = 'Free';
+
+  // ---- de-Hinglish sweep: copy that was inline in widgets ----
+  // commands
+  static const String cmdNoCommands = 'No commands';
+  static String cmdArgs(String name) => '/$name arguments';
+  static String cmdUseSkill(String name) => 'Use the $name skill to do this: ';
+  static String cmdUseLabel(String name) => 'Use \$name';
+  static String partsAgent(String a) => 'Agent \u00b7 \${a.isEmpty ? '?' : a}';
+
+  // diff
+  static const String diffNoActiveSession = 'No active session.';
+  static const String diffNotARepo =
+      'This project is not a git repository, so there is no git diff.';
+  static const String diffNoFilesBody =
+      'No file has been modified in this session yet.';
+  static const String diffNotTextual = 'This file has no textual diff.';
+  static const String diffLoadFailed = 'Could not load the diff';
+  static const String diffNoChanges = 'No changes';
+  static const String diffNoChangesBody =
+      'No tracked file has changed in this session.';
+  static const String diffApplyTitle = 'Apply this patch?';
+  static const String diffApplied = 'Applied';
+  static const String diffNoneTitle = 'No diff';
+  static const String diffCleanBody = 'The worktree is clean.';
+  static String diffAppliesTo(String file) =>
+      'This patch will be applied to $file.';
+
+  // models
+  static const String modelsLoadingProviders = 'Loading providers\\u2026';
+  static const String modelsNoneTitle = 'No models found';
+  static const String modelsNoneBody =
+      'No provider is connected. Add an API key in Settings.';
+
+  // prompts (permissions / questions)
+  static const String permAllow = 'Allow';
+  static const String permAlways = 'Always';
+  static const String permDeny = 'Deny';
+  static const String permSend = 'Send';
+
+  // files
+  static const String filesDeleteTitle = 'Delete?';
+  static String filesDeleteBody(String p) => '$p will be deleted permanently.';
+  static const String filesUnsaved = 'Unsaved changes';
+  static const String filesSaveFailed = 'Could not save the file';
+  static const String filesDeleteConfirm = 'Delete';
+  static String filesNameLabel(bool folder) =>
+      folder ? 'Folder name' : 'File name';
+  static String filesEmptyName(bool folder) =>
+      folder ? 'Folder name cannot be empty' : 'File name cannot be empty';
+  static String filesNameHint(bool folder) =>
+      folder ? 'new-folder' : 'untitled.md';
+  static const String filesBinary = 'Binary file';
+  static const String filesNoChanges = 'No tracked file has changed.';
+  static const String filesNewTitle = 'New file or folder';
+  static const String filesReadFailed = 'Could not read the file';
+  static const String filesUnsavedExit =
+      'You have unsaved changes. Discard them and exit?';
+  static const String filesBadName =
+      'Invalid name \u2014 "/" and ".." are not allowed';
+  static const String filesEmptyHere = 'There are no files here.';
+  static const String filesNotText = 'Not a text file, so it cannot be edited.';
+
+  // settings
+  static const String setAdd = 'Add';
+  static const String setChangeServer = 'Change server';
+  static const String setConnect = 'Connect';
+  static String setPermExternalTitle(String path) =>
+      'Allow external directory access?';
+  static String setPermExternalBody(String path) =>
+      'Grant write permission for $path.';
+  static const String setInstanceRestart = 'Restart instance';
+  static const String setInstanceRestartTitle = 'Restart the instance?';
+  static String setPassword(String env) => 'Password ($env)';
+  static const String setRevertLast = 'Revert the last message';
+  static const String setRevertLastBody =
+      'Undo the changes from the last message';
+  static const String setRevertAllBodyShort = 'Undo every reverted change';
+  static const String setExternalFolder = 'Grant external folder write access';
+  static const String setExternalFolderSub =
+      'Also create files outside the project folder';
+  static const String setPermExternalNote =
+      'This lets opencode write files outside the project folder '
+      '(for example /storage/emulated/0/).';
+  static String filesExists(String name) => '$name already exists';
+  static String filesDeleteFailed(String p) => 'Could not delete $p';
+  static String filesFolderFailed(String p) => 'Could not create $p';
+  static const String shareLinkCreated = 'Share link created';
+  static const String configSaved = 'Config saved';
+  static String added(String name) => '$name added';
+
+  // ---- third de-Hinglish sweep: toasts / empty states ----
+  static const String codeCopied = 'Code copied';
+  static const String contextCompacted = 'Context compacted';
+  static const String questionMultiHint = 'More than one may be selected';
+  static const String linkCopied = 'Link copied';
+  static const String noMessagesYet = 'No messages yet';
+  static const String instanceRestarted = 'Instance restarted';
+  static const String externalPermGranted = 'External directory access granted';
+  static const String noMcpServers = 'No MCP servers.';
+  static const String noLspActive = 'No LSP is active.';
+  static const String noFormatters = 'No formatter is configured.';
+  static const String shellNoOutput2 = 'The shell produced no output.';
+
+  static const String noProviderConnected =
+      'No provider is connected. Add an API key below.';
+  static const String patchConfigNote =
+      'PATCH /config updates the global opencode config.';
+
+  static const String externalPermEnabled = 'External directory access enabled';
+
+  static const String nameLabel = 'Name';
+  static String netTimeout(int s) => 'The server did not reply within \${s}s';
+  static String netUnreachable(String root) =>
+      'Could not reach the server.\n\nIs \${root} reachable?\n'
+      'Is it running in Termux?';
+  static const String shellNoOutput =
+      'The shell produced no output \u2014 the command may not have run.';
+  static const String permWhatDoing = 'opencode is about to:';
+  static String permSuggestingRules(List<String> r) =>
+      'The server suggests these rules: \${r.join(', ')}';
+  static const String skipQ = 'Skip';
+
+  // ---- second de-Hinglish sweep ----
+  static const String filesNewFileItem = 'New file';
+  static const String filesNewFolderItem = 'New folder';
+  static const String filesPathHint = 'Path (relative to the project root)';
+  static const String filesGo = 'Go';
+  static const String filesRootCrumb = 'root';
+  static String filesChangedCount(int n) =>
+      n == 1 ? '1 changed' : '\$n changed';
+  static const String filesDuplicate = 'Duplicate';
+  static const String filesFolderExists = 'A folder with that name exists here';
+  static String filesExists(String name) => '\$name already exists';
+  static const String filesChangedTitle = 'Changed files';
+  static const String filesAllClean = 'All clean';
+  static const String diffRefresh = 'Refresh';
+  static const String diffApply = 'Apply';
+  static const String partsPatch = 'Patch';
+  static const String partsExternalAccess = 'Allow external access';
+  static const String setUnrevert = 'Unrevert';
+  static const String setUpgradeBody =
+      'Dispose the current instance and start a fresh one';
+  static const String setUpgradeSub =
+      'Move server-side opencode to the latest version';
+  static const String setUpgradeTitle = 'Upgrade?';
+  static const String setUpgradeBody2 = 'The server may restart.';
+  static const String setServerLabel = 'Server';
+  static const String setUrlLabel = 'URL';
+  static const String setUserLabel = 'Username (basic auth)';
+  static const String modelsTitle = 'Models & Agents';
+  static const String modelsFilterAll = 'All';
+  static const String modelsNoneFiltered =
+      'No model matches that filter. Try another one.';
+  static const String modelsAgentLabel = 'Agent';
+  static const String modelsReasoning = 'Reasoning';
+  static const String modelsTools = 'Tools';
+  static String modelsContext(int k) => '${k}k context';
+  static String modelsSelected(String name) => 'Model: \$name';
+  static const String setUpgradeCmd = 'opencode upgrade';
+  static const String setUpgradeConfirmBody =
+      'The current instance will be disposed and any active work may stop.';
+  static const String setMcpCommandLabel = 'Command (e.g. npx)';
+  static String setMcpLabel(String type) =>
+      type == 'local' ? setMcpCommandLabel : setUrlLabel;
+  static const String setRevertAll = 'Revert all changes';
+  static const String setRevertAllConfirm = 'Revert all?';
+  static const String setRevertAllBody =
+      'This reverts every change made in this project.';
+  static const String setReconnect = 'Reconnect';
+
+  // terminal
+  static const String termClearTooltip = 'Clear output';
+  static const String termWrap = 'Wrap';
+  static const String termPrompt = 'command';
+  static const String termEmptyTitle = 'Terminal';
+  static const String termEmptyBody =
+      'Run a shell command in the project directory.';
+
+  static const String copy = 'Copy';
+  static const String copied = 'Copied';
+  static const String partsOutput = 'Output';
+  static const String moreActions = 'More actions';
+  static const String messageDeleted = 'Message deleted';
+  static const String partsThinking = 'Thinking';
+  static String partsThoughtFor(int secs) =>
+      secs < 1 ? 'Thought for a moment' : 'Thought for ${secs}s';
+  static String partsThinkingLines(int n) => n == 1 ? '1 line' : '$n lines';
+  static const String composerPlaceholderStart = 'Ask anything\u2026';
+  static const String composerPlaceholderReply = 'Reply to the agent\u2026';
+  static const String composerStopHint = 'Tap to stop';
+  static const String composerWorkingSlow = 'Taking longer than usual';
+  static String composerWorking(String agent) =>
+      agent.isEmpty ? 'Working\u2026' : '$agent is working\u2026';
+  static String composerQueued(int n) =>
+      n == 1 ? '1 message queued' : '$n messages queued';
 
   static String sessionsCount(int n) => '$n sessions';
   static String sessionsCountOne(int n) => '$n session';
@@ -546,6 +780,201 @@ class S {
   static const partRevertHint = 'Undo the changes of this message';
   static const partUnrevertHint = 'Restore every reverted change';
   static const partReadToolHint = 'The file content is inlined below';
+
+  // ==================================================================
+  // Dark redesign. Grouped by the fix that introduced them.
+  // ==================================================================
+
+  // --- fix 0/2: connection status ------------------------------------
+  /// Shown once, in the header.
+  static const statusConnected = 'Connected';
+  static const statusReconnecting = 'Reconnecting';
+  static const statusOffline = 'Offline';
+  static const statusRetry = 'Retry';
+  static const statusRetryTooltip = 'Retry the connection';
+
+  /// Honest about cached data: the list below is real, the server is not.
+  static const statusOfflineCached = 'Offline — showing cached';
+
+  static String statusCached(int n) => 'Offline — showing $n cached';
+
+  // --- fix 2: contextual header actions -----------------------------
+  static const headerSearch = 'Search';
+  static const headerSearchTooltip = 'Search chats';
+  static const headerRefresh = 'Refresh';
+  static const headerRefreshTooltip = 'Reload from the server';
+  static const headerClear = 'Clear';
+  static const headerClearTooltip = 'Clear the terminal output';
+  static const headerNewSession = 'New session';
+  static const headerNewSessionTooltip = 'Start a new terminal session';
+  static const headerNewFile = 'New file';
+  static const headerNewFolder = 'New folder';
+  static const headerNewTooltip = 'Create a file or a folder';
+  static const headerTasksTooltip = 'Open the task list';
+
+  // --- fix 3: hero chips ---------------------------------------------
+  static const chipFree = 'Free';
+  static const chipFreeTooltip = 'This model is free to use';
+
+  // --- fix 5: composer -----------------------------------------------
+  static const composerPlaceholder =
+      'Ask the agent to build, fix, or explain...';
+  static const composerWorking = 'Agent is working — Stop to interrupt';
+  static const composerQueued = 'Queued — sends when this turn ends';
+  static const composerQueuedTooltip = 'This message is queued';
+  static const composerSendTooltip = 'Send';
+  static const composerStopTooltip = 'Stop the current turn';
+  static const composerMicTooltip = 'Voice input';
+  static const composerMicBody = 'Voice input is not available yet.';
+
+  // --- fix 6: options sheet ------------------------------------------
+  static const sheetGroupSession = 'Session';
+  static const sheetGroupAgent = 'Agent';
+  static const sheetGroupApp = 'App';
+  static const sheetRename = 'Rename';
+  static const sheetDiff = 'Diff';
+  static const sheetHistory = 'History';
+  static const sheetTools = 'Tools';
+  static const sheetCommands = 'Commands';
+  static const sheetSettingsUsage = 'Settings & token usage';
+  static const sheetAbout = 'About';
+
+  // --- fix 4: running chat --------------------------------------------
+  static const thinking = 'Thinking...';
+  static const thinkingCollapsedTooltip = 'Show what the agent was thinking';
+  static String thinkingGroup(int seconds, int steps) => seconds >= 60
+      ? 'Thought for ${seconds ~/ 60}m ${seconds % 60}s · $steps steps'
+      : 'Thought for ${seconds}s · $steps steps';
+  static String thinkingSteps(int n) => n == 1 ? '1 step' : '$n steps';
+  static const working = 'Working...';
+  static String jumpUnread(int n) =>
+      n == 1 ? '1 new message' : '$n new messages';
+  static const messageRetry = 'Retry';
+  static const messageRetryTooltip = 'Run this turn again';
+  static const messageUndoConfirmTitle = 'Undo this message?';
+  static const messageUndoConfirmBody =
+      'The agent reply that follows it is removed too. This cannot be undone.';
+  static const messageUndoConfirmAction = 'Undo';
+  static const messageUndoDone = 'Message undone';
+  static const messageUndoAgain = 'Undo undo';
+  static const messageCopied = 'Copied';
+  static const retryDone = 'Running again';
+  static const partOutputCopy = 'Copy output';
+  static const partCommandCopy = 'Copy command';
+  static const partExpand = 'Expand';
+  static const partCollapse = 'Collapse';
+
+  // --- fix 7: history ------------------------------------------------
+  static const historyToday = 'Today';
+  static const historyYesterday = 'Yesterday';
+  static const historyEarlier = 'Earlier';
+  static const historySearchHint = 'Search chats';
+  static const historySegmentPrimary = 'Primary';
+  static const historySegmentAll = 'All sessions';
+  static const historySegmentTooltip =
+      'Primary shows top-level chats; All sessions includes sub-sessions';
+  static const historyUntitled = 'Untitled';
+  static const historyEmptyTitle = 'No chats yet';
+  static const historyEmptyBody = 'Start a chat and it will show up here.';
+  static const historyEmptySearch = 'No chats match that search';
+  static const historyDeleted = 'Session deleted';
+  static const historyUndo = 'Undo';
+  static const historyRename = 'Rename';
+  static const historyPin = 'Pin to top';
+  static const historyUnpin = 'Unpin';
+  static const historyPinned = 'Pinned';
+  static const historyDelete = 'Delete';
+  static const historyDeleteTitle = 'Delete this session?';
+  static String historyDeleteBody(String title) =>
+      '"$title" and its messages will be removed from the server.';
+
+  // --- fix 8: files ---------------------------------------------------
+  static const filesShowIgnored = 'Show ignored files';
+  static const filesShowIgnoredTooltip =
+      'Includes .git, node_modules, build output and anything in .gitignore';
+  static const filesPathHint = 'Path (default: project root)';
+  static const filesGo = 'Go';
+  static const filesClearPath = 'Clear path';
+  static const filesNew = 'New';
+  static const filesRoot = 'root';
+  static const filesCopyPath = 'Copy path';
+  static const filesEmptyTitle = 'No files';
+  static const filesEmptyBody = 'This folder is empty.';
+  static const filesErrorTitle = 'Could not read this folder';
+  static const filesLoading = 'Reading the folder';
+  static String filesItems(int n) => n == 1 ? '1 item' : '$n items';
+  static String filesSelected(int n) => n == 1 ? '1 selected' : '$n selected';
+  static const filesSendToChat = 'Send to chat';
+  static const deleteFile = 'Delete';
+
+  // --- fix 9: models & agents -----------------------------------------
+  static const modelsSearchHint = 'Search models';
+  static const modelsConnectedOnly = 'Connected providers only';
+  static const modelsCapReasoning = 'Reasoning';
+  static const modelsCapTools = 'Tools';
+  static const modelsCapVision = 'Vision';
+  static const modelsCapFiles = 'Files';
+  static String modelsContext(String limit) => '$limit ctx';
+  static String modelsProvider(int n) => n == 1 ? '1 model' : '$n models';
+  static const modelsEmptyTitle = 'No models match';
+  static const modelsEmptyBody = 'Try a different search or filter.';
+  static const agentSelector = 'Agent';
+  static String agentPrimary(String name) => '$name — primary';
+
+  /// 262K / 1M / 128K. Anything under 1024 stays in K so a 1.2M-token window does
+  /// not render as "1200.0K".
+  static String formatContext(int tokens) {
+    if (tokens >= 1000000) {
+      final m = tokens / 1000000;
+      return m >= 10 || m == m.roundToDouble()
+          ? '${m.round()}M'
+          : '${m.toStringAsFixed(1)}M';
+    }
+    if (tokens >= 1000) return '${(tokens / 1000).round()}K';
+    return '$tokens';
+  }
+
+  // --- fix 10: terminal ------------------------------------------------
+  static const termEmptyTitle = 'No output yet';
+  static const termEmptyBody = 'Run a command and its output appears here.';
+  static const termInputHint = 'Enter a command';
+  static const termRun = 'Run';
+  static const termSendTooltip = 'Run this command';
+  static const termClearTooltip = 'Clear the output';
+  static const termCopyOutput = 'Copy output';
+  static const termHistoryPrev = 'Previous command';
+  static const termHistoryNext = 'Next command';
+  static const termQuickTooltip = 'Tap to insert · long-press to run';
+  static const termCopyPath = 'Copy path';
+  static const termChangeDir = 'Change directory';
+  static const termCancel = 'Cancel';
+  static const termFailed = 'Command failed';
+
+  // --- fix 9: about ----------------------------------------------------
+  static const aboutStatusTitle = 'Server';
+  static const aboutVersionLabel = 'Version';
+
+  // --- misc -------------------------------------------------------------
+  static const todosEmptyTitle = 'No tasks yet';
+  static const todosEmptyNoChat = 'Start a chat first.';
+  static const todosEmptyHint =
+      'Tasks appear here as soon as the agent uses the todo tool.';
+  static const questionCustomHint = 'Type your answer';
+  static const cmdArgsHint = 'Type the arguments';
+  static const setInitAgents = 'Create AGENTS.md (/init)';
+  static const setInitAgentsSub = "Generate the project's instruction file";
+  static const setSummarize = 'Summarize';
+  static const setSummarizeSub = 'Compact the context of this chat';
+  static const setAddMcp = 'Add MCP server';
+  static const setSaveConfig = 'Save config';
+
+  static const pickModelFirst = 'Pick a model first';
+  static const sendMessageFirst = 'Send a message first';
+  static const errNoActivity =
+      'No activity from the server for 5 minutes. Check the server logs or retry.';
+  static String termuxSetupNote(String command) =>
+      'opencode server must be running in Termux, started from the project folder '
+      'you want to see. Command: $command';
 
   // ------------------------------------------------------------------
   // helpers

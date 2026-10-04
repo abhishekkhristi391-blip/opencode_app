@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/strings.dart';
 import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
@@ -9,10 +10,10 @@ class TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
 
   @override
-  State<TerminalPage> createState() => _TerminalPageState();
+  State<TerminalPage> createState() => TerminalPageState();
 }
 
-class _TerminalPageState extends State<TerminalPage> {
+class TerminalPageState extends State<TerminalPage> {
   final input = TextEditingController();
   final out = TextEditingController();
   final scroll = ScrollController();
@@ -34,6 +35,23 @@ class _TerminalPageState extends State<TerminalPage> {
     'tree': 'find . -maxdepth 2 -not -path "*/.git/*" | head -80',
     'clear': 'clear',
   };
+
+  /// Called by the shell header. `clear` as a command only works while the
+  /// shell has a PTY attached, so clearing the scrollback has to be a local
+  /// action.
+  void clear() {
+    out.clear();
+    setState(() {});
+  }
+
+  /// Runs `clear` and drops the stale scrollback, so "New session" visibly
+  /// resets the view instead of leaving the old output behind it.
+  void newSession() {
+    out.clear();
+    history.clear();
+    historyIndex = -1;
+    _run('clear');
+  }
 
   @override
   void dispose() {
@@ -89,7 +107,7 @@ class _TerminalPageState extends State<TerminalPage> {
             OCSpace.md,
             OCSpace.sm,
           ),
-          color: OCColors.surfaceMuted,
+          color: context.oc.card,
           child: Row(
             children: [
               const OCIconTile(
@@ -102,19 +120,21 @@ class _TerminalPageState extends State<TerminalPage> {
               Expanded(
                 child: Text(
                   store.paths?.directory ?? store.baseUrl,
-                  style: OCTypography.micro,
+                  style: OCTypography.caption.copyWith(color: context.oc.mute),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
-                tooltip: 'Output clear',
+                tooltip: S.termClearTooltip,
                 iconSize: 17,
+                color: context.oc.mute,
                 icon: const Icon(Icons.backspace_outlined),
-                onPressed: out.clear,
+                onPressed: clear,
               ),
               IconButton(
-                tooltip: 'Wrap',
+                tooltip: S.termWrap,
                 iconSize: 17,
+                color: context.oc.mute,
                 icon: Icon(wrap ? Icons.wrap_text : Icons.horizontal_rule),
                 onPressed: () => setState(() => wrap = !wrap),
               ),
@@ -131,9 +151,7 @@ class _TerminalPageState extends State<TerminalPage> {
                 ActionChip(
                   label: Text(
                     e.key,
-                    style: OCTypography.micro.copyWith(
-                      color: OCColors.textSecondary,
-                    ),
+                    style: OCTypography.micro.copyWith(color: context.oc.mute),
                   ),
                   visualDensity: VisualDensity.compact,
                   onPressed: running ? null : () => _run(e.value),
@@ -143,11 +161,11 @@ class _TerminalPageState extends State<TerminalPage> {
             ],
           ),
         ),
-        const Divider(height: 1, color: OCColors.borderHairline),
+        Divider(height: 1, color: context.oc.line),
         Expanded(
           child: Container(
             width: double.infinity,
-            color: OCColors.surfaceSubtle,
+            color: context.oc.terminalBg,
             child: out.text.isEmpty
                 ? Center(
                     child: Text(
@@ -155,7 +173,7 @@ class _TerminalPageState extends State<TerminalPage> {
                       textAlign: TextAlign.center,
                       style: OCTypography.caption.copyWith(
                         height: 1.6,
-                        color: OCColors.textTertiary,
+                        color: context.oc.mute,
                       ),
                     ),
                   )
@@ -176,9 +194,9 @@ class _TerminalPageState extends State<TerminalPage> {
         ),
         if (running) const OCProgressBar(value: 1, height: 4, animate: false),
         Container(
-          decoration: const BoxDecoration(
-            color: OCColors.surface,
-            border: Border(top: BorderSide(color: OCColors.borderHairline)),
+          decoration: BoxDecoration(
+            color: context.oc.card,
+            border: Border(top: BorderSide(color: context.oc.line)),
           ),
           child: SafeArea(
             top: false,
@@ -193,7 +211,7 @@ class _TerminalPageState extends State<TerminalPage> {
                 children: [
                   Text(
                     '\$',
-                    style: OCTypography.mono(color: OCColors.orange, size: 15),
+                    style: OCTypography.mono(color: context.oc.acc, size: 15),
                   ),
                   Expanded(
                     child: Focus(
@@ -232,11 +250,15 @@ class _TerminalPageState extends State<TerminalPage> {
                         enabled: !running,
                         style: OCTypography.mono(
                           size: 13.5,
-                          color: OCColors.textPrimary,
+                          color: context.oc.terminalInk,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
-                          hintText: 'command',
+                          hintText: S.termPrompt,
+                          hintStyle: OCTypography.mono(
+                            size: 13.5,
+                            color: context.oc.faint,
+                          ),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -250,12 +272,12 @@ class _TerminalPageState extends State<TerminalPage> {
                   IconButton.filled(
                     onPressed: running ? null : () => _run(),
                     style: IconButton.styleFrom(
-                      backgroundColor: OCColors.orange,
+                      backgroundColor: context.oc.acc,
                     ),
                     icon: const Icon(
                       Icons.send,
                       size: 18,
-                      color: OCColors.textInverse,
+                      color: context.oc.onAcc,
                     ),
                   ),
                 ],
@@ -267,8 +289,8 @@ class _TerminalPageState extends State<TerminalPage> {
     );
   }
 
-  static TextStyle _terminalStyle(BuildContext context) => OCTypography.mono(
-    size: 12,
-    color: Theme.of(context).colorScheme.onSurface,
-  );
+  /// Always the terminal palette, never the page's ink: a shell transcript that
+  /// switches to the app's foreground colour stops reading as a terminal.
+  static TextStyle _terminalStyle(BuildContext context) =>
+      OCTypography.mono(size: 12, color: context.oc.terminalInk);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/strings.dart';
 import '../models/models.dart';
 import 'app_scope.dart';
 import 'primitives.dart';
@@ -70,10 +71,7 @@ class _PermissionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: OCSpace.sm),
-          Text(
-            'opencode "${p.title}" karne ja raha hai.',
-            style: OCTypography.caption,
-          ),
+          Text(S.permWhatDoing, style: OCTypography.caption),
           if (detail.isNotEmpty) ...[
             const SizedBox(height: OCSpace.md),
             Container(
@@ -97,17 +95,14 @@ class _PermissionCard extends StatelessWidget {
           ],
           if (p.always.isNotEmpty) ...[
             const SizedBox(height: OCSpace.md),
-            Text(
-              'Server is rules suggest kar raha hai: ${p.always.join(', ')}',
-              style: OCTypography.micro,
-            ),
+            Text(S.permSuggestingRules(p.always), style: OCTypography.micro),
           ],
           const SizedBox(height: OCSpace.lg),
           Row(
             children: [
               Expanded(
                 child: OCButton(
-                  label: 'Deny',
+                  label: S.permDeny,
                   variant: OCButtonVariant.ghostOutline,
                   onPressed: () => store.answerPermission(p, 'reject'),
                 ),
@@ -115,7 +110,7 @@ class _PermissionCard extends StatelessWidget {
               const SizedBox(width: OCSpace.sm),
               Expanded(
                 child: OCButton(
-                  label: 'Always',
+                  label: S.permAlways,
                   variant: OCButtonVariant.secondaryPill,
                   onPressed: () => store.answerPermission(p, 'always'),
                 ),
@@ -123,7 +118,7 @@ class _PermissionCard extends StatelessWidget {
               const SizedBox(width: OCSpace.sm),
               Expanded(
                 child: OCButton(
-                  label: 'Allow',
+                  label: S.permAllow,
                   variant: OCButtonVariant.primaryBlack,
                   onPressed: () => store.answerPermission(p, 'once'),
                 ),
@@ -221,7 +216,7 @@ class _QuestionCardState extends State<_QuestionCard> {
             children: [
               Expanded(
                 child: OCButton(
-                  label: 'Skip',
+                  label: S.skipQ,
                   variant: OCButtonVariant.ghostOutline,
                   onPressed: () => store.rejectQuestion(widget.q),
                 ),
@@ -230,7 +225,7 @@ class _QuestionCardState extends State<_QuestionCard> {
               Expanded(
                 flex: 2,
                 child: OCButton(
-                  label: 'Bhejo',
+                  label: S.permSend,
                   variant: OCButtonVariant.primaryBlack,
                   onPressed: () {
                     final answers = <List<String>>[];
@@ -273,10 +268,7 @@ class _QuestionCardState extends State<_QuestionCard> {
         if (item.multiple)
           Padding(
             padding: const EdgeInsets.only(top: OCSpace.xxs),
-            child: Text(
-              'Multiple select ho sakta hai',
-              style: OCTypography.micro,
-            ),
+            child: Text(S.questionMultiHint, style: OCTypography.micro),
           ),
         const SizedBox(height: OCSpace.sm),
         for (final o in item.options)
@@ -310,7 +302,7 @@ class _QuestionCardState extends State<_QuestionCard> {
             child: TextField(
               controller: custom.putIfAbsent(qi, TextEditingController.new),
               decoration: InputDecoration(
-                hintText: 'Apna answer likho…',
+                hintText: S.questionCustomHint,
                 hintStyle: OCTypography.caption,
                 isDense: true,
                 filled: true,
@@ -362,7 +354,7 @@ class ShareCard extends StatelessWidget {
         icon: const Icon(Icons.copy, color: OCColors.textSecondary),
         onPressed: () {
           Clipboard.setData(ClipboardData(text: url));
-          showSnack(context, 'Link copy ho gaya');
+          showSnack(context, S.linkCopied);
         },
       ),
     ),
