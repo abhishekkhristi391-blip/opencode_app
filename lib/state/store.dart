@@ -1154,18 +1154,32 @@ class OcStore extends ChangeNotifier {
       chunks.add(b64.substring(i, min(i + chunk, b64.length)));
     }
     final q = _shellQuote(path);
-    var cmd = ': > $q';
+    final dir = _shellQuote(_parentDir(path));
+    // Build into a sibling temp file first, then decode into place:
+    //  - `mkdir -p` so a not-yet-existing folder is not a silent failure
+    //  - `: > $tmp` truncates any leftover temp from an earlier failed write
+    //    (appending to it used to prepend garbage to the new content)
+    //  - the temp is always created, so an empty file also succeeds
+    final tmp = '$q.oc-tmp';
+    var cmd = 'mkdir -p $dir && : > $tmp';
     for (final c in chunks) {
-      cmd += " && printf '%s' '$c' >> $q.b64tmp";
+      cmd += " && printf '%s' '$c' >> $tmp";
     }
-    cmd += ' && base64 -d $q.b64tmp > $q && rm -f $q.b64tmp';
+    cmd += ' && base64 -d $tmp > $q && rm -f $tmp && test -f $q';
     final r = await runShell(cmd);
     if (r.exit != 0)
       throw ApiException(
         1,
         'WriteFailed',
-        r.output.isEmpty ? 'Write fail' : r.output,
+        r.output.isEmpty ? 'Write fail: $path' : r.output,
       );
+  }
+
+  /// Parent directory of [path], `/` when there is none.
+  static String _parentDir(String path) {
+    final i = path.lastIndexOf('/');
+    if (i <= 0) return '/';
+    return path.substring(0, i);
   }
 
   static String _shellQuote(String s) {
@@ -1178,11 +1192,25 @@ class OcStore extends ChangeNotifier {
   }
 
   Future<void> deleteEntry(String path) async {
-    await runShell('rm -rf ${_shellQuote(path)}');
+    final r = await runShell('rm -rf ${_shellQuote(path)}');
+    if (r.exit != 0) {
+      throw ApiException(
+        1,
+        'DeleteFailed',
+        r.output.isEmpty ? 'Delete nahi hua: $path' : r.output,
+      );
+    }
   }
 
   Future<void> mkdirEntry(String path) async {
-    await runShell('mkdir -p ${_shellQuote(path)}');
+    final r = await runShell('mkdir -p ${_shellQuote(path)}');
+    if (r.exit != 0) {
+      throw ApiException(
+        1,
+        'MkdirFailed',
+        r.output.isEmpty ? 'Folder nahi bana: $path' : r.output,
+      );
+    }
   }
 
   // =====================================================================
@@ -1703,5 +1731,3 @@ class OcStore extends ChangeNotifier {
     super.dispose();
   }
 }
-// rebuild trigger
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
