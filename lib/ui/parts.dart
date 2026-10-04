@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
+import '../state/store.dart';
+import 'app_scope.dart';
 import 'line_icons.dart';
 import 'markdown.dart';
 import 'primitives.dart';
@@ -630,7 +632,6 @@ class _OutputBlockState extends State<_OutputBlock> {
       ),
     );
   }
-}
 }
 
 class _FilePart extends StatelessWidget {
