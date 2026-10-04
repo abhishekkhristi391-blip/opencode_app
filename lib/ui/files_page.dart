@@ -333,7 +333,7 @@ class FilesPageState extends State<FilesPage> {
                   message: err!,
                 )
               : nodes.isEmpty
-              ? const EmptyHint(
+              ? EmptyHint(
                   icon: Icons.folder_off_outlined,
                   title: S.filesEmptyName(true),
                   message: S.filesEmptyHere,
@@ -434,7 +434,7 @@ class FilesPageState extends State<FilesPage> {
               ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: context.oc.err),
-              title: const Text(
+              title: Text(
                 S.deleteFile,
                 style: TextStyle(color: context.oc.err),
               ),
@@ -507,7 +507,7 @@ class ChangedFilesPage extends StatelessWidget {
                 iconSize: 16,
               ),
               title: Text(list[i].path, style: OCTypography.mono(size: 12.5)),
-              trailing: const Icon(
+              trailing: Icon(
                 Icons.open_in_new,
                 size: 16,
                 color: context.oc.mute,
@@ -775,7 +775,7 @@ class _FileEditorPageState extends State<FileEditorPage> {
                       OCSpace.lg,
                       OCSpace.sm,
                     ),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: context.oc.card,
                       border: Border(top: BorderSide(color: context.oc.line)),
                     ),

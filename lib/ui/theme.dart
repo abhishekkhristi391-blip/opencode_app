@@ -903,7 +903,7 @@ ThemeData _buildTheme() {
         (s) => s.contains(WidgetState.selected) ? OCColors.accent : t.line,
       ),
     ),
-    pageTransitionsTheme: const PageTransitionsTheme(
+    pageTransitionsTheme: PageTransitionsTheme(
       builders: {
         TargetPlatform.android: ZoomPageTransitionsBuilder(),
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),

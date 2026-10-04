@@ -171,7 +171,7 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () async {
               final ok = await confirmDialog(
                 context,
-                title: S.setPermExternalTitle(d.path),
+                title: S.setPermExternalTitle(store.paths?.directory ?? ''),
                 message: S.setPermExternalNote,
                 confirm: S.permAllow,
               );
@@ -359,7 +359,7 @@ class _SettingsPageState extends State<SettingsPage> {
             TextField(
               controller: pass,
               obscureText: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: S.setPassword('OPENCODE_SERVER_PASSWORD'),
               ),
             ),

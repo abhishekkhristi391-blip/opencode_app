@@ -1341,7 +1341,6 @@ class OcStore extends ChangeNotifier {
         agent: agent,
         parts: parts,
         tools: toolMap,
-        system: systemPrompt,
       );
     } on ApiException catch (e) {
       _clearBusyTimer();

@@ -274,11 +274,7 @@ class TerminalPageState extends State<TerminalPage> {
                     style: IconButton.styleFrom(
                       backgroundColor: context.oc.acc,
                     ),
-                    icon: const Icon(
-                      Icons.send,
-                      size: 18,
-                      color: context.oc.onAcc,
-                    ),
+                    icon: Icon(Icons.send, size: 18, color: context.oc.onAcc),
                   ),
                 ],
               ),

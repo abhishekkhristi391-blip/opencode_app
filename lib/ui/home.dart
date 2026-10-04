@@ -360,7 +360,7 @@ class HomeShellState extends State<HomeShell> {
         groupValue: store.agent,
         onChanged: (v) {
           if (v != null) store.setAgent(v);
-          Navigator.pop(sheetCtx);
+          Navigator.pop(context);
         },
         child: SafeArea(
           child: ListView(
