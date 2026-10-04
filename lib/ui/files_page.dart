@@ -292,8 +292,12 @@ class _FilesPageState extends State<FilesPage> {
                   Navigator.pop(sheetCtx);
                   final v = await promptText(context, title: 'Folder ka naam');
                   if (v == null || v.trim().isEmpty) return;
-                  await store.mkdirEntry('${n.path}/${v.trim()}');
-                  _load();
+                  try {
+                    await store.mkdirEntry('${n.path}/${v.trim()}');
+                    _load();
+                  } catch (e) {
+                    if (mounted) showSnack(context, '$e', error: true);
+                  }
                 },
               )
             else
@@ -321,8 +325,12 @@ class _FilesPageState extends State<FilesPage> {
                   danger: true,
                 );
                 if (!ok) return;
-                await store.deleteEntry(n.path);
-                _load();
+                try {
+                  await store.deleteEntry(n.path);
+                  _load();
+                } catch (e) {
+                  if (mounted) showSnack(context, '$e', error: true);
+                }
               },
             ),
             const SizedBox(height: 6),

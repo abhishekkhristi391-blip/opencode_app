@@ -503,12 +503,9 @@ bool _isExternalPermissionError(String text) {
     'access denied',
     'eacces',
     'operation not permitted',
-    'outside workspace',
     'not allowed',
+    'read-only file system',
     'external directory',
-    'out of bounds',
-    'workspace boundary',
-    'restricted path',
   ];
   const pathKeywords = [
     '/storage/',
@@ -518,8 +515,20 @@ bool _isExternalPermissionError(String text) {
     '/mnt/',
     'free fire',
   ];
+  // These already name the workspace/external-path restriction on their own,
+  // so the affordance must not also demand a path keyword — otherwise the most
+  // common denial ("... is outside the workspace") never gets an escape hatch.
+  const selfSufficient = [
+    'outside workspace',
+    'external directory',
+    'workspace boundary',
+    'out of bounds',
+    'restricted path',
+  ];
+  final hasSelfSufficient = selfSufficient.any((k) => lower.contains(k));
   final hasPermissionKeyword = permissionKeywords.any((k) => lower.contains(k));
   final hasPathKeyword = pathKeywords.any((k) => lower.contains(k));
+  if (hasSelfSufficient) return true;
   return hasPermissionKeyword && hasPathKeyword;
 }
 

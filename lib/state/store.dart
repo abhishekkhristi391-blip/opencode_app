@@ -1109,18 +1109,34 @@ class OcStore extends ChangeNotifier {
     final r = await api.shell(sid, command: command, agent: agent);
     var out = '';
     var code = 0;
+    var ran = false;
     for (final p in r.parts) {
-      if (p.type == 'tool') {
-        code = p.exitCode ?? 0;
-        final stdout = p.output;
-        final stderr = p.errorText;
-        if (stdout.isNotEmpty) {
-          out += (out.isEmpty ? '' : '\n') + stdout;
-        }
-        if (stderr.isNotEmpty) {
-          out += (out.isEmpty ? '' : '\n') + stderr;
-        }
+      if (p.type != 'tool') continue;
+      ran = true;
+      // A later part succeeding must never mask an earlier failure, otherwise
+      // `writeFile` reports success for a half-applied command.
+      final e = p.exitCode ?? 0;
+      if (e != 0) code = e;
+      // Tool-level failure with no `exit` in metadata still has to fail.
+      if (e == 0 && p.status == ToolStatus.error) code = 1;
+      final stdout = p.output;
+      final stderr = p.errorText;
+      if (stdout.isNotEmpty) {
+        out += (out.isEmpty ? '' : '\n') + stdout;
       }
+      if (stderr.isNotEmpty) {
+        out += (out.isEmpty ? '' : '\n') + stderr;
+      }
+    }
+    if (!ran) {
+      // No tool part at all: the server never executed anything. Returning 0
+      // here is exactly what made writes/deletes fail *silently*.
+      return (
+        exit: 127,
+        output: out.isEmpty
+            ? 'Shell ne koi output nahi diya — command chalaya hi nahi gaya.'
+            : out,
+      );
     }
     return (exit: code, output: out);
   }
@@ -1688,3 +1704,4 @@ class OcStore extends ChangeNotifier {
   }
 }
 // rebuild trigger
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
