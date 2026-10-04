@@ -496,14 +496,29 @@ class _InputBlock extends StatelessWidget {
 /// Detects if an error message indicates a permission issue with external paths.
 bool _isExternalPermissionError(String text) {
   final lower = text.toLowerCase();
-  return (lower.contains('permission denied') ||
-          lower.contains('access denied') ||
-          lower.contains('eacces') ||
-          lower.contains('operation not permitted') ||
-          lower.contains('outside workspace') ||
-          lower.contains('not allowed') ||
-          lower.contains('external directory')) &&
-      (lower.contains('/storage/') || lower.contains('/sdcard/') || lower.contains('emulated'));
+  const permissionKeywords = [
+    'permission denied',
+    'access denied',
+    'eacces',
+    'operation not permitted',
+    'outside workspace',
+    'not allowed',
+    'external directory',
+    'out of bounds',
+    'workspace boundary',
+    'restricted path',
+  ];
+  const pathKeywords = [
+    '/storage/',
+    '/sdcard/',
+    'emulated',
+    '/data/',
+    '/mnt/',
+    'free fire',
+  ];
+  final hasPermissionKeyword = permissionKeywords.any((k) => lower.contains(k));
+  final hasPathKeyword = pathKeywords.any((k) => lower.contains(k));
+  return hasPermissionKeyword && hasPathKeyword;
 }
 
 class _OutputBlock extends StatefulWidget {
