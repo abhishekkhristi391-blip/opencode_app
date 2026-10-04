@@ -944,6 +944,12 @@ class OcStore extends ChangeNotifier {
       _toast('Pehle model choose karo');
       return;
     }
+    // System prompt: user communicates in Hindi/Hinglish using Roman script.
+    const systemPrompt =
+        'User baatein Hindi/Hinglish mein Roman script (English letters) se karta hai. '
+        'Jaise: "bana na" = "banana" (create), "kaise hoga" = "how to do". '
+        'Treat Roman Hindi as Hindi, NOT Turkish or other languages. '
+        'Reply naturally in the same script user uses.';
     // Instant feedback: show "working" right away, don't wait for the server.
     busy = true;
     busyStatus = '';
@@ -957,10 +963,12 @@ class OcStore extends ChangeNotifier {
         agent: agent,
         parts: parts,
         tools: toolMap,
+        system: systemPrompt,
       );
     } on ApiException catch (e) {
       _clearBusyTimer();
       busy = false;
+      messagesLoading = false;
       sessionError = e.message;
       // Remove the optimistic user message on error
       messages.removeWhere(
@@ -970,6 +978,7 @@ class OcStore extends ChangeNotifier {
     } catch (e) {
       _clearBusyTimer();
       busy = false;
+      messagesLoading = false;
       sessionError = e.toString();
       // Remove the optimistic user message on error
       messages.removeWhere(
@@ -1676,3 +1685,4 @@ class OcStore extends ChangeNotifier {
     super.dispose();
   }
 }
+                                                                      
