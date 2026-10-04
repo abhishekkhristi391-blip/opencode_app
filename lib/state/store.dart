@@ -151,10 +151,13 @@ class OcStore extends ChangeNotifier {
   /// synthesised when a part arrives before its header. Both get a real row
   /// moments later when the server echoes them back, so persisting them now
   /// only risks resurrecting an empty bubble.
+  /// Also excludes assistant messages that are still streaming (no finishReason).
   bool _isCacheable(ChatMessage m) {
     if (m.info.id.isEmpty) return false;
     if (m.info.raw['optimistic'] == true) return false;
     if (m.info.raw.isEmpty) return false;
+    // Don't cache assistant messages that haven't finished yet (no finishReason).
+    if (m.info.role == 'assistant' && m.info.finishReason.isEmpty) return false;
     return true;
   }
 
@@ -1409,6 +1412,12 @@ class OcStore extends ChangeNotifier {
         final q = QuestionReq.fromJson(asMap(p));
         if (q.id.isNotEmpty && !questions.any((x) => x.id == q.id)) {
           questions.add(q);
+          // Question tool pauses the agent — treat as idle for UI so prompt is usable.
+          if (_isCurrent(q.sessionId)) {
+            _clearBusyTimer();
+            busy = false;
+            busyStatus = '';
+          }
           notifyListeners();
         }
         break;
