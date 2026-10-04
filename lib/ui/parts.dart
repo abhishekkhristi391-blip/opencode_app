@@ -493,6 +493,19 @@ class _InputBlock extends StatelessWidget {
   }
 }
 
+/// Detects if an error message indicates a permission issue with external paths.
+bool _isExternalPermissionError(String text) {
+  final lower = text.toLowerCase();
+  return (lower.contains('permission denied') ||
+          lower.contains('access denied') ||
+          lower.contains('eacces') ||
+          lower.contains('operation not permitted') ||
+          lower.contains('outside workspace') ||
+          lower.contains('not allowed') ||
+          lower.contains('external directory')) &&
+      (lower.contains('/storage/') || lower.contains('/sdcard/') || lower.contains('emulated'));
+}
+
 class _OutputBlock extends StatefulWidget {
   final String text;
   final bool isError;
@@ -509,11 +522,13 @@ class _OutputBlockState extends State<_OutputBlock> {
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
+    final store = AppScope.of(context);
     final lines = widget.text.split('\n');
     final truncated = lines.length > _maxLines;
     final shown = _expanded || !truncated
         ? widget.text
         : lines.take(_maxLines).join('\n');
+    final showPermissionPrompt = widget.isError && _isExternalPermissionError(widget.text);
 
     // Reference `.out`: always the dark code surface, in both themes.
     return Container(
@@ -557,6 +572,34 @@ class _OutputBlockState extends State<_OutputBlock> {
                 ],
               ),
             ),
+          if (showPermissionPrompt) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: t.accSoft,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: t.acc),
+              ),
+              child: Row(
+                children: [
+                  LIcon(LI.warning, size: 18, color: t.accInk, strokeWidth: 2),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tool blocked: external directory access needed',
+                      style: OCTypography.caption.copyWith(color: t.accInk),
+                    ),
+                  ),
+                  OCButton(
+                    label: 'Allow external access',
+                    variant: OCButtonVariant.smallInline,
+                    onPressed: () => store.enableExternalDirectoryAccess(),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Align(
             alignment: Alignment.centerRight,
             child: InkWell(
@@ -572,6 +615,7 @@ class _OutputBlockState extends State<_OutputBlock> {
       ),
     );
   }
+}
 }
 
 class _FilePart extends StatelessWidget {

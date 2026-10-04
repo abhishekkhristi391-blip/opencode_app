@@ -1187,6 +1187,23 @@ class OcStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Enables server config to allow tools to access directories outside the workspace.
+  Future<void> enableExternalDirectoryAccess() async {
+    try {
+      await api.patchConfig({
+        'permission': {
+          'edit': 'allow',
+          'bash': 'allow',
+          'external_directory': 'allow',
+        },
+      });
+      await refreshConfig();
+      _toast('External directory access enabled');
+    } on ApiException catch (e) {
+      _toast(e.message);
+    }
+  }
+
   Future<void> addMcp(
     String name,
     String type,
