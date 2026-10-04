@@ -1351,6 +1351,7 @@ class OcStore extends ChangeNotifier {
           _clearBusyTimer();
           busy = false;
           busyStatus = '';
+          messagesLoading = false;
           notifyListeners();
           // The run is over: commit the tail now instead of waiting out the
           // flush debounce, so killing the app here still keeps the answer.
@@ -1367,6 +1368,7 @@ class OcStore extends ChangeNotifier {
           _clearBusyTimer();
           sessionError = _errorText(asMap(p['error']));
           busy = false;
+          messagesLoading = false;
           notifyListeners();
         }
         break;
@@ -1685,4 +1687,4 @@ class OcStore extends ChangeNotifier {
     super.dispose();
   }
 }
-                                                                      
+// rebuild trigger
