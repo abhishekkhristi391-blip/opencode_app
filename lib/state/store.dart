@@ -787,6 +787,9 @@ class OcStore extends ChangeNotifier {
     final fresh = older.where((m) => !known.contains(m.info.id)).toList();
     if (fresh.isEmpty) return;
     messages = [...fresh, ...messages];
+    // The page is all older turns, so an optimistic bubble still sitting in the
+    // list can only have been superseded by a confirmed message already in it.
+    _stripEchoedOptimistic(messages, messages);
     _oldestMessageId = messages.first.info.id;
     _persistHistory(id, fresh);
   }
@@ -1842,4 +1845,3 @@ class OcStore extends ChangeNotifier {
     super.dispose();
   }
 }
-                                                                                                                                                                                                                 
