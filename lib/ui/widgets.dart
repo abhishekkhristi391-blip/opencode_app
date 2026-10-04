@@ -135,6 +135,19 @@ void showSnack(BuildContext context, String msg, {bool error = false}) {
   showToast(context, msg, error: error);
 }
 
+/// Undo bar for destructive-but-reversible actions. A real [SnackBar] rather
+/// than the toast, because it needs the action slot.
+void showUndoSnack(BuildContext context, String msg, VoidCallback onUndo) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        action: SnackBarAction(label: S.historyUndo, onPressed: onUndo),
+      ),
+    );
+}
+
 void copyToClipboard(
   BuildContext context,
   String text, [

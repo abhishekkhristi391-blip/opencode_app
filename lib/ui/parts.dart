@@ -891,12 +891,18 @@ class ThinkingGroup extends StatelessWidget {
         .map((p) => p.text)
         .where((s) => s.trim().isNotEmpty)
         .join('\n\n');
-    final start = parts
-        .map((p) => p.timeStart)
+    // Tool timing lives in raw['time'] the same way Message.time does.
+    final starts = parts
+        .map((p) => asInt(asMap(p.raw['time'])['start']))
         .where((v) => v > 0)
-        .fold<int>(0, (a, b) => a == 0 ? b : (a < b ? a : b));
-    final end = parts.fold<int>(0, (a, p) => p.timeEnd > a ? p.timeEnd : a);
-    final secs = (end - start) / 1000;
+        .toList();
+    final ends = parts
+        .map((p) => asInt(asMap(p.raw['time'])['end']))
+        .where((v) => v > 0)
+        .toList();
+    final start = starts.isEmpty ? 0 : starts.reduce((a, b) => a < b ? a : b);
+    final end = ends.isEmpty ? 0 : ends.reduce((a, b) => a > b ? a : b);
+    final secs = start > 0 && end > start ? (end - start) / 1000 : 0;
 
     if (text.trim().isEmpty) return const SizedBox.shrink();
 

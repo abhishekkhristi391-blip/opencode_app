@@ -4,6 +4,7 @@
 
 import 'dart:ui' show FontFeature;
 
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// Semantic colour roles used across the app.
@@ -57,10 +58,10 @@ class OCColors {
 
   /// 12% accent wash for selected rows. Never a solid peach fill - that is what
   /// made the Models and History tabs look like a light theme.
-  static const accentSoft = Color(0xFFFF8A3D).withValues(alpha: 0.14);
+  static const accentSoft = Color(0x24FF8A3D);
 
   /// Border of a selected control.
-  static const accentLine = Color(0xFFFF8A3D).withValues(alpha: 0.55);
+  static const accentLine = Color(0x8CFF8A3D);
 
   // --- status -------------------------------------------------------------
   static const success = Color(0xFF34D399);
@@ -68,9 +69,9 @@ class OCColors {
   static const warning = Color(0xFFFBBF24);
 
   /// 12% washes for status backgrounds.
-  static const successSoft = Color(0xFF34D399).withValues(alpha: 0.14);
-  static const errorSoft = Color(0xFFF87171).withValues(alpha: 0.14);
-  static const warningSoft = Color(0xFFFBBF24).withValues(alpha: 0.14);
+  static const successSoft = Color(0x2434D399);
+  static const errorSoft = Color(0x24F87171);
+  static const warningSoft = Color(0x24FBBF24);
 
   // --- code ---------------------------------------------------------------
   static const codeBg = terminalBg;
@@ -112,8 +113,6 @@ class OCColors {
   static const toggleOn = accent;
   static const toggleOff = surfaceElevated;
   static const danger = error;
-  static const successSoft = Color(0x1434D399);
-  static const info = Color(0xFF60A5FA);
   static const codeBorder = border;
   static const selection = accent;
 
@@ -266,6 +265,10 @@ class OCTokens extends ThemeExtension<OCTokens> {
   /// later without touching every call site.
   static const light = dark;
 
+  static OCTokens of(BuildContext context) =>
+      Theme.of(context).extension<OCTokens>() ?? dark;
+
+  @override
   OCTokens copyWith({
     Color? bg,
     Color? card,
@@ -515,6 +518,11 @@ class OCMotion {
   /// The 2dp indeterminate progress line under the header.
   static const progress = Duration(milliseconds: 1600);
 
+  /// Default easing for taps and row highlights.
+  static const curve = Curves.easeOutCubic;
+  static const curveDecel = Curves.easeOut;
+  static const curveEmphatic = Curves.easeOutBack;
+
   /// Legacy aliases.
   static const base = normal;
   static const standard = normal;
@@ -759,18 +767,24 @@ ThemeData _buildTheme() {
         ),
       ),
       dragHandleColor: t.line,
-      dragHandleSize: 36,
+      dragHandleSize: const Size(36, 36),
       showDragHandle: true,
     ),
     menuTheme: MenuThemeData(
-      color: t.card,
-      surfaceTintColor: Colors.transparent,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(OCRadius.card),
-        side: BorderSide(color: t.line),
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(t.card),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        elevation: const WidgetStatePropertyAll(8),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(OCRadius.card),
+            side: BorderSide(color: t.line),
+          ),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          OCTypography.body.copyWith(color: t.ink),
+        ),
       ),
-      textStyle: OCTypography.body.copyWith(color: t.ink),
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: t.card,

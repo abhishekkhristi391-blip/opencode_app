@@ -186,6 +186,7 @@ class FilesPageState extends State<FilesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     // Built from the normalised dir so absolute paths and plain relative ones
     // both produce correct segments (the old `('.$dir')` blindly prefixed a
     // `.` onto every path, including `/storage/...`).
@@ -710,11 +711,17 @@ class _FileEditorPageState extends State<FileEditorPage> {
           ),
           actions: [
             if (dirty)
-              const Center(
-                child: StatusPill(
-                  'edited',
-                  context.oc.acc,
-                  icon: Icons.edit_note,
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_note, size: 14, color: context.oc.acc),
+                    const SizedBox(width: OCSpace.xs),
+                    Text(
+                      S.filesEdited,
+                      style: OCTypography.micro.copyWith(color: context.oc.acc),
+                    ),
+                  ],
                 ),
               ),
             IconButton(

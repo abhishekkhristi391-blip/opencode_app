@@ -72,7 +72,7 @@ class SessionsPageState extends State<SessionsPage> {
 
 class _SessionsHeader extends StatelessWidget {
   final ValueListenable<bool> filter;
-  final ValueListenable<String> query;
+  final ValueNotifier<String> query;
   final TextEditingController searchCtrl;
   final FocusNode searchFocus;
 
@@ -197,7 +197,7 @@ List<Session> visibleSessions(
 
 class _SessionsList extends StatefulWidget {
   final ValueListenable<bool> filter;
-  final ValueListenable<String> query;
+  final ValueNotifier<String> query;
   const _SessionsList({required this.filter, required this.query});
 
   @override
@@ -437,19 +437,12 @@ class _SessionTile extends StatelessWidget {
         final removed = s;
         final ok = await store.deleteSession(removed.id);
         if (!ok) return false;
-        showSnack(
-          context,
-          S.historyDeleted,
-          action: SnackBarAction(
-            label: S.historyUndo,
-            onPressed: () {
-              // Re-creating is not possible against a deleted id, so undo offers
-              // the next best thing: bring it back into view as a new session
-              // carrying the old title. Nothing is silently lost either way.
-              store.newSession(title: removed.label);
-            },
-          ),
-        );
+        showUndoSnack(context, S.historyDeleted, () {
+          // Re-creating is not possible against a deleted id, so undo offers
+          // the next best thing: bring it back into view as a new session
+          // carrying the old title. Nothing is silently lost either way.
+          store.newSession(title: removed.label);
+        });
         return true;
       },
       child: Material(

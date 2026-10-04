@@ -314,7 +314,7 @@ class _OCButtonState extends State<OCButton> {
         child: AnimatedScale(
           scale: _pressed ? OCMotion.pressScale : 1,
           duration: OCMotion.micro,
-          curve: OCMotion.standard,
+          curve: OCMotion.curve,
           child: AnimatedOpacity(
             opacity: enabled ? 1 : 0.4, // disabled = 40% opacity
             duration: OCMotion.micro,
@@ -361,7 +361,7 @@ class OCCard extends StatelessWidget {
     super.key,
     required this.child,
     this.variant = OCCardVariant.default_,
-    this.padding = const EdgeInsets.all(OCSpace.card),
+    this.padding = const EdgeInsets.all(OCSpace.cardPad),
     this.margin = EdgeInsets.zero,
     this.gradient,
     this.onTap,
@@ -730,7 +730,7 @@ class OCToggle extends StatelessWidget {
               duration: OCMotion.micro,
               child: AnimatedContainer(
                 duration: OCMotion.base,
-                curve: OCMotion.standard,
+                curve: OCMotion.curve,
                 width: 44,
                 height: 26,
                 padding: const EdgeInsets.all(2),
@@ -740,7 +740,7 @@ class OCToggle extends StatelessWidget {
                 ),
                 child: AnimatedAlign(
                   duration: OCMotion.base,
-                  curve: OCMotion.standard,
+                  curve: OCMotion.curve,
                   alignment: value
                       ? Alignment.centerRight
                       : Alignment.centerLeft,
@@ -837,7 +837,7 @@ class _SegmentItem extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: OCMotion.base,
-          curve: OCMotion.standard,
+          curve: OCMotion.curve,
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
           decoration: BoxDecoration(
@@ -908,7 +908,6 @@ class OCProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = value.clamp(0.0, 1.0);
-    final ring = color ?? context.oc.acc;
     return Semantics(
       label: semanticLabel,
       value: '${(target * 100).round()}%',
@@ -920,7 +919,7 @@ class OCProgressBar extends StatelessWidget {
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: animate ? 0 : target, end: target),
             duration: OCMotion.emphasis,
-            curve: OCMotion.standard,
+            curve: OCMotion.curve,
             builder: (_, v, __) => FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: v,
@@ -969,6 +968,7 @@ class OCProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = value.clamp(0.0, 1.0);
+    final ring = color ?? context.oc.acc;
     return Semantics(
       label: semanticLabel,
       value: '${(target * 100).round()}%',
@@ -981,7 +981,7 @@ class OCProgressRing extends StatelessWidget {
             TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: animate ? 0 : target, end: target),
               duration: OCMotion.emphasis,
-              curve: OCMotion.standard,
+              curve: OCMotion.curve,
               builder: (_, v, __) => CustomPaint(
                 size: Size.square(size),
                 painter: _RingPainter(

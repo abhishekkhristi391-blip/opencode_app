@@ -67,7 +67,7 @@ class _ChatPageState extends State<ChatPage> {
 
   /// New assistant messages that arrived while the user was scrolled away.
   int _unread = 0;
-  int _lastCount = 0;
+  int? _lastCount = 0;
   String _lastTailId = '';
   bool _wasLoading = false;
 
@@ -120,7 +120,6 @@ class _ChatPageState extends State<ChatPage> {
     _lastCount = _chatMessageCount();
   }
 
-  int? _lastCount;
   int? _chatMessageCount() {
     final st = _store;
     if (st == null) return null;
@@ -1002,21 +1001,17 @@ class _ProjectBar extends StatelessWidget {
             ),
             InfoRow(
               S.projectDirectory,
-              value: (p?.directory ?? '').isEmpty
-                  ? S.projectUnknown
-                  : p!.directory,
+              (p?.directory ?? '').isEmpty ? S.projectUnknown : p!.directory,
               mono: true,
             ),
             InfoRow(
               S.projectWorktree,
-              value: (p?.worktree ?? '').isEmpty
-                  ? S.projectUnknown
-                  : p!.worktree,
+              (p?.worktree ?? '').isEmpty ? S.projectUnknown : p!.worktree,
               mono: true,
             ),
             InfoRow(
               S.projectBranch,
-              value: (v?.branch ?? '').isEmpty ? S.projectNoBranch : v!.branch,
+              (v?.branch ?? '').isEmpty ? S.projectNoBranch : v!.branch,
               mono: true,
             ),
             const SizedBox(height: OCSpace.sm),
@@ -1492,19 +1487,12 @@ Future<void> showMessageMenu(BuildContext context, ChatMessage msg) async {
                 if (!context.mounted) return;
                 // Reversible, so it is not confirmed: the old confirm dialog
                 // asked about an action that the undo bar already covers.
-                showSnack(
-                  context,
-                  S.messageDeleted,
-                  action: SnackBarAction(
-                    label: S.historyUndo,
-                    onPressed: () {
-                      // The server has no restore endpoint; re-running undo on the
-                      // message is the closest honest recovery, so the bar says
-                      // so rather than pretending.
-                      store.revert(msg.info.id);
-                    },
-                  ),
-                );
+                showUndoSnack(context, S.messageDeleted, () {
+                  // The server has no restore endpoint; re-running undo on the
+                  // message is the closest honest recovery, so the bar says
+                  // so rather than pretending.
+                  store.revert(msg.info.id);
+                });
               } catch (e) {
                 if (context.mounted) showSnack(context, '$e', error: true);
               }

@@ -308,8 +308,8 @@ class S {
   static const String cmdNoCommands = 'No commands';
   static String cmdArgs(String name) => '/$name arguments';
   static String cmdUseSkill(String name) => 'Use the $name skill to do this: ';
-  static String cmdUseLabel(String name) => 'Use \$name';
-  static String partsAgent(String a) => 'Agent \u00b7 \${a.isEmpty ? '?' : a}';
+  static String cmdUseLabel(String name) => 'Use $name';
+  static String partsAgent(String a) => 'Agent \u00b7 ${a.isEmpty ? '?' : a}';
 
   // diff
   static const String diffNoActiveSession = 'No active session.';
@@ -413,15 +413,15 @@ class S {
   static const String externalPermEnabled = 'External directory access enabled';
 
   static const String nameLabel = 'Name';
-  static String netTimeout(int s) => 'The server did not reply within \${s}s';
+  static String netTimeout(int s) => 'The server did not reply within ${s}s';
   static String netUnreachable(String root) =>
-      'Could not reach the server.\n\nIs \${root} reachable?\n'
+      'Could not reach the server.\n\nIs ${root} reachable?\n'
       'Is it running in Termux?';
   static const String shellNoOutput =
       'The shell produced no output \u2014 the command may not have run.';
   static const String permWhatDoing = 'opencode is about to:';
   static String permSuggestingRules(List<String> r) =>
-      'The server suggests these rules: \${r.join(', ')}';
+      'The server suggests these rules: ${r.join(', ')}';
   static const String skipQ = 'Skip';
 
   // ---- second de-Hinglish sweep ----
@@ -430,11 +430,9 @@ class S {
   static const String filesPathHint = 'Path (relative to the project root)';
   static const String filesGo = 'Go';
   static const String filesRootCrumb = 'root';
-  static String filesChangedCount(int n) =>
-      n == 1 ? '1 changed' : '\$n changed';
+  static String filesChangedCount(int n) => n == 1 ? '1 changed' : '$n changed';
   static const String filesDuplicate = 'Duplicate';
   static const String filesFolderExists = 'A folder with that name exists here';
-  static String filesExists(String name) => '\$name already exists';
   static const String filesChangedTitle = 'Changed files';
   static const String filesAllClean = 'All clean';
   static const String diffRefresh = 'Refresh';
@@ -459,7 +457,7 @@ class S {
   static const String modelsReasoning = 'Reasoning';
   static const String modelsTools = 'Tools';
   static String modelsContext(int k) => '${k}k context';
-  static String modelsSelected(String name) => 'Model: \$name';
+  static String modelsSelected(String name) => 'Model: $name';
   static const String setUpgradeCmd = 'opencode upgrade';
   static const String setUpgradeConfirmBody =
       'The current instance will be disposed and any active work may stop.';
@@ -480,8 +478,6 @@ class S {
   static const String termEmptyBody =
       'Run a shell command in the project directory.';
 
-  static const String copy = 'Copy';
-  static const String copied = 'Copied';
   static const String partsOutput = 'Output';
   static const String moreActions = 'More actions';
   static const String messageDeleted = 'Message deleted';
@@ -507,29 +503,25 @@ class S {
   // ------------------------------------------------------------------
   static const filesTitle = 'Files';
   static const filesPathLabel = 'Path';
-  static const filesPathHint = 'Relative to the project root';
   static const filesPathOpen = 'Enter a path';
   static const filesFilterTooltip = 'Filters';
   static const filesShowIgnored = 'Show ignored files';
   static const filesChanged = 'Changed files';
-  static const filesChangedCount = '%d changed';
   static const filesEmptyTitle = 'Empty folder';
   static const filesEmptyBody = 'There is no file here.';
   static const filesLoadFailed = 'Could not load this folder';
   static const filesSaved = 'Saved';
   static const filesRenameTitle = 'Rename';
-  static const filesDuplicate = 'Duplicate';
   static const filesNewFolder = 'New folder here';
   static const filesNewFolderTitle = 'Folder name';
   static const filesSendToChat = 'Send to chat';
-  static const filesDeleteTitle = 'Delete?';
   static const filesProjectRoot = 'root';
   static const filesEditorTitle = 'Editor';
   static const filesUntitled = 'Untitled';
   static const filesBinaryTitle = 'Binary file';
   static const filesBinaryBody =
       'This is not a text file, so it cannot be edited.';
-  static const filesReadFailed = 'This file could not be read';
+  static const filesEdited = 'edited';
   static const filesUnsavedTitle = 'Unsaved changes';
   static const filesUnsavedBody = 'You have unsaved changes. Exit anyway?';
   static const filesAllCleanTitle = 'Everything is clean';
@@ -549,16 +541,9 @@ class S {
   static const diffStaged = 'Staged';
   static const diffNoSession = 'No active session';
   static const diffNoSessionBody = 'Open a session to see its changes.';
-  static const diffLoadFailed = 'The diff could not be loaded';
-  static const diffNoChanges = 'No changes';
-  static const diffNoChangesBody =
-      'This session has not modified any file yet.';
-  static const diffNotARepo = 'This project is not a git repository';
   static const diffClean = 'The worktree is clean';
   static const diffNoTextDiff = 'There is no textual diff for this file.';
   static const diffCopy = 'Copy diff';
-  static const diffApply = 'Apply patch';
-  static const diffApplyTitle = 'Apply the patch?';
   static const diffTruncated = '… %d more lines';
 
   static String diffAddedRemoved(int add, int del) => '+$add  −$del';
@@ -616,7 +601,6 @@ class S {
   // ------------------------------------------------------------------
   // models
   // ------------------------------------------------------------------
-  static const modelsTitle = 'Models & Agents';
   static const modelsSearchHint = 'Search models';
   static const modelsLoading = 'Loading providers';
   static const modelsEmptyTitle = 'No model found';
@@ -819,8 +803,6 @@ class S {
   // --- fix 5: composer -----------------------------------------------
   static const composerPlaceholder =
       'Ask the agent to build, fix, or explain...';
-  static const composerWorking = 'Agent is working — Stop to interrupt';
-  static const composerQueued = 'Queued — sends when this turn ends';
   static const composerQueuedTooltip = 'This message is queued';
   static const composerSendTooltip = 'Send';
   static const composerStopTooltip = 'Stop the current turn';
@@ -840,7 +822,6 @@ class S {
   static const sheetAbout = 'About';
 
   // --- fix 4: running chat --------------------------------------------
-  static const thinking = 'Thinking...';
   static const thinkingCollapsedTooltip = 'Show what the agent was thinking';
   static String thinkingGroup(int seconds, int steps) => seconds >= 60
       ? 'Thought for ${seconds ~/ 60}m ${seconds % 60}s · $steps steps'
@@ -857,7 +838,6 @@ class S {
   static const messageUndoConfirmAction = 'Undo';
   static const messageUndoDone = 'Message undone';
   static const messageUndoAgain = 'Undo undo';
-  static const messageCopied = 'Copied';
   static const retryDone = 'Running again';
   static const partOutputCopy = 'Copy output';
   static const partCommandCopy = 'Copy command';
@@ -865,10 +845,6 @@ class S {
   static const partCollapse = 'Collapse';
 
   // --- fix 7: history ------------------------------------------------
-  static const historyToday = 'Today';
-  static const historyYesterday = 'Yesterday';
-  static const historyEarlier = 'Earlier';
-  static const historySearchHint = 'Search chats';
   static const historySegmentPrimary = 'Primary';
   static const historySegmentAll = 'All sessions';
   static const historySegmentTooltip =
@@ -877,47 +853,32 @@ class S {
   static const historyEmptyTitle = 'No chats yet';
   static const historyEmptyBody = 'Start a chat and it will show up here.';
   static const historyEmptySearch = 'No chats match that search';
-  static const historyDeleted = 'Session deleted';
-  static const historyUndo = 'Undo';
   static const historyRename = 'Rename';
-  static const historyPin = 'Pin to top';
-  static const historyUnpin = 'Unpin';
-  static const historyPinned = 'Pinned';
   static const historyDelete = 'Delete';
   static const historyDeleteTitle = 'Delete this session?';
   static String historyDeleteBody(String title) =>
       '"$title" and its messages will be removed from the server.';
 
   // --- fix 8: files ---------------------------------------------------
-  static const filesShowIgnored = 'Show ignored files';
   static const filesShowIgnoredTooltip =
       'Includes .git, node_modules, build output and anything in .gitignore';
-  static const filesPathHint = 'Path (default: project root)';
-  static const filesGo = 'Go';
   static const filesClearPath = 'Clear path';
   static const filesNew = 'New';
   static const filesRoot = 'root';
   static const filesCopyPath = 'Copy path';
-  static const filesEmptyTitle = 'No files';
-  static const filesEmptyBody = 'This folder is empty.';
   static const filesErrorTitle = 'Could not read this folder';
   static const filesLoading = 'Reading the folder';
   static String filesItems(int n) => n == 1 ? '1 item' : '$n items';
   static String filesSelected(int n) => n == 1 ? '1 selected' : '$n selected';
-  static const filesSendToChat = 'Send to chat';
   static const deleteFile = 'Delete';
 
   // --- fix 9: models & agents -----------------------------------------
-  static const modelsSearchHint = 'Search models';
   static const modelsConnectedOnly = 'Connected providers only';
   static const modelsCapReasoning = 'Reasoning';
   static const modelsCapTools = 'Tools';
   static const modelsCapVision = 'Vision';
   static const modelsCapFiles = 'Files';
-  static String modelsContext(String limit) => '$limit ctx';
   static String modelsProvider(int n) => n == 1 ? '1 model' : '$n models';
-  static const modelsEmptyTitle = 'No models match';
-  static const modelsEmptyBody = 'Try a different search or filter.';
   static const agentSelector = 'Agent';
   static String agentPrimary(String name) => '$name — primary';
 
@@ -935,12 +896,9 @@ class S {
   }
 
   // --- fix 10: terminal ------------------------------------------------
-  static const termEmptyTitle = 'No output yet';
-  static const termEmptyBody = 'Run a command and its output appears here.';
   static const termInputHint = 'Enter a command';
   static const termRun = 'Run';
   static const termSendTooltip = 'Run this command';
-  static const termClearTooltip = 'Clear the output';
   static const termCopyOutput = 'Copy output';
   static const termHistoryPrev = 'Previous command';
   static const termHistoryNext = 'Next command';
