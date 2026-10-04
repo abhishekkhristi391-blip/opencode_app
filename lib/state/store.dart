@@ -15,6 +15,12 @@ class ChatMessage {
   List<Part> parts;
   String? errorText;
 
+  /// Set once the store has concluded the run is over even though the server
+  /// never sent a completion stamp for this message (abort, error, or a lost
+  /// `message.updated`). Without it `streaming` stays true and the typing dots
+  /// spin forever on a message the agent already abandoned.
+  bool settled = false;
+
   // FIX: always copy into a *growable* list. Passing `const []` used to make
   // parts.add() throw, so streamed parts never showed up.
   ChatMessage(this.info, List<Part> parts, {this.errorText})
@@ -29,6 +35,7 @@ class ChatMessage {
   /// failed run leaves the finish reason empty, which used to keep the typing
   /// dots on forever and hide the error.
   bool get streaming =>
+      !settled &&
       info.finishReason.isEmpty &&
       !info.completed &&
       info.role == 'assistant' &&
@@ -124,13 +131,25 @@ class OcStore extends ChangeNotifier {
   // =====================================================================
 
   Timer? _notifyTimer;
+  bool _notifyPending = false;
 
-  /// Coalesces many rapid updates (stream deltas etc.) into ~16 rebuilds/sec.
+  /// Coalesces streaming deltas into at most ~16 rebuilds/sec, but paints the
+  /// *first* change of a burst straight away.
+  ///
+  /// The old version always waited a full window before the first rebuild, so
+  /// the opening token of every reply appeared late; worse, any change that
+  /// landed while a timer was pending was dropped without a trailing rebuild,
+  /// so the final token of a turn could sit unrendered for good.
   void _scheduleNotify() {
-    if (_disposed || _notifyTimer != null) return;
+    if (_disposed) return;
+    _notifyPending = true;
+    if (_notifyTimer != null) return;
+    _notifyPending = false;
+    notifyListeners();
     _notifyTimer = Timer(const Duration(milliseconds: 60), () {
       _notifyTimer = null;
-      if (!_disposed) notifyListeners();
+      // Guarantees the last change of a burst always gets painted.
+      if (_notifyPending) _scheduleNotify();
     });
   }
 
@@ -739,6 +758,9 @@ class OcStore extends ChangeNotifier {
     _clearBusyTimer();
     busy = false;
     busyStatus = '';
+    // Stop pressed: the aborted message never gets a completion stamp, so its
+    // dots would keep spinning for the rest of the session.
+    _settleStuckStreaming();
     notifyListeners();
   }
 
@@ -971,9 +993,13 @@ class OcStore extends ChangeNotifier {
   // run showed a fake "timeout". Now it only fires after 5 min of *silence*.
   Timer? _busyTimer;
   bool _busyProbeActive = false;
+  int _probeFailures = 0;
   DateTime _lastActivity = DateTime.now();
 
-  void _touchActivity() => _lastActivity = DateTime.now();
+  void _touchActivity() {
+    _probeFailures = 0;
+    _lastActivity = DateTime.now();
+  }
 
   void _startBusyTimer() {
     _touchActivity();
@@ -997,6 +1023,7 @@ class OcStore extends ChangeNotifier {
         _busyTimer = null;
         busy = false;
         busyStatus = '';
+        _settleStuckStreaming();
         sessionError =
             'Server se 5 min tak koi activity nahi aayi. Server logs check karo ya dobara try karo.';
         notifyListeners();
@@ -1015,11 +1042,13 @@ class OcStore extends ChangeNotifier {
     _busyProbeActive = true;
     try {
       final st = asMap(await api.sessionStatus())[id];
+      _probeFailures = 0;
       // Session unknown to the server => nothing is running for it.
       if (st == null) {
         _clearBusyTimer();
         busy = false;
         busyStatus = '';
+        _settleStuckStreaming();
         notifyListeners();
         return;
       }
@@ -1027,6 +1056,9 @@ class OcStore extends ChangeNotifier {
         _clearBusyTimer();
         busy = false;
         busyStatus = '';
+        // The run is over server-side; if its closing `message.updated` was lost
+        // the dots would spin forever, so retire them before re-syncing.
+        _settleStuckStreaming();
         // The idle event was lost: re-sync so the answer is not left cut off.
         unawaited(_resyncMessages(id));
         notifyListeners();
@@ -1036,7 +1068,12 @@ class OcStore extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) debugPrint('busy probe failed: $e');
-      _touchActivity();
+      // A flaky link must not unlock the composer mid-run, so the window is
+      // still restarted — but after a few failures we stop doing that, which is
+      // what lets the 5-minute bail-out above actually fire instead of the probe
+      // resetting the clock forever.
+      _probeFailures++;
+      if (_probeFailures < 3) _touchActivity();
     } finally {
       _busyProbeActive = false;
     }
@@ -1045,6 +1082,25 @@ class OcStore extends ChangeNotifier {
   void _clearBusyTimer() {
     _busyTimer?.cancel();
     _busyTimer = null;
+  }
+
+  /// Kills the typing dots on trailing assistant messages the server never
+  /// closed out. Only called on paths where the store has already decided the
+  /// run is over (abort, error, lost-`message.updated` probe), so it can never
+  /// cut a genuinely live message short — a normal `message.updated` with a
+  /// completion stamp is what ends the dots in the happy path.
+  ///
+  /// Returns true when something changed, so callers can skip a pointless
+  /// rebuild.
+  bool _settleStuckStreaming() {
+    var changed = false;
+    for (final m in messages) {
+      if (m.streaming) {
+        m.settled = true;
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   Future<void> _sendParts(String sid, List<Map<String, dynamic>> parts) async {
@@ -1104,6 +1160,13 @@ class OcStore extends ChangeNotifier {
       if (s == null) return;
       sid = s.id;
     }
+    // Same instant-feedback contract as send(): a slash command runs a full
+    // agent turn but produced no indicator at all until the server's first
+    // status event, so the UI looked inert for seconds.
+    busy = true;
+    busyStatus = '';
+    _startBusyTimer();
+    notifyListeners();
     try {
       await api.post(
         '/session/$sid/command',
@@ -1118,7 +1181,10 @@ class OcStore extends ChangeNotifier {
         timeout: const Duration(minutes: 30),
       );
     } on ApiException catch (e) {
+      _clearBusyTimer();
+      busy = false;
       sessionError = e.message;
+      _settleStuckStreaming();
       notifyListeners();
     }
   }
@@ -1527,6 +1593,8 @@ class OcStore extends ChangeNotifier {
           sessionError = _errorText(asMap(p['error']));
           busy = false;
           messagesLoading = false;
+          // A failed run's message never gets a completion stamp either.
+          _settleStuckStreaming();
           notifyListeners();
         }
         break;
@@ -1634,6 +1702,10 @@ class OcStore extends ChangeNotifier {
   /// Newest optimistic user row. Only one prompt is in flight at a time, so the
   /// server's echo always belongs to the send that was made last — matching the
   /// *first* optimistic row instead used to delete the wrong bubble.
+  /// Prefix of the part ids minted locally in [send] for the optimistic bubble.
+  /// Must stay in sync with the `'part-$userMsgId'` ids built there.
+  static const String _localPartPrefix = 'part-local-';
+
   int _optimisticIndex() {
     for (var i = messages.length - 1; i >= 0; i--) {
       final m = messages[i];
@@ -1725,6 +1797,22 @@ class OcStore extends ChangeNotifier {
     if (i >= 0) {
       msg.parts[i] = part;
     } else {
+      // A row adopted from the optimistic hand-over still carries the local
+      // stand-in parts minted in [send]. Dedupe above is by id, so the server's
+      // echo was *appended* rather than replacing them, and the bubble rendered
+      // the user's text (and every attachment chip) twice. Retire the stand-in
+      // this part supersedes — matched on content, not type alone, so sibling
+      // attachments are left alone.
+      if (!part.id.startsWith(_localPartPrefix)) {
+        msg.parts.removeWhere(
+          (p) =>
+              p.id.startsWith(_localPartPrefix) &&
+              p.type == part.type &&
+              (part.type == 'file'
+                  ? p.filename == part.filename
+                  : p.text.trim() == part.text.trim()),
+        );
+      }
       msg.parts.add(part);
     }
     if (current != null) _scheduleFlush(current!.id, msg);

@@ -64,6 +64,7 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _showJump = false;
   int _lastCount = 0;
+  String _lastTailId = '';
   bool _wasLoading = false;
 
   /// Kept in a field so [dispose] can detach the listener. Looking it up through
@@ -216,19 +217,29 @@ class _ChatPageState extends State<ChatPage> {
   /// to ~16/s, and [_queueAutoScroll] collapses whatever is left to one jump
   /// per frame.
   void _syncFollow() {
-    final store = AppScope.read(context);
-    final count = store.messages.length;
+    // The listener is detached in dispose, but a notification already in flight
+    // can still land there; read the cached store instead of doing an inherited
+    // widget lookup (which is not legal outside build) on every token.
+    final store = _store;
+    if (store == null) return;
+    final messages = store.messages;
+    final count = messages.length;
+    final tailId = messages.isEmpty ? '' : messages.last.info.id;
 
     // A fresh user message always re-arms follow: the user just spoke.
-    if (count > _lastCount && count > 0 && store.messages.last.info.isUser) {
+    // Keyed on the tail *id*, not the count: prepending an older page also
+    // raises the count, and that used to yank the reader back to the bottom
+    // mid-history whenever the last message happened to be theirs.
+    if (tailId.isNotEmpty && tailId != _lastTailId && messages.last.info.isUser) {
       _setFollow(true);
     }
+    _lastTailId = tailId;
 
     final justLoaded = _wasLoading && !store.messagesLoading;
     _wasLoading = store.messagesLoading;
     // Only re-arm follow on load completion if we were already following,
     // or if this is the initial load (messages was empty). Prevents jumping
-    /// to bottom after "load older" when user is scrolled up reading history.
+    // to bottom after "load older" when user is scrolled up reading history.
     if (justLoaded && (_follow || _lastCount == 0)) {
       _setFollow(true);
     }
