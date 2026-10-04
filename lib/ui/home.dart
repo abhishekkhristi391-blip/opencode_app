@@ -239,7 +239,7 @@ class HomeShellState extends State<HomeShell> {
     final chat = index == 0;
 
     void go(Widget Function() page, String title) {
-      Navigator.pop(sheetCtx);
+      Navigator.pop(context);
       pushScreen(context, title: title, child: page());
     }
 
@@ -360,7 +360,7 @@ class HomeShellState extends State<HomeShell> {
         groupValue: store.agent,
         onChanged: (v) {
           if (v != null) store.setAgent(v);
-          Navigator.pop(context);
+          Navigator.pop(sheetCtx);
         },
         child: SafeArea(
           child: ListView(

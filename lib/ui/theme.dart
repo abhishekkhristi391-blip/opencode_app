@@ -781,9 +781,6 @@ ThemeData _buildTheme() {
             side: BorderSide(color: t.line),
           ),
         ),
-        textStyle: WidgetStatePropertyAll(
-          OCTypography.body.copyWith(color: t.ink),
-        ),
       ),
     ),
     popupMenuTheme: PopupMenuThemeData(
@@ -903,7 +900,7 @@ ThemeData _buildTheme() {
         (s) => s.contains(WidgetState.selected) ? OCColors.accent : t.line,
       ),
     ),
-    pageTransitionsTheme: PageTransitionsTheme(
+    pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: ZoomPageTransitionsBuilder(),
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
