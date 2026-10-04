@@ -57,9 +57,40 @@ class PendingAttachment {
 
 /// Single source of truth for the whole app. A [ChangeNotifier] wired into the
 /// widget tree through [AppScope], so no external state-management dependency.
+/// Transcript-local rebuild signal.
+///
+/// Token streaming rewrites [OcStore.messages] many times a second. Firing the
+/// single app-wide [ChangeNotifier] that often rebuilt *every* mounted
+/// subscriber on each token — the composer, the sessions tab kept alive in the
+/// `IndexedStack`, the busy and error bars — even though only the transcript
+/// displays the text. This carries that traffic instead.
+class MessageListSignal extends ChangeNotifier {
+  /// Announces a change to the message list.
+  ///
+  /// Wrapped in its own type so only the store can raise it;
+  /// `ChangeNotifier.notifyListeners` is `@protected`.
+  void notify() => notifyListeners();
+}
+
 class OcStore extends ChangeNotifier {
   final OcClient api = OcClient();
   EventStream? _stream;
+
+  /// Fires when the *contents* of the message list change.
+  final messageList = MessageListSignal();
+
+  /// What the transcript listens to: [messageList] for token-level edits plus
+  /// this store for the app-wide state that also changes the list's own chrome
+  /// (loading state, `hasMoreMessages`, `showTokensInChat`, a session switch).
+  ///
+  /// Built once because `Listenable.merge` re-subscribes on every construction.
+  /// Merging is what makes the split safe: any mutation that still notifies the
+  /// app also refreshes the transcript, so no update path can silently leave the
+  /// list stale.
+  late final Listenable messageListenable = Listenable.merge([
+    this,
+    messageList,
+  ]);
 
   SharedPreferences? _prefs;
   bool _disposed = false;
@@ -133,6 +164,9 @@ class OcStore extends ChangeNotifier {
   Timer? _notifyTimer;
   bool _notifyPending = false;
 
+  Timer? _msgNotifyTimer;
+  bool _msgNotifyPending = false;
+
   /// Coalesces streaming deltas into at most ~16 rebuilds/sec, but paints the
   /// *first* change of a burst straight away.
   ///
@@ -150,6 +184,20 @@ class OcStore extends ChangeNotifier {
       _notifyTimer = null;
       // Guarantees the last change of a burst always gets painted.
       if (_notifyPending) _scheduleNotify();
+    });
+  }
+
+  /// Same throttle, but scoped to [messageList] so a token never rebuilds the
+  /// rest of the app.
+  void _scheduleMessageNotify() {
+    if (_disposed) return;
+    _msgNotifyPending = true;
+    if (_msgNotifyTimer != null) return;
+    _msgNotifyPending = false;
+    messageList.notify();
+    _msgNotifyTimer = Timer(const Duration(milliseconds: 60), () {
+      _msgNotifyTimer = null;
+      if (_msgNotifyPending) _scheduleMessageNotify();
     });
   }
 
@@ -1753,7 +1801,8 @@ class OcStore extends ChangeNotifier {
     }
     final m = _messageById(info.id);
     if (m != null && current != null) _scheduleFlush(current!.id, m);
-    _scheduleNotify();
+    // Transcript-only: nothing outside the message list reads this.
+    _scheduleMessageNotify();
   }
 
   void _upsertPart(Part part) {
@@ -1816,7 +1865,7 @@ class OcStore extends ChangeNotifier {
       msg.parts.add(part);
     }
     if (current != null) _scheduleFlush(current!.id, msg);
-    _scheduleNotify();
+    _scheduleMessageNotify();
   }
 
   void _applyDelta(String partId, String field, String delta) {
@@ -1830,7 +1879,7 @@ class OcStore extends ChangeNotifier {
         raw[field] = '${asStr(raw[field])}$delta';
         m.parts[i] = Part.fromJson(raw);
         if (current != null) _scheduleFlush(current!.id, m);
-        _scheduleNotify(); // FIX: was notifyListeners() on every single token
+        _scheduleMessageNotify(); // was notifyListeners() on every single token
         return;
       }
     }
@@ -1851,7 +1900,7 @@ class OcStore extends ChangeNotifier {
         _scheduleFlush(current!.id, m);
       }
     }
-    _scheduleNotify();
+    _scheduleMessageNotify();
   }
 
   void _removeMessage(String sid, String messageId) {
@@ -1867,7 +1916,7 @@ class OcStore extends ChangeNotifier {
     if (current != null) {
       unawaited(ChatDB.instance.deleteMessage(current!.id, messageId));
     }
-    _scheduleNotify();
+    _scheduleMessageNotify();
   }
 
   void _upsertSession(Session s) {
@@ -1882,6 +1931,7 @@ class OcStore extends ChangeNotifier {
     // Keep the on-disk session list current so the chat survives a cold start
     // with the server down.
     unawaited(ChatDB.instance.saveSession(s.id, s.toMap(), s.updated));
+    // Stays global: the sessions list is a different view and must repaint.
     _scheduleNotify();
   }
 
@@ -1925,6 +1975,7 @@ class OcStore extends ChangeNotifier {
     _disposed = true;
     _clearBusyTimer();
     _notifyTimer?.cancel();
+    _msgNotifyTimer?.cancel();
     _todoTimer?.cancel();
     _flushTimer?.cancel();
     _stream?.stop();

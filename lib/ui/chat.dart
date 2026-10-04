@@ -82,6 +82,10 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) {
         _store = AppScope.read(context);
         _store!.addListener(_onStoreChange);
+        // Streaming deltas now notify the transcript's own signal instead of the
+        // store, so follow-mode has to hear from both or auto-scroll would stop
+        // tracking the tail mid-run.
+        _store!.messageList.addListener(_onStoreChange);
       }
     });
   }
@@ -94,6 +98,7 @@ class _ChatPageState extends State<ChatPage> {
     focus.dispose();
     // Remove store listener
     _store?.removeListener(_onStoreChange);
+    _store?.messageList.removeListener(_onStoreChange);
     _store = null;
     super.dispose();
   }
@@ -250,27 +255,26 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: AppScope.of(context),
-      builder: (context, _) {
-        return Column(
-          children: [
-            const _ErrorBarWidget(),
-            const _BusyBarWidget(),
-            Expanded(
-              child: _ChatMessages(
-                scroll: scroll,
-                showJump: _showJump,
-                onNotification: _handleNotification,
-                onJump: _jumpToLatest,
-                onLoadOlder: _loadOlderMessages,
-                onPickSuggestion: _sendSuggestion,
-              ),
-            ),
-            _ComposerWidget(controller: input, focus: focus, onSend: _send),
-          ],
-        );
-      },
+    // No ListenableBuilder on purpose. Every child below subscribes to exactly
+    // what it needs — the bars and the composer to the store, the transcript to
+    // [OcStore.messageListenable] — so this Column is static and stays out of
+    // the rebuild path entirely.
+    return Column(
+      children: [
+        const _ErrorBarWidget(),
+        const _BusyBarWidget(),
+        Expanded(
+          child: _ChatMessages(
+            scroll: scroll,
+            showJump: _showJump,
+            onNotification: _handleNotification,
+            onJump: _jumpToLatest,
+            onLoadOlder: _loadOlderMessages,
+            onPickSuggestion: _sendSuggestion,
+          ),
+        ),
+        _ComposerWidget(controller: input, focus: focus, onSend: _send),
+      ],
     );
   }
 
@@ -387,6 +391,18 @@ class _ChatMessages extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
+    // Bound to the transcript's own signal, not to the whole store: a token now
+    // repaints this list and nothing else in the app. `messageListenable` also
+    // carries the app-wide notifications that change this list's own chrome
+    // (loading state, `hasMoreMessages`, `showTokensInChat`), so a session
+    // switch or a settings toggle still lands here.
+    return ListenableBuilder(
+      listenable: store.messageListenable,
+      builder: (context, _) => _buildList(context, store),
+    );
+  }
+
+  Widget _buildList(BuildContext context, OcStore store) {
     final messages = store.messages;
 
     if (store.messagesLoading && messages.isEmpty) {
