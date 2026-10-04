@@ -1099,9 +1099,15 @@ class OcStore extends ChangeNotifier {
     var code = 0;
     for (final p in r.parts) {
       if (p.type == 'tool') {
-        out = p.output;
         code = p.exitCode ?? 0;
-        if (p.errorText.isNotEmpty && out.isEmpty) out = p.errorText;
+        final stdout = p.output;
+        final stderr = p.errorText;
+        if (stdout.isNotEmpty) {
+          out += (out.isEmpty ? '' : '\n') + stdout;
+        }
+        if (stderr.isNotEmpty) {
+          out += (out.isEmpty ? '' : '\n') + stderr;
+        }
       }
     }
     return (exit: code, output: out);
