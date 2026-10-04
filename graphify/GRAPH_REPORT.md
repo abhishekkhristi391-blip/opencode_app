@@ -1,15 +1,15 @@
 # GRAPH REPORT
-27 files, 569 symbols, 1003 edges (685 EXTRACTED, 318 INFERRED)
+27 files, 572 symbols, 1010 edges (690 EXTRACTED, 320 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:464
 - mono (function) - 12 links - lib/ui/theme.dart:544
-- OCButton (class) - 10 links - lib/ui/primitives.dart:98
+- OCButton (class) - 11 links - lib/ui/primitives.dart:98
 - read (function) - 9 links - lib/ui/app_scope.dart:17
 - showSnack (function) - 9 links - lib/ui/widgets.dart:132
 - EmptyHint (class) - 9 links - lib/ui/widgets.dart:147
 - LoadingView (class) - 7 links - lib/ui/widgets.dart:206
-- send (function) - 6 links - lib/state/store.dart:815
+- send (function) - 6 links - lib/state/store.dart:835
 - confirmDialog (function) - 6 links - lib/ui/widgets.dart:370
 - SectionTitle (class) - 6 links - lib/ui/widgets.dart:405
 
@@ -18,7 +18,7 @@
 
 ## Folder dependencies (who imports whom)
 - lib/ui -> lib/models  (11 imports)
-- lib/ui -> lib/state  (9 imports)
+- lib/ui -> lib/state  (10 imports)
 - lib/ui -> lib/l10n  (5 imports)
 - lib -> lib/ui  (3 imports)
 - lib/api -> lib/models  (2 imports)
