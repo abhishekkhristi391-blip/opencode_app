@@ -188,7 +188,70 @@ class OcStore extends ChangeNotifier {
         if (m.info.created > 0 && m.info.created < newest) older.add(m);
       }
     }
-    return [...older, ...window];
+    final merged = [...older, ...window];
+    _stripEchoedOptimistic(merged, window);
+    return merged;
+  }
+
+  /// Slack when comparing the server's `created` stamp with the local
+  /// `DateTime.now()` the optimistic bubble was drawn with — the server can
+  /// stamp a turn a hair earlier than we did.
+  static const int _echoSkewMs = 5000;
+
+  /// Plain text of a message's text parts, so an optimistic bubble and the
+  /// server's copy of the same turn can be compared without ids.
+  static String _messageText(ChatMessage m) {
+    final b = StringBuffer();
+    for (final p in m.parts) {
+      final t = p.text.trim();
+      if (p.type != 'text' || t.isEmpty) continue;
+      if (b.isNotEmpty) b.write('\n');
+      b.write(t);
+    }
+    return b.toString();
+  }
+
+  /// Removes the optimistic user bubble once [window] already holds the
+  /// server's own copy of that same turn.
+  ///
+  /// The optimistic row carries a `local-<ms>` id the server never knows about,
+  /// so the id-based merge in [_mergeHistory] could not match it: it was kept in
+  /// `older` *and* the confirmed message was added from the window, rendering
+  /// the user's message twice. That happens whenever the `message.updated` echo
+  /// is missed (SSE dropped while backgrounded, so the next idle resync or
+  /// watchdog probe is the first thing that sees the confirmed message) — the
+  /// [send] hand-over only runs on that event.
+  ///
+  /// Matches on content plus ordering, because only one prompt is ever in
+  /// flight: a genuinely older turn with identical text is left alone.
+  static void _stripEchoedOptimistic(
+    List<ChatMessage> list,
+    List<ChatMessage> window,
+  ) {
+    var oi = -1;
+    for (var i = list.length - 1; i >= 0; i--) {
+      final m = list[i];
+      if (m.info.role == 'user' && m.info.raw['optimistic'] == true) {
+        oi = i;
+        break;
+      }
+    }
+    if (oi < 0) return;
+    final local = list[oi];
+    final localText = _messageText(local);
+    if (localText.isEmpty) return;
+
+    ChatMessage? confirmed;
+    for (var i = window.length - 1; i >= 0; i--) {
+      final m = window[i];
+      if (m.info.role == 'user' && m.info.raw['optimistic'] != true) {
+        confirmed = m;
+        break;
+      }
+    }
+    if (confirmed == null) return;
+    if (confirmed.info.created + _echoSkewMs < local.info.created) return;
+    if (_messageText(confirmed) == localText) list.removeAt(oi);
   }
 
   /// Reads a session's history out of the cache. Returns an empty list rather
@@ -1779,3 +1842,4 @@ class OcStore extends ChangeNotifier {
     super.dispose();
   }
 }
+                                                                                                                                                                                                                 
