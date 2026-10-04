@@ -66,6 +66,12 @@ class _ChatPageState extends State<ChatPage> {
   int _lastCount = 0;
   bool _wasLoading = false;
 
+  /// Kept in a field so [dispose] can detach the listener. Looking it up through
+  /// the context there is unsafe: the element is already defunct at that point
+  /// (and `mounted` is false for a state being disposed), which trips the
+  /// dependOnInheritedWidgetOfExactType assert and leaks the listener.
+  OcStore? _store;
+
   @override
   void initState() {
     super.initState();
@@ -73,8 +79,8 @@ class _ChatPageState extends State<ChatPage> {
     // Listen to store changes for follow-the-tail logic (outside of build)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final store = AppScope.read(context);
-        store.addListener(_onStoreChange);
+        _store = AppScope.read(context);
+        _store!.addListener(_onStoreChange);
       }
     });
   }
@@ -86,10 +92,8 @@ class _ChatPageState extends State<ChatPage> {
     scroll.dispose();
     focus.dispose();
     // Remove store listener
-    if (mounted) {
-      final store = AppScope.read(context);
-      store.removeListener(_onStoreChange);
-    }
+    _store?.removeListener(_onStoreChange);
+    _store = null;
     super.dispose();
   }
 
@@ -834,12 +838,12 @@ class _MessageTileState extends State<_MessageTile> {
             ),
           ),
         if (m.streaming && !hasContent) const _TypingDots(),
-        if (m.errorText != null) _InlineError(m.errorText!),
-        if (m.errorText == null && !m.streaming && m.info.tokens.total > 0)
+        if (m.displayError != null) _InlineError(m.displayError!),
+        if (m.displayError == null && !m.streaming && m.info.tokens.total > 0)
           _ReplyMeta(msg: m, visible: widget.showTokens),
         // Only the newest reply carries the inline actions; older ones reach
         // the same operations through the long-press menu.
-        if (widget.isLastReply && m.errorText == null) _ReplyActions(msg: m),
+        if (widget.isLastReply && m.displayError == null) _ReplyActions(msg: m),
       ],
     );
   }

@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../api/client.dart';
 import '../api/events.dart';
@@ -22,10 +21,19 @@ class ChatMessage {
   ChatMessage(this.info, List<Part> parts, {this.errorText})
     : parts = List<Part>.of(parts);
 
+  /// Error to show for this message: an explicit local one wins over whatever
+  /// the server attached.
+  String? get displayError => errorText ?? info.errorMessage;
+
+  /// True only while the server is still producing this assistant message.
+  /// `time.completed` is checked as well as the finish reason: a stopped or
+  /// failed run leaves the finish reason empty, which used to keep the typing
+  /// dots on forever and hide the error.
   bool get streaming =>
       info.finishReason.isEmpty &&
+      !info.completed &&
       info.role == 'assistant' &&
-      errorText == null;
+      displayError == null;
 }
 
 class PendingAttachment {
@@ -253,21 +261,9 @@ class OcStore extends ChangeNotifier {
   }
 
   // ---- permissions ----
-  Future<bool> _ensureStoragePermission() async {
-    if (!Platform.isAndroid) return true;
-    try {
-      final manage = Permission.manageExternalStorage;
-      var status = await manage.status;
-      if (!status.isGranted) {
-        status = await manage.request();
-      }
-      if (status.isGranted) return true;
-    } catch (e) {
-      debugPrint('Storage permission check failed: $e');
-    }
-    final st = await Permission.storage.request();
-    return st.isGranted;
-  }
+  // NOTE: there is deliberately no storage-permission gate here. File writes go
+  // through the server's shell, so this app's MANAGE_EXTERNAL_STORAGE state is
+  // irrelevant to them; prompting for it only added friction.
 
   // =====================================================================
   // boot
@@ -909,6 +905,7 @@ class OcStore extends ChangeNotifier {
   // FIX: the old 5-minute one-shot timer was never reset, so any long agent
   // run showed a fake "timeout". Now it only fires after 5 min of *silence*.
   Timer? _busyTimer;
+  bool _busyProbeActive = false;
   DateTime _lastActivity = DateTime.now();
 
   void _touchActivity() => _lastActivity = DateTime.now();
@@ -916,22 +913,68 @@ class OcStore extends ChangeNotifier {
   void _startBusyTimer() {
     _touchActivity();
     if (_busyTimer?.isActive ?? false) return;
-    _busyTimer = Timer.periodic(const Duration(seconds: 30), (t) {
+    _busyTimer = Timer.periodic(const Duration(seconds: 15), (t) {
       if (_disposed || !busy) {
         t.cancel();
         _busyTimer = null;
         return;
       }
-      if (DateTime.now().difference(_lastActivity) >
-          const Duration(minutes: 5)) {
+      final silent = DateTime.now().difference(_lastActivity);
+      // 45s of silence used to mean "hang" and the UI spun until the 5 min
+      // bail-out. The stream can simply have dropped an event, so ask the
+      // server instead of guessing: it is the only authority on run state.
+      if (silent > const Duration(seconds: 45)) {
+        unawaited(_probeBusyState());
+        return;
+      }
+      if (silent > const Duration(minutes: 5)) {
         t.cancel();
         _busyTimer = null;
         busy = false;
         busyStatus = '';
-        sessionError = 'Server se 5 min tak koi activity nahi aayi. Server logs check karo ya dobara try karo.';
+        sessionError =
+            'Server se 5 min tak koi activity nahi aayi. Server logs check karo ya dobara try karo.';
         notifyListeners();
       }
     });
+  }
+
+  /// Asks the server whether the current session is still running. Only a
+  /// definite "not busy" clears the spinner; a failed probe keeps waiting so a
+  /// flaky network can't unlock the composer mid-run.
+  Future<void> _probeBusyState() async {
+    final id = current?.id;
+    if (id == null || _disposed || !busy) return;
+    // Don't stack probes on a slow link.
+    if (_busyProbeActive) return;
+    _busyProbeActive = true;
+    try {
+      final st = asMap(await api.sessionStatus())[id];
+      // Session unknown to the server => nothing is running for it.
+      if (st == null) {
+        _clearBusyTimer();
+        busy = false;
+        busyStatus = '';
+        notifyListeners();
+        return;
+      }
+      if (asStr(asMap(st)['type']) != 'busy') {
+        _clearBusyTimer();
+        busy = false;
+        busyStatus = '';
+        // The idle event was lost: re-sync so the answer is not left cut off.
+        unawaited(_resyncMessages(id));
+        notifyListeners();
+      } else {
+        // Still genuinely running: restart the silence window.
+        _touchActivity();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('busy probe failed: $e');
+      _touchActivity();
+    } finally {
+      _busyProbeActive = false;
+    }
   }
 
   void _clearBusyTimer() {
@@ -1142,10 +1185,10 @@ class OcStore extends ChangeNotifier {
   }
 
   Future<void> writeFile(String path, String content) async {
-    final ok = await _ensureStoragePermission();
-    if (!ok) {
-      throw ApiException(1, 'PermissionDenied', 'Storage permission required to write files');
-    }
+    // No app-side storage permission gate: the file is written by the SERVER
+    // (its own shell), not by this app's process. Asking for
+    // MANAGE_EXTERNAL_STORAGE here blocked saves for no reason — the failure
+    // that matters is the server's, and it surfaces as a shell error below.
     final b64 = base64Encode(utf8.encode(content));
     // Chunked so very large files stay inside ARG_MAX.
     const chunk = 24000;
@@ -1155,24 +1198,30 @@ class OcStore extends ChangeNotifier {
     }
     final q = _shellQuote(path);
     final dir = _shellQuote(_parentDir(path));
-    // Build into a sibling temp file first, then decode into place:
+    // Decode into a sibling temp file, then `mv` it into place:
     //  - `mkdir -p` so a not-yet-existing folder is not a silent failure
     //  - `: > $tmp` truncates any leftover temp from an earlier failed write
     //    (appending to it used to prepend garbage to the new content)
     //  - the temp is always created, so an empty file also succeeds
+    //  - `mv` is atomic: the original is only replaced once the new content is
+    //    fully decoded, so a failed save can never destroy what was there
     final tmp = '$q.oc-tmp';
     var cmd = 'mkdir -p $dir && : > $tmp';
     for (final c in chunks) {
       cmd += " && printf '%s' '$c' >> $tmp";
     }
-    cmd += ' && base64 -d $tmp > $q && rm -f $tmp && test -f $q';
+    cmd += ' && base64 -d $tmp > $tmp.oc-out && mv $tmp.oc-out $q';
+    cmd += ' && rm -f $tmp && test -f $q';
     final r = await runShell(cmd);
-    if (r.exit != 0)
+    if (r.exit != 0) {
+      // Best-effort cleanup so a failed save leaves no temp litter behind.
+      unawaited(runShell('rm -f $tmp $tmp.oc-out'));
       throw ApiException(
         1,
         'WriteFailed',
         r.output.isEmpty ? 'Write fail: $path' : r.output,
       );
+    }
   }
 
   /// Parent directory of [path], `/` when there is none.

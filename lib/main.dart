@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'state/store.dart';
@@ -41,13 +39,14 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       store.resumeConnections();
       store.reconnectStream();
-      // Refresh the open session if any
-      final id = store.current?.id;
-      if (id != null) {
-        unawaited(store.openSession(id));
-      }
-    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
-      // Gracefully pause connections when app goes to background
+      // Do NOT re-open the session here. Re-opening reloads the message list,
+      // which wiped the on-screen chat and made an in-flight reply vanish. The
+      // reconnected stream re-syncs the session in place instead.
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // Only a real backgrounding pauses the stream. `inactive` also fires for
+      // the notification shade, the app picker and system dialogs — pausing
+      // there killed the live stream while the user was still looking at it.
       store.pauseConnections();
     }
   }

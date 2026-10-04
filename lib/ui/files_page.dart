@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
 
 import '../models/models.dart';
 import '../state/store.dart';
@@ -37,13 +35,117 @@ class _FilesPageState extends State<FilesPage> {
     super.dispose();
   }
 
+  /// Normalises a user-typed directory into what the file API expects: the
+  /// project root is `.`, a `./` prefix is dropped, and an empty field never
+  /// reaches the API as `''` (which used to break loading outright).
+  static String _normDir(String? p) {
+    var s = (p ?? '').trim();
+    while (s.startsWith('./')) {
+      s = s.substring(2);
+    }
+    while (s.endsWith('/')) {
+      s = s.substring(0, s.length - 1);
+    }
+    if (s.isEmpty || s == '.') return '.';
+    return s;
+  }
+
+  /// A name is usable only if it stays inside the current folder.
+  static bool _validName(String n) {
+    final s = n.trim();
+    return s.isNotEmpty &&
+        s != '.' &&
+        s != '..' &&
+        !s.contains('/') &&
+        !s.contains('\\') &&
+        !s.contains('\u0000');
+  }
+
+  /// "+" menu: create a file or a folder in the directory on screen.
+  Future<void> _createMenu() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.note_add_outlined),
+              title: const Text('Naya file'),
+              onTap: () async {
+                Navigator.pop(sheetCtx);
+                await _newFile();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.create_new_folder_outlined),
+              title: const Text('Naya folder'),
+              onTap: () async {
+                Navigator.pop(sheetCtx);
+                await _newFolder();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _newFile() async {
+    final name = await promptText(context, title: 'File ka naam');
+    if (name == null || !mounted) return;
+    if (!_validName(name)) {
+      showSnack(context, 'Naam galat hai — "/" ya ".." allowed nahi', error: true);
+      return;
+    }
+    final path = dir == '.' ? name : '$dir/$name';
+    final exists = nodes.any((n) => n.name == name.trim());
+    if (exists) {
+      showSnack(context, '$name pehle se exist karta hai', error: true);
+      return;
+    }
+    try {
+      await AppScope.read(context).writeFile(path, '');
+      if (!mounted) return;
+      await _load();
+      if (!mounted) return;
+      FileNode? made;
+      for (final n in nodes) {
+        if (n.name == name.trim()) {
+          made = n;
+          break;
+        }
+      }
+      if (made != null) _open(made);
+    } catch (e) {
+      if (mounted) showSnack(context, '$e', error: true);
+    }
+  }
+
+  Future<void> _newFolder() async {
+    final name = await promptText(context, title: 'Folder ka naam');
+    if (name == null || !mounted) return;
+    if (!_validName(name)) {
+      showSnack(context, 'Naam galat hai — "/" ya ".." allowed nahi', error: true);
+      return;
+    }
+    final path = dir == '.' ? name.trim() : '$dir/${name.trim()}';
+    try {
+      await AppScope.read(context).mkdirEntry(path);
+      await _load();
+    } catch (e) {
+      if (mounted) showSnack(context, '$e', error: true);
+    }
+  }
+
   Future<void> _load([String? d]) async {
     setState(() {
       loading = true;
       err = null;
       if (d != null) {
-        dir = d;
-        pathC.text = d;
+        dir = _normDir(d);
+        pathC.text = dir;
       }
     });
     final store = AppScope.read(context);
@@ -76,9 +178,19 @@ class _FilesPageState extends State<FilesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final crumbs = dir == '.'
-        ? <String>['.']
-        : ('.$dir').split('/').where((e) => e.isNotEmpty).toList();
+    // Built from the normalised dir so absolute paths and plain relative ones
+    // both produce correct segments (the old `('.$dir')` blindly prefixed a
+    // `.` onto every path, including `/storage/...`).
+    final d = _normDir(dir);
+    final absolute = d.startsWith('/');
+    final segs = d.split('/').where((e) => e.isNotEmpty).toList();
+    final crumbs = absolute
+        ? <String>['/', ...segs]
+        : (segs.isEmpty ? <String>['.'] : segs);
+    String crumbPath(int i) {
+      if (absolute) return i == 0 ? '/' : '/${crumbs.sublist(1, i + 1).join('/')}';
+      return i == 0 ? '.' : crumbs.sublist(0, i + 1).join('/');
+    }
 
     return Column(
       children: [
@@ -123,6 +235,11 @@ class _FilesPageState extends State<FilesPage> {
               ),
               const SizedBox(width: OCSpace.sm),
               IconButton(
+                tooltip: 'Naya file ya folder',
+                icon: const Icon(Icons.add),
+                onPressed: _createMenu,
+              ),
+              IconButton(
                 tooltip: 'Refresh',
                 icon: const Icon(Icons.refresh),
                 onPressed: () => _load(),
@@ -145,19 +262,14 @@ class _FilesPageState extends State<FilesPage> {
                   ),
                 InkWell(
                   borderRadius: BorderRadius.circular(OCRadius.sm),
-                  onTap: () {
-                    final p = i == 0
-                        ? '.'
-                        : './${crumbs.sublist(1, i + 1).join('/')}';
-                    _load(p);
-                  },
+                  onTap: () => _load(crumbPath(i)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: OCSpace.sm,
                       vertical: OCSpace.sm,
                     ),
                     child: Text(
-                      i == 0 ? 'root' : crumbs[i],
+                      i == 0 ? (absolute ? '/' : 'root') : crumbs[i],
                       style: OCTypography.caption.copyWith(
                         color: i == crumbs.length - 1
                             ? OCColors.orangeInk
@@ -533,28 +645,9 @@ class _FileEditorPageState extends State<FileEditorPage> {
   }
 
   Future<void> _save() async {
-    if (Platform.isAndroid) {
-      try {
-        final st = await Permission.manageExternalStorage.status;
-        if (!st.isGranted) {
-          final r = await Permission.manageExternalStorage.request();
-          if (!r.isGranted) {
-            final r2 = await Permission.storage.request();
-            if (!r2.isGranted && mounted) {
-              showSnack(context, 'Storage permission required', error: true);
-              return;
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Storage permission check failed: $e');
-        final r2 = await Permission.storage.request();
-        if (!r2.isGranted && mounted) {
-          showSnack(context, 'Storage permission required', error: true);
-          return;
-        }
-      }
-    }
+    // No storage-permission prompt: the write is performed by the server's
+    // shell, so this app's own storage grant says nothing about it. A genuine
+    // failure comes back as an ApiException from writeFile and is shown below.
     setState(() => saving = true);
     try {
       await AppScope.read(context).writeFile(widget.path, c.text);

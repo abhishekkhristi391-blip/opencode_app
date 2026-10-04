@@ -168,13 +168,36 @@ class Message {
       tokens: Tokens.from(asMap(j['tokens'])),
       finishReason: asStr(asMap(j['finish'])['reason']),
       summaryText: asStr(asMap(j['summary'])['summary']),
-      summary: j['summary'] != null,
+      // Only a literal `true` is a compaction summary. User messages can carry
+      // a `summary` *object*, and treating that as a summary made them vanish
+      // from the chat after a reload.
+      summary: j['summary'] == true,
       raw: j,
     );
   }
 
   bool get isUser => role == 'user';
   bool get isError => finishReason == 'error' || raw['error'] != null;
+
+  /// True once the server stamped a completion time on this message. A stopped
+  /// or failed run can leave `finish` empty, so this is the only reliable
+  /// "generation actually ended" signal.
+  bool get completed => asInt(asMap(raw['time'])['completed']) > 0;
+
+  /// Error the server attached to this message, as displayable text.
+  /// Aborted / failed runs set `error` and never set a finish reason, which is
+  /// why the raw message needs this before the UI can show anything.
+  String? get errorMessage {
+    final e = raw['error'];
+    if (e == null) return null;
+    if (e is String) return e.trim().isEmpty ? null : e.trim();
+    final m = e is Map<String, dynamic> ? e : const <String, dynamic>{};
+    final data = asMap(m['data']);
+    final msg = asStr(data['message'], asStr(m['message'])).trim();
+    if (msg.isNotEmpty) return msg;
+    final name = asStr(m['name']).trim();
+    return name.isEmpty ? null : name;
+  }
 
   Map<String, dynamic> toMap() => raw;
 }

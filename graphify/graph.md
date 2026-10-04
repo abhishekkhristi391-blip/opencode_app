@@ -152,64 +152,63 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolDone [EXTRACTED] l
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolRunning [EXTRACTED] lib/l10n/strings.dart:181
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolsCount [EXTRACTED] lib/l10n/strings.dart:470
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::useSkillPrompt [EXTRACTED] lib/l10n/strings.dart:379
-lib/main.dart --defines--> lib/main.dart::OpenCodeApp [EXTRACTED] lib/main.dart:15
-lib/main.dart --defines--> lib/main.dart::_OpenCodeAppState [EXTRACTED] lib/main.dart:22
-lib/main.dart --defines--> lib/main.dart::build [EXTRACTED] lib/main.dart:56
-lib/main.dart --defines--> lib/main.dart::createState [EXTRACTED] lib/main.dart:19
-lib/main.dart --defines--> lib/main.dart::didChangeAppLifecycleState [EXTRACTED] lib/main.dart:40
-lib/main.dart --defines--> lib/main.dart::dispose [EXTRACTED] lib/main.dart:33
-lib/main.dart --defines--> lib/main.dart::initState [EXTRACTED] lib/main.dart:26
-lib/main.dart --defines--> lib/main.dart::main [EXTRACTED] lib/main.dart:10
-lib/main.dart --imports--> lib/state/store.dart [EXTRACTED] lib/main.dart:5
+lib/main.dart --defines--> lib/main.dart::OpenCodeApp [EXTRACTED] lib/main.dart:13
+lib/main.dart --defines--> lib/main.dart::_OpenCodeAppState [EXTRACTED] lib/main.dart:20
+lib/main.dart --defines--> lib/main.dart::build [EXTRACTED] lib/main.dart:55
+lib/main.dart --defines--> lib/main.dart::createState [EXTRACTED] lib/main.dart:17
+lib/main.dart --defines--> lib/main.dart::didChangeAppLifecycleState [EXTRACTED] lib/main.dart:38
+lib/main.dart --defines--> lib/main.dart::dispose [EXTRACTED] lib/main.dart:31
+lib/main.dart --defines--> lib/main.dart::initState [EXTRACTED] lib/main.dart:24
+lib/main.dart --defines--> lib/main.dart::main [EXTRACTED] lib/main.dart:8
+lib/main.dart --imports--> lib/state/store.dart [EXTRACTED] lib/main.dart:3
 lib/main.dart --calls--> lib/state/store.dart::OcStore [INFERRED 0.6] lib/main.dart:0
 lib/main.dart --calls--> lib/state/store.dart::boot [INFERRED 0.6] lib/main.dart:0
-lib/main.dart --calls--> lib/state/store.dart::openSession [INFERRED 0.6] lib/main.dart:0
 lib/main.dart --calls--> lib/state/store.dart::pauseConnections [INFERRED 0.6] lib/main.dart:0
 lib/main.dart --calls--> lib/state/store.dart::reconnectStream [INFERRED 0.6] lib/main.dart:0
 lib/main.dart --calls--> lib/state/store.dart::resumeConnections [INFERRED 0.6] lib/main.dart:0
-lib/main.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/main.dart:6
+lib/main.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/main.dart:4
 lib/main.dart --calls--> lib/ui/app_scope.dart::AppScope [INFERRED 0.6] lib/main.dart:0
-lib/main.dart --imports--> lib/ui/home.dart [EXTRACTED] lib/main.dart:7
+lib/main.dart --imports--> lib/ui/home.dart [EXTRACTED] lib/main.dart:5
 lib/main.dart --calls--> lib/ui/home.dart::HomeShell [INFERRED 0.6] lib/main.dart:0
-lib/main.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/main.dart:8
+lib/main.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/main.dart:6
 lib/main.dart --calls--> lib/ui/theme.dart::buildDarkTheme [INFERRED 0.6] lib/main.dart:0
 lib/main.dart --calls--> lib/ui/theme.dart::buildLightTheme [INFERRED 0.6] lib/main.dart:0
-lib/models/models.dart --defines--> lib/models/models.dart::Agent [EXTRACTED] lib/models/models.dart:322
-lib/models/models.dart --defines--> lib/models/models.dart::CommandInfo [EXTRACTED] lib/models/models.dart:464
-lib/models/models.dart --defines--> lib/models/models.dart::FileDiff [EXTRACTED] lib/models/models.dart:438
-lib/models/models.dart --defines--> lib/models/models.dart::FileNode [EXTRACTED] lib/models/models.dart:416
+lib/models/models.dart --defines--> lib/models/models.dart::Agent [EXTRACTED] lib/models/models.dart:345
+lib/models/models.dart --defines--> lib/models/models.dart::CommandInfo [EXTRACTED] lib/models/models.dart:487
+lib/models/models.dart --defines--> lib/models/models.dart::FileDiff [EXTRACTED] lib/models/models.dart:461
+lib/models/models.dart --defines--> lib/models/models.dart::FileNode [EXTRACTED] lib/models/models.dart:439
 lib/models/models.dart --defines--> lib/models/models.dart::Message [EXTRACTED] lib/models/models.dart:129
-lib/models/models.dart --defines--> lib/models/models.dart::ModelInfo [EXTRACTED] lib/models/models.dart:350
-lib/models/models.dart --defines--> lib/models/models.dart::NamedStatus [EXTRACTED] lib/models/models.dart:500
-lib/models/models.dart --defines--> lib/models/models.dart::Part [EXTRACTED] lib/models/models.dart:186
-lib/models/models.dart --defines--> lib/models/models.dart::PermissionReq [EXTRACTED] lib/models/models.dart:556
-lib/models/models.dart --defines--> lib/models/models.dart::QuestionItem [EXTRACTED] lib/models/models.dart:631
-lib/models/models.dart --defines--> lib/models/models.dart::QuestionOption [EXTRACTED] lib/models/models.dart:624
-lib/models/models.dart --defines--> lib/models/models.dart::QuestionReq [EXTRACTED] lib/models/models.dart:654
-lib/models/models.dart --defines--> lib/models/models.dart::ServerPaths [EXTRACTED] lib/models/models.dart:535
+lib/models/models.dart --defines--> lib/models/models.dart::ModelInfo [EXTRACTED] lib/models/models.dart:373
+lib/models/models.dart --defines--> lib/models/models.dart::NamedStatus [EXTRACTED] lib/models/models.dart:523
+lib/models/models.dart --defines--> lib/models/models.dart::Part [EXTRACTED] lib/models/models.dart:209
+lib/models/models.dart --defines--> lib/models/models.dart::PermissionReq [EXTRACTED] lib/models/models.dart:579
+lib/models/models.dart --defines--> lib/models/models.dart::QuestionItem [EXTRACTED] lib/models/models.dart:654
+lib/models/models.dart --defines--> lib/models/models.dart::QuestionOption [EXTRACTED] lib/models/models.dart:647
+lib/models/models.dart --defines--> lib/models/models.dart::QuestionReq [EXTRACTED] lib/models/models.dart:677
+lib/models/models.dart --defines--> lib/models/models.dart::ServerPaths [EXTRACTED] lib/models/models.dart:558
 lib/models/models.dart --defines--> lib/models/models.dart::Session [EXTRACTED] lib/models/models.dart:65
 lib/models/models.dart --defines--> lib/models/models.dart::SessionSummary [EXTRACTED] lib/models/models.dart:52
-lib/models/models.dart --defines--> lib/models/models.dart::SkillInfo [EXTRACTED] lib/models/models.dart:485
-lib/models/models.dart --defines--> lib/models/models.dart::Todo [EXTRACTED] lib/models/models.dart:393
+lib/models/models.dart --defines--> lib/models/models.dart::SkillInfo [EXTRACTED] lib/models/models.dart:508
+lib/models/models.dart --defines--> lib/models/models.dart::Todo [EXTRACTED] lib/models/models.dart:416
 lib/models/models.dart --defines--> lib/models/models.dart::Tokens [EXTRACTED] lib/models/models.dart:24
-lib/models/models.dart --defines--> lib/models/models.dart::ToolStatus [EXTRACTED] lib/models/models.dart:184
-lib/models/models.dart --defines--> lib/models/models.dart::VcsInfo [EXTRACTED] lib/models/models.dart:523
-lib/models/models.dart --defines--> lib/models/models.dart::_fmt [EXTRACTED] lib/models/models.dart:617
-lib/models/models.dart --defines--> lib/models/models.dart::_short [EXTRACTED] lib/models/models.dart:312
+lib/models/models.dart --defines--> lib/models/models.dart::ToolStatus [EXTRACTED] lib/models/models.dart:207
+lib/models/models.dart --defines--> lib/models/models.dart::VcsInfo [EXTRACTED] lib/models/models.dart:546
+lib/models/models.dart --defines--> lib/models/models.dart::_fmt [EXTRACTED] lib/models/models.dart:640
+lib/models/models.dart --defines--> lib/models/models.dart::_short [EXTRACTED] lib/models/models.dart:335
 lib/models/models.dart --defines--> lib/models/models.dart::asBool [EXTRACTED] lib/models/models.dart:20
 lib/models/models.dart --defines--> lib/models/models.dart::asDouble [EXTRACTED] lib/models/models.dart:17
 lib/models/models.dart --defines--> lib/models/models.dart::asInt [EXTRACTED] lib/models/models.dart:11
 lib/models/models.dart --defines--> lib/models/models.dart::asList [EXTRACTED] lib/models/models.dart:9
 lib/models/models.dart --defines--> lib/models/models.dart::asMap [EXTRACTED] lib/models/models.dart:5
 lib/models/models.dart --defines--> lib/models/models.dart::asStr [EXTRACTED] lib/models/models.dart:15
-lib/models/models.dart --defines--> lib/models/models.dart::baseName [EXTRACTED] lib/models/models.dart:709
-lib/models/models.dart --defines--> lib/models/models.dart::dirName [EXTRACTED] lib/models/models.dart:714
-lib/models/models.dart --defines--> lib/models/models.dart::fmtAge [EXTRACTED] lib/models/models.dart:691
-lib/models/models.dart --defines--> lib/models/models.dart::fmtBytes [EXTRACTED] lib/models/models.dart:679
-lib/models/models.dart --defines--> lib/models/models.dart::fmtDuration [EXTRACTED] lib/models/models.dart:701
-lib/models/models.dart --defines--> lib/models/models.dart::fmtTime [EXTRACTED] lib/models/models.dart:685
+lib/models/models.dart --defines--> lib/models/models.dart::baseName [EXTRACTED] lib/models/models.dart:732
+lib/models/models.dart --defines--> lib/models/models.dart::dirName [EXTRACTED] lib/models/models.dart:737
+lib/models/models.dart --defines--> lib/models/models.dart::fmtAge [EXTRACTED] lib/models/models.dart:714
+lib/models/models.dart --defines--> lib/models/models.dart::fmtBytes [EXTRACTED] lib/models/models.dart:702
+lib/models/models.dart --defines--> lib/models/models.dart::fmtDuration [EXTRACTED] lib/models/models.dart:724
+lib/models/models.dart --defines--> lib/models/models.dart::fmtTime [EXTRACTED] lib/models/models.dart:708
 lib/models/models.dart --defines--> lib/models/models.dart::toMap [EXTRACTED] lib/models/models.dart:124
-lib/state/store.dart --imports--> lib/api/client.dart [EXTRACTED] lib/state/store.dart:10
+lib/state/store.dart --imports--> lib/api/client.dart [EXTRACTED] lib/state/store.dart:9
 lib/state/store.dart --calls--> lib/api/client.dart::ApiException [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::OcClient [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::abort [INFERRED 0.6] lib/state/store.dart:0
@@ -245,12 +244,12 @@ lib/state/store.dart --calls--> lib/api/client.dart::summarize [INFERRED 0.35] l
 lib/state/store.dart --calls--> lib/api/client.dart::todos [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::unrevert [INFERRED 0.35] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/client.dart::unshare [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --imports--> lib/api/events.dart [EXTRACTED] lib/state/store.dart:11
+lib/state/store.dart --imports--> lib/api/events.dart [EXTRACTED] lib/state/store.dart:10
 lib/state/store.dart --calls--> lib/api/events.dart::EventStream [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/events.dart::reconnect [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/events.dart::start [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/api/events.dart::stop [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --imports--> lib/db/chat_db.dart [EXTRACTED] lib/state/store.dart:13
+lib/state/store.dart --imports--> lib/db/chat_db.dart [EXTRACTED] lib/state/store.dart:12
 lib/state/store.dart --calls--> lib/db/chat_db.dart::clearSession [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::deleteMessage [INFERRED 0.35] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::deleteSessionRow [INFERRED 0.6] lib/state/store.dart:0
@@ -259,102 +258,102 @@ lib/state/store.dart --calls--> lib/db/chat_db.dart::loadSessions [INFERRED 0.6]
 lib/state/store.dart --calls--> lib/db/chat_db.dart::saveSession [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::saveSessions [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/db/chat_db.dart::upsertMessages [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --imports--> lib/models/models.dart [EXTRACTED] lib/state/store.dart:12
+lib/state/store.dart --imports--> lib/models/models.dart [EXTRACTED] lib/state/store.dart:11
 lib/state/store.dart --calls--> lib/models/models.dart::Message [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::Tokens [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::asList [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::asMap [INFERRED 0.6] lib/state/store.dart:0
 lib/state/store.dart --calls--> lib/models/models.dart::asStr [INFERRED 0.6] lib/state/store.dart:0
-lib/state/store.dart --defines--> lib/state/store.dart::ChatMessage [EXTRACTED] lib/state/store.dart:15
-lib/state/store.dart --defines--> lib/state/store.dart::OcStore [EXTRACTED] lib/state/store.dart:46
-lib/state/store.dart --defines--> lib/state/store.dart::PendingAttachment [EXTRACTED] lib/state/store.dart:31
-lib/state/store.dart --defines--> lib/state/store.dart::_applyDelta [EXTRACTED] lib/state/store.dart:1620
-lib/state/store.dart --defines--> lib/state/store.dart::_cachedHistory [EXTRACTED] lib/state/store.dart:189
-lib/state/store.dart --defines--> lib/state/store.dart::_clearBusyTimer [EXTRACTED] lib/state/store.dart:937
-lib/state/store.dart --defines--> lib/state/store.dart::_clearLocalEcho [EXTRACTED] lib/state/store.dart:1542
-lib/state/store.dart --defines--> lib/state/store.dart::_dbRow [EXTRACTED] lib/state/store.dart:144
-lib/state/store.dart --defines--> lib/state/store.dart::_debouncedTodos [EXTRACTED] lib/state/store.dart:131
-lib/state/store.dart --defines--> lib/state/store.dart::_ensureStoragePermission [EXTRACTED] lib/state/store.dart:256
-lib/state/store.dart --defines--> lib/state/store.dart::_errorText [EXTRACTED] lib/state/store.dart:1500
-lib/state/store.dart --defines--> lib/state/store.dart::_flushHistory [EXTRACTED] lib/state/store.dart:233
-lib/state/store.dart --defines--> lib/state/store.dart::_handleEvent [EXTRACTED] lib/state/store.dart:1359
-lib/state/store.dart --defines--> lib/state/store.dart::_isCacheable [EXTRACTED] lib/state/store.dart:155
-lib/state/store.dart --defines--> lib/state/store.dart::_isCurrent [EXTRACTED] lib/state/store.dart:1509
-lib/state/store.dart --defines--> lib/state/store.dart::_mergeHistory [EXTRACTED] lib/state/store.dart:170
-lib/state/store.dart --defines--> lib/state/store.dart::_messageById [EXTRACTED] lib/state/store.dart:1512
-lib/state/store.dart --defines--> lib/state/store.dart::_optimisticIndex [EXTRACTED] lib/state/store.dart:1523
-lib/state/store.dart --defines--> lib/state/store.dart::_parentDir [EXTRACTED] lib/state/store.dart:1179
-lib/state/store.dart --defines--> lib/state/store.dart::_partPayload [EXTRACTED] lib/state/store.dart:821
-lib/state/store.dart --defines--> lib/state/store.dart::_persist [EXTRACTED] lib/state/store.dart:292
-lib/state/store.dart --defines--> lib/state/store.dart::_persistHistory [EXTRACTED] lib/state/store.dart:249
-lib/state/store.dart --defines--> lib/state/store.dart::_persistSessions [EXTRACTED] lib/state/store.dart:501
-lib/state/store.dart --defines--> lib/state/store.dart::_prependHistory [EXTRACTED] lib/state/store.dart:726
-lib/state/store.dart --defines--> lib/state/store.dart::_removeMessage [EXTRACTED] lib/state/store.dart:1655
-lib/state/store.dart --defines--> lib/state/store.dart::_removePart [EXTRACTED] lib/state/store.dart:1637
-lib/state/store.dart --defines--> lib/state/store.dart::_restoreSessionsFromCache [EXTRACTED] lib/state/store.dart:512
-lib/state/store.dart --defines--> lib/state/store.dart::_resyncMessages [EXTRACTED] lib/state/store.dart:376
-lib/state/store.dart --defines--> lib/state/store.dart::_safeSession [EXTRACTED] lib/state/store.dart:607
-lib/state/store.dart --defines--> lib/state/store.dart::_scheduleFlush [EXTRACTED] lib/state/store.dart:215
-lib/state/store.dart --defines--> lib/state/store.dart::_scheduleNotify [EXTRACTED] lib/state/store.dart:122
-lib/state/store.dart --defines--> lib/state/store.dart::_sendParts [EXTRACTED] lib/state/store.dart:942
-lib/state/store.dart --defines--> lib/state/store.dart::_shellQuote [EXTRACTED] lib/state/store.dart:1185
-lib/state/store.dart --defines--> lib/state/store.dart::_startBusyTimer [EXTRACTED] lib/state/store.dart:916
-lib/state/store.dart --defines--> lib/state/store.dart::_startStream [EXTRACTED] lib/state/store.dart:352
-lib/state/store.dart --defines--> lib/state/store.dart::_toast [EXTRACTED] lib/state/store.dart:1689
-lib/state/store.dart --defines--> lib/state/store.dart::_touchActivity [EXTRACTED] lib/state/store.dart:914
-lib/state/store.dart --defines--> lib/state/store.dart::_upsertMessage [EXTRACTED] lib/state/store.dart:1547
-lib/state/store.dart --defines--> lib/state/store.dart::_upsertPart [EXTRACTED] lib/state/store.dart:1573
-lib/state/store.dart --defines--> lib/state/store.dart::_upsertSession [EXTRACTED] lib/state/store.dart:1671
-lib/state/store.dart --defines--> lib/state/store.dart::_utilSession [EXTRACTED] lib/state/store.dart:1084
-lib/state/store.dart --defines--> lib/state/store.dart::_widenHistory [EXTRACTED] lib/state/store.dart:740
-lib/state/store.dart --defines--> lib/state/store.dart::abortSession [EXTRACTED] lib/state/store.dart:673
-lib/state/store.dart --defines--> lib/state/store.dart::addAttachment [EXTRACTED] lib/state/store.dart:806
-lib/state/store.dart --defines--> lib/state/store.dart::addMcp [EXTRACTED] lib/state/store.dart:1269
-lib/state/store.dart --defines--> lib/state/store.dart::answerPermission [EXTRACTED] lib/state/store.dart:1311
-lib/state/store.dart --defines--> lib/state/store.dart::answerQuestion [EXTRACTED] lib/state/store.dart:1325
-lib/state/store.dart --defines--> lib/state/store.dart::boot [EXTRACTED] lib/state/store.dart:276
-lib/state/store.dart --defines--> lib/state/store.dart::clearAttachments [EXTRACTED] lib/state/store.dart:816
-lib/state/store.dart --defines--> lib/state/store.dart::connect [EXTRACTED] lib/state/store.dart:317
-lib/state/store.dart --defines--> lib/state/store.dart::deleteEntry [EXTRACTED] lib/state/store.dart:1194
-lib/state/store.dart --defines--> lib/state/store.dart::deleteSession [EXTRACTED] lib/state/store.dart:625
-lib/state/store.dart --defines--> lib/state/store.dart::dispose [EXTRACTED] lib/state/store.dart:1722
-lib/state/store.dart --defines--> lib/state/store.dart::enableExternalDirectoryAccess [EXTRACTED] lib/state/store.dart:1253
-lib/state/store.dart --defines--> lib/state/store.dart::forkSession [EXTRACTED] lib/state/store.dart:643
-lib/state/store.dart --defines--> lib/state/store.dart::handleEvent [EXTRACTED] lib/state/store.dart:1349
-lib/state/store.dart --defines--> lib/state/store.dart::initAgents [EXTRACTED] lib/state/store.dart:1051
-lib/state/store.dart --defines--> lib/state/store.dart::loadOlderMessages [EXTRACTED] lib/state/store.dart:765
-lib/state/store.dart --defines--> lib/state/store.dart::loadPending [EXTRACTED] lib/state/store.dart:1296
-lib/state/store.dart --defines--> lib/state/store.dart::mkdirEntry [EXTRACTED] lib/state/store.dart:1205
-lib/state/store.dart --defines--> lib/state/store.dart::newSession [EXTRACTED] lib/state/store.dart:530
-lib/state/store.dart --defines--> lib/state/store.dart::openSession [EXTRACTED] lib/state/store.dart:548
-lib/state/store.dart --defines--> lib/state/store.dart::pauseConnections [EXTRACTED] lib/state/store.dart:1701
-lib/state/store.dart --defines--> lib/state/store.dart::reconnectStream [EXTRACTED] lib/state/store.dart:1697
-lib/state/store.dart --defines--> lib/state/store.dart::refreshCatalog [EXTRACTED] lib/state/store.dart:412
-lib/state/store.dart --defines--> lib/state/store.dart::refreshCommands [EXTRACTED] lib/state/store.dart:1220
-lib/state/store.dart --defines--> lib/state/store.dart::refreshConfig [EXTRACTED] lib/state/store.dart:1230
-lib/state/store.dart --defines--> lib/state/store.dart::refreshDiff [EXTRACTED] lib/state/store.dart:702
-lib/state/store.dart --defines--> lib/state/store.dart::refreshServerInfo [EXTRACTED] lib/state/store.dart:402
-lib/state/store.dart --defines--> lib/state/store.dart::refreshSessions [EXTRACTED] lib/state/store.dart:474
-lib/state/store.dart --defines--> lib/state/store.dart::refreshTodos [EXTRACTED] lib/state/store.dart:691
-lib/state/store.dart --defines--> lib/state/store.dart::rejectQuestion [EXTRACTED] lib/state/store.dart:1335
-lib/state/store.dart --defines--> lib/state/store.dart::removeAttachment [EXTRACTED] lib/state/store.dart:811
-lib/state/store.dart --defines--> lib/state/store.dart::renameSession [EXTRACTED] lib/state/store.dart:616
-lib/state/store.dart --defines--> lib/state/store.dart::resumeConnections [EXTRACTED] lib/state/store.dart:1713
-lib/state/store.dart --defines--> lib/state/store.dart::revert [EXTRACTED] lib/state/store.dart:1029
-lib/state/store.dart --defines--> lib/state/store.dart::runCommand [EXTRACTED] lib/state/store.dart:992
-lib/state/store.dart --defines--> lib/state/store.dart::saveConfig [EXTRACTED] lib/state/store.dart:1242
-lib/state/store.dart --defines--> lib/state/store.dart::send [EXTRACTED] lib/state/store.dart:835
-lib/state/store.dart --defines--> lib/state/store.dart::setAgent [EXTRACTED] lib/state/store.dart:451
-lib/state/store.dart --defines--> lib/state/store.dart::setModel [EXTRACTED] lib/state/store.dart:444
-lib/state/store.dart --defines--> lib/state/store.dart::setServer [EXTRACTED] lib/state/store.dart:309
-lib/state/store.dart --defines--> lib/state/store.dart::setShowTokensInChat [EXTRACTED] lib/state/store.dart:94
-lib/state/store.dart --defines--> lib/state/store.dart::shareSession [EXTRACTED] lib/state/store.dart:654
-lib/state/store.dart --defines--> lib/state/store.dart::summarize [EXTRACTED] lib/state/store.dart:1019
-lib/state/store.dart --defines--> lib/state/store.dart::takeToast [EXTRACTED] lib/state/store.dart:1690
-lib/state/store.dart --defines--> lib/state/store.dart::toggleTool [EXTRACTED] lib/state/store.dart:457
-lib/state/store.dart --defines--> lib/state/store.dart::unrevert [EXTRACTED] lib/state/store.dart:1040
-lib/state/store.dart --defines--> lib/state/store.dart::unshareSession [EXTRACTED] lib/state/store.dart:664
-lib/state/store.dart --defines--> lib/state/store.dart::writeFile [EXTRACTED] lib/state/store.dart:1144
+lib/state/store.dart --defines--> lib/state/store.dart::ChatMessage [EXTRACTED] lib/state/store.dart:14
+lib/state/store.dart --defines--> lib/state/store.dart::OcStore [EXTRACTED] lib/state/store.dart:54
+lib/state/store.dart --defines--> lib/state/store.dart::PendingAttachment [EXTRACTED] lib/state/store.dart:39
+lib/state/store.dart --defines--> lib/state/store.dart::_applyDelta [EXTRACTED] lib/state/store.dart:1669
+lib/state/store.dart --defines--> lib/state/store.dart::_cachedHistory [EXTRACTED] lib/state/store.dart:197
+lib/state/store.dart --defines--> lib/state/store.dart::_clearBusyTimer [EXTRACTED] lib/state/store.dart:980
+lib/state/store.dart --defines--> lib/state/store.dart::_clearLocalEcho [EXTRACTED] lib/state/store.dart:1591
+lib/state/store.dart --defines--> lib/state/store.dart::_dbRow [EXTRACTED] lib/state/store.dart:152
+lib/state/store.dart --defines--> lib/state/store.dart::_debouncedTodos [EXTRACTED] lib/state/store.dart:139
+lib/state/store.dart --defines--> lib/state/store.dart::_errorText [EXTRACTED] lib/state/store.dart:1549
+lib/state/store.dart --defines--> lib/state/store.dart::_flushHistory [EXTRACTED] lib/state/store.dart:241
+lib/state/store.dart --defines--> lib/state/store.dart::_handleEvent [EXTRACTED] lib/state/store.dart:1408
+lib/state/store.dart --defines--> lib/state/store.dart::_isCacheable [EXTRACTED] lib/state/store.dart:163
+lib/state/store.dart --defines--> lib/state/store.dart::_isCurrent [EXTRACTED] lib/state/store.dart:1558
+lib/state/store.dart --defines--> lib/state/store.dart::_mergeHistory [EXTRACTED] lib/state/store.dart:178
+lib/state/store.dart --defines--> lib/state/store.dart::_messageById [EXTRACTED] lib/state/store.dart:1561
+lib/state/store.dart --defines--> lib/state/store.dart::_optimisticIndex [EXTRACTED] lib/state/store.dart:1572
+lib/state/store.dart --defines--> lib/state/store.dart::_parentDir [EXTRACTED] lib/state/store.dart:1228
+lib/state/store.dart --defines--> lib/state/store.dart::_partPayload [EXTRACTED] lib/state/store.dart:817
+lib/state/store.dart --defines--> lib/state/store.dart::_persist [EXTRACTED] lib/state/store.dart:288
+lib/state/store.dart --defines--> lib/state/store.dart::_persistHistory [EXTRACTED] lib/state/store.dart:257
+lib/state/store.dart --defines--> lib/state/store.dart::_persistSessions [EXTRACTED] lib/state/store.dart:497
+lib/state/store.dart --defines--> lib/state/store.dart::_prependHistory [EXTRACTED] lib/state/store.dart:722
+lib/state/store.dart --defines--> lib/state/store.dart::_probeBusyState [EXTRACTED] lib/state/store.dart:945
+lib/state/store.dart --defines--> lib/state/store.dart::_removeMessage [EXTRACTED] lib/state/store.dart:1704
+lib/state/store.dart --defines--> lib/state/store.dart::_removePart [EXTRACTED] lib/state/store.dart:1686
+lib/state/store.dart --defines--> lib/state/store.dart::_restoreSessionsFromCache [EXTRACTED] lib/state/store.dart:508
+lib/state/store.dart --defines--> lib/state/store.dart::_resyncMessages [EXTRACTED] lib/state/store.dart:372
+lib/state/store.dart --defines--> lib/state/store.dart::_safeSession [EXTRACTED] lib/state/store.dart:603
+lib/state/store.dart --defines--> lib/state/store.dart::_scheduleFlush [EXTRACTED] lib/state/store.dart:223
+lib/state/store.dart --defines--> lib/state/store.dart::_scheduleNotify [EXTRACTED] lib/state/store.dart:130
+lib/state/store.dart --defines--> lib/state/store.dart::_sendParts [EXTRACTED] lib/state/store.dart:985
+lib/state/store.dart --defines--> lib/state/store.dart::_shellQuote [EXTRACTED] lib/state/store.dart:1234
+lib/state/store.dart --defines--> lib/state/store.dart::_startBusyTimer [EXTRACTED] lib/state/store.dart:913
+lib/state/store.dart --defines--> lib/state/store.dart::_startStream [EXTRACTED] lib/state/store.dart:348
+lib/state/store.dart --defines--> lib/state/store.dart::_toast [EXTRACTED] lib/state/store.dart:1738
+lib/state/store.dart --defines--> lib/state/store.dart::_touchActivity [EXTRACTED] lib/state/store.dart:911
+lib/state/store.dart --defines--> lib/state/store.dart::_upsertMessage [EXTRACTED] lib/state/store.dart:1596
+lib/state/store.dart --defines--> lib/state/store.dart::_upsertPart [EXTRACTED] lib/state/store.dart:1622
+lib/state/store.dart --defines--> lib/state/store.dart::_upsertSession [EXTRACTED] lib/state/store.dart:1720
+lib/state/store.dart --defines--> lib/state/store.dart::_utilSession [EXTRACTED] lib/state/store.dart:1127
+lib/state/store.dart --defines--> lib/state/store.dart::_widenHistory [EXTRACTED] lib/state/store.dart:736
+lib/state/store.dart --defines--> lib/state/store.dart::abortSession [EXTRACTED] lib/state/store.dart:669
+lib/state/store.dart --defines--> lib/state/store.dart::addAttachment [EXTRACTED] lib/state/store.dart:802
+lib/state/store.dart --defines--> lib/state/store.dart::addMcp [EXTRACTED] lib/state/store.dart:1318
+lib/state/store.dart --defines--> lib/state/store.dart::answerPermission [EXTRACTED] lib/state/store.dart:1360
+lib/state/store.dart --defines--> lib/state/store.dart::answerQuestion [EXTRACTED] lib/state/store.dart:1374
+lib/state/store.dart --defines--> lib/state/store.dart::boot [EXTRACTED] lib/state/store.dart:272
+lib/state/store.dart --defines--> lib/state/store.dart::clearAttachments [EXTRACTED] lib/state/store.dart:812
+lib/state/store.dart --defines--> lib/state/store.dart::connect [EXTRACTED] lib/state/store.dart:313
+lib/state/store.dart --defines--> lib/state/store.dart::deleteEntry [EXTRACTED] lib/state/store.dart:1243
+lib/state/store.dart --defines--> lib/state/store.dart::deleteSession [EXTRACTED] lib/state/store.dart:621
+lib/state/store.dart --defines--> lib/state/store.dart::dispose [EXTRACTED] lib/state/store.dart:1771
+lib/state/store.dart --defines--> lib/state/store.dart::enableExternalDirectoryAccess [EXTRACTED] lib/state/store.dart:1302
+lib/state/store.dart --defines--> lib/state/store.dart::forkSession [EXTRACTED] lib/state/store.dart:639
+lib/state/store.dart --defines--> lib/state/store.dart::handleEvent [EXTRACTED] lib/state/store.dart:1398
+lib/state/store.dart --defines--> lib/state/store.dart::initAgents [EXTRACTED] lib/state/store.dart:1094
+lib/state/store.dart --defines--> lib/state/store.dart::loadOlderMessages [EXTRACTED] lib/state/store.dart:761
+lib/state/store.dart --defines--> lib/state/store.dart::loadPending [EXTRACTED] lib/state/store.dart:1345
+lib/state/store.dart --defines--> lib/state/store.dart::mkdirEntry [EXTRACTED] lib/state/store.dart:1254
+lib/state/store.dart --defines--> lib/state/store.dart::newSession [EXTRACTED] lib/state/store.dart:526
+lib/state/store.dart --defines--> lib/state/store.dart::openSession [EXTRACTED] lib/state/store.dart:544
+lib/state/store.dart --defines--> lib/state/store.dart::pauseConnections [EXTRACTED] lib/state/store.dart:1750
+lib/state/store.dart --defines--> lib/state/store.dart::reconnectStream [EXTRACTED] lib/state/store.dart:1746
+lib/state/store.dart --defines--> lib/state/store.dart::refreshCatalog [EXTRACTED] lib/state/store.dart:408
+lib/state/store.dart --defines--> lib/state/store.dart::refreshCommands [EXTRACTED] lib/state/store.dart:1269
+lib/state/store.dart --defines--> lib/state/store.dart::refreshConfig [EXTRACTED] lib/state/store.dart:1279
+lib/state/store.dart --defines--> lib/state/store.dart::refreshDiff [EXTRACTED] lib/state/store.dart:698
+lib/state/store.dart --defines--> lib/state/store.dart::refreshServerInfo [EXTRACTED] lib/state/store.dart:398
+lib/state/store.dart --defines--> lib/state/store.dart::refreshSessions [EXTRACTED] lib/state/store.dart:470
+lib/state/store.dart --defines--> lib/state/store.dart::refreshTodos [EXTRACTED] lib/state/store.dart:687
+lib/state/store.dart --defines--> lib/state/store.dart::rejectQuestion [EXTRACTED] lib/state/store.dart:1384
+lib/state/store.dart --defines--> lib/state/store.dart::removeAttachment [EXTRACTED] lib/state/store.dart:807
+lib/state/store.dart --defines--> lib/state/store.dart::renameSession [EXTRACTED] lib/state/store.dart:612
+lib/state/store.dart --defines--> lib/state/store.dart::resumeConnections [EXTRACTED] lib/state/store.dart:1762
+lib/state/store.dart --defines--> lib/state/store.dart::revert [EXTRACTED] lib/state/store.dart:1072
+lib/state/store.dart --defines--> lib/state/store.dart::runCommand [EXTRACTED] lib/state/store.dart:1035
+lib/state/store.dart --defines--> lib/state/store.dart::saveConfig [EXTRACTED] lib/state/store.dart:1291
+lib/state/store.dart --defines--> lib/state/store.dart::send [EXTRACTED] lib/state/store.dart:831
+lib/state/store.dart --defines--> lib/state/store.dart::setAgent [EXTRACTED] lib/state/store.dart:447
+lib/state/store.dart --defines--> lib/state/store.dart::setModel [EXTRACTED] lib/state/store.dart:440
+lib/state/store.dart --defines--> lib/state/store.dart::setServer [EXTRACTED] lib/state/store.dart:305
+lib/state/store.dart --defines--> lib/state/store.dart::setShowTokensInChat [EXTRACTED] lib/state/store.dart:102
+lib/state/store.dart --defines--> lib/state/store.dart::shareSession [EXTRACTED] lib/state/store.dart:650
+lib/state/store.dart --defines--> lib/state/store.dart::summarize [EXTRACTED] lib/state/store.dart:1062
+lib/state/store.dart --defines--> lib/state/store.dart::takeToast [EXTRACTED] lib/state/store.dart:1739
+lib/state/store.dart --defines--> lib/state/store.dart::toggleTool [EXTRACTED] lib/state/store.dart:453
+lib/state/store.dart --defines--> lib/state/store.dart::unrevert [EXTRACTED] lib/state/store.dart:1083
+lib/state/store.dart --defines--> lib/state/store.dart::unshareSession [EXTRACTED] lib/state/store.dart:660
+lib/state/store.dart --defines--> lib/state/store.dart::writeFile [EXTRACTED] lib/state/store.dart:1187
 lib/ui/about_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/about_page.dart:3
 lib/ui/about_page.dart --defines--> lib/ui/about_page.dart::AboutPage [EXTRACTED] lib/ui/about_page.dart:10
 lib/ui/about_page.dart --defines--> lib/ui/about_page.dart::build [EXTRACTED] lib/ui/about_page.dart:14
@@ -403,74 +402,74 @@ lib/ui/chat.dart --calls--> lib/state/store.dart::toggleTool [INFERRED 0.6] lib/
 lib/ui/chat.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/chat.dart:12
 lib/ui/chat.dart --calls--> lib/ui/app_scope.dart::read [INFERRED 0.6] lib/ui/chat.dart:0
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::ChatPage [EXTRACTED] lib/ui/chat.dart:21
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::SlashTextField [EXTRACTED] lib/ui/chat.dart:1806
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ActionBtn [EXTRACTED] lib/ui/chat.dart:911
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_AttachmentStrip [EXTRACTED] lib/ui/chat.dart:1432
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BusyBar [EXTRACTED] lib/ui/chat.dart:547
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BusyBarWidget [EXTRACTED] lib/ui/chat.dart:333
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ChatMessages [EXTRACTED] lib/ui/chat.dart:355
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::SlashTextField [EXTRACTED] lib/ui/chat.dart:1810
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ActionBtn [EXTRACTED] lib/ui/chat.dart:915
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_AttachmentStrip [EXTRACTED] lib/ui/chat.dart:1436
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BusyBar [EXTRACTED] lib/ui/chat.dart:551
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BusyBarWidget [EXTRACTED] lib/ui/chat.dart:337
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ChatMessages [EXTRACTED] lib/ui/chat.dart:359
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ChatPageState [EXTRACTED] lib/ui/chat.dart:33
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_CircleButton [EXTRACTED] lib/ui/chat.dart:1761
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_Composer [EXTRACTED] lib/ui/chat.dart:1219
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ComposerWidget [EXTRACTED] lib/ui/chat.dart:1190
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ErrorBar [EXTRACTED] lib/ui/chat.dart:509
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ErrorBarWidget [EXTRACTED] lib/ui/chat.dart:313
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_FilePickerSheet [EXTRACTED] lib/ui/chat.dart:2019
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_FilePickerSheetState [EXTRACTED] lib/ui/chat.dart:2026
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IncomingFileChip [EXTRACTED] lib/ui/chat.dart:1066
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_InlineError [EXTRACTED] lib/ui/chat.dart:1097
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_JumpToLatest [EXTRACTED] lib/ui/chat.dart:436
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_LoadOlderButton [EXTRACTED] lib/ui/chat.dart:483
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageTile [EXTRACTED] lib/ui/chat.dart:663
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageTileState [EXTRACTED] lib/ui/chat.dart:678
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ModelPill [EXTRACTED] lib/ui/chat.dart:1475
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ReplyActions [EXTRACTED] lib/ui/chat.dart:876
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ReplyMeta [EXTRACTED] lib/ui/chat.dart:850
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SendButton [EXTRACTED] lib/ui/chat.dart:1708
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SheetOption [EXTRACTED] lib/ui/chat.dart:1566
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SheetRow [EXTRACTED] lib/ui/chat.dart:1029
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SlashTextFieldState [EXTRACTED] lib/ui/chat.dart:1823
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SuggestionCard [EXTRACTED] lib/ui/chat.dart:613
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_TypingDots [EXTRACTED] lib/ui/chat.dart:1133
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_TypingDotsState [EXTRACTED] lib/ui/chat.dart:1140
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_Welcome [EXTRACTED] lib/ui/chat.dart:560
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_apply [EXTRACTED] lib/ui/chat.dart:1907
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_assistantBlock [EXTRACTED] lib/ui/chat.dart:808
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_buildContent [EXTRACTED] lib/ui/chat.dart:716
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_debouncedSearchFiles [EXTRACTED] lib/ui/chat.dart:1874
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_handleNotification [EXTRACTED] lib/ui/chat.dart:115
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_iconFor [EXTRACTED] lib/ui/chat.dart:2130
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_jumpToLatest [EXTRACTED] lib/ui/chat.dart:173
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_load [EXTRACTED] lib/ui/chat.dart:2038
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_loadOlderMessages [EXTRACTED] lib/ui/chat.dart:191
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_mimeFor [EXTRACTED] lib/ui/chat.dart:1372
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_onChanged [EXTRACTED] lib/ui/chat.dart:1848
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_onScroll [EXTRACTED] lib/ui/chat.dart:106
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_onStoreChange [EXTRACTED] lib/ui/chat.dart:96
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_openMenu [EXTRACTED] lib/ui/chat.dart:712
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickAgentSheet [EXTRACTED] lib/ui/chat.dart:1601
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickImage [EXTRACTED] lib/ui/chat.dart:1327
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickProjectFile [EXTRACTED] lib/ui/chat.dart:1347
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickToolsSheet [EXTRACTED] lib/ui/chat.dart:1643
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_queueAutoScroll [EXTRACTED] lib/ui/chat.dart:148
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_runAutoScroll [EXTRACTED] lib/ui/chat.dart:162
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_searchFiles [EXTRACTED] lib/ui/chat.dart:1882
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_send [EXTRACTED] lib/ui/chat.dart:274
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_sendSuggestion [EXTRACTED] lib/ui/chat.dart:265
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_set [EXTRACTED] lib/ui/chat.dart:1895
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_setFollow [EXTRACTED] lib/ui/chat.dart:138
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_showAttachSheet [EXTRACTED] lib/ui/chat.dart:1288
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_showCommands [EXTRACTED] lib/ui/chat.dart:1387
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_signature [EXTRACTED] lib/ui/chat.dart:690
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_syncFollow [EXTRACTED] lib/ui/chat.dart:214
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_userBubble [EXTRACTED] lib/ui/chat.dart:762
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::build [EXTRACTED] lib/ui/chat.dart:237
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_CircleButton [EXTRACTED] lib/ui/chat.dart:1765
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_Composer [EXTRACTED] lib/ui/chat.dart:1223
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ComposerWidget [EXTRACTED] lib/ui/chat.dart:1194
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ErrorBar [EXTRACTED] lib/ui/chat.dart:513
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ErrorBarWidget [EXTRACTED] lib/ui/chat.dart:317
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_FilePickerSheet [EXTRACTED] lib/ui/chat.dart:2023
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_FilePickerSheetState [EXTRACTED] lib/ui/chat.dart:2030
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IncomingFileChip [EXTRACTED] lib/ui/chat.dart:1070
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_InlineError [EXTRACTED] lib/ui/chat.dart:1101
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_JumpToLatest [EXTRACTED] lib/ui/chat.dart:440
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_LoadOlderButton [EXTRACTED] lib/ui/chat.dart:487
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageTile [EXTRACTED] lib/ui/chat.dart:667
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageTileState [EXTRACTED] lib/ui/chat.dart:682
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ModelPill [EXTRACTED] lib/ui/chat.dart:1479
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ReplyActions [EXTRACTED] lib/ui/chat.dart:880
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ReplyMeta [EXTRACTED] lib/ui/chat.dart:854
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SendButton [EXTRACTED] lib/ui/chat.dart:1712
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SheetOption [EXTRACTED] lib/ui/chat.dart:1570
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SheetRow [EXTRACTED] lib/ui/chat.dart:1033
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SlashTextFieldState [EXTRACTED] lib/ui/chat.dart:1827
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SuggestionCard [EXTRACTED] lib/ui/chat.dart:617
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_TypingDots [EXTRACTED] lib/ui/chat.dart:1137
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_TypingDotsState [EXTRACTED] lib/ui/chat.dart:1144
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_Welcome [EXTRACTED] lib/ui/chat.dart:564
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_apply [EXTRACTED] lib/ui/chat.dart:1911
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_assistantBlock [EXTRACTED] lib/ui/chat.dart:812
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_buildContent [EXTRACTED] lib/ui/chat.dart:720
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_debouncedSearchFiles [EXTRACTED] lib/ui/chat.dart:1878
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_handleNotification [EXTRACTED] lib/ui/chat.dart:119
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_iconFor [EXTRACTED] lib/ui/chat.dart:2134
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_jumpToLatest [EXTRACTED] lib/ui/chat.dart:177
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_load [EXTRACTED] lib/ui/chat.dart:2042
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_loadOlderMessages [EXTRACTED] lib/ui/chat.dart:195
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_mimeFor [EXTRACTED] lib/ui/chat.dart:1376
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_onChanged [EXTRACTED] lib/ui/chat.dart:1852
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_onScroll [EXTRACTED] lib/ui/chat.dart:110
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_onStoreChange [EXTRACTED] lib/ui/chat.dart:100
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_openMenu [EXTRACTED] lib/ui/chat.dart:716
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickAgentSheet [EXTRACTED] lib/ui/chat.dart:1605
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickImage [EXTRACTED] lib/ui/chat.dart:1331
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickProjectFile [EXTRACTED] lib/ui/chat.dart:1351
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_pickToolsSheet [EXTRACTED] lib/ui/chat.dart:1647
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_queueAutoScroll [EXTRACTED] lib/ui/chat.dart:152
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_runAutoScroll [EXTRACTED] lib/ui/chat.dart:166
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_searchFiles [EXTRACTED] lib/ui/chat.dart:1886
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_send [EXTRACTED] lib/ui/chat.dart:278
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_sendSuggestion [EXTRACTED] lib/ui/chat.dart:269
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_set [EXTRACTED] lib/ui/chat.dart:1899
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_setFollow [EXTRACTED] lib/ui/chat.dart:142
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_showAttachSheet [EXTRACTED] lib/ui/chat.dart:1292
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_showCommands [EXTRACTED] lib/ui/chat.dart:1391
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_signature [EXTRACTED] lib/ui/chat.dart:694
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_syncFollow [EXTRACTED] lib/ui/chat.dart:218
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_userBubble [EXTRACTED] lib/ui/chat.dart:766
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::build [EXTRACTED] lib/ui/chat.dart:241
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::createState [EXTRACTED] lib/ui/chat.dart:25
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::didChangeDependencies [EXTRACTED] lib/ui/chat.dart:685
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::dispose [EXTRACTED] lib/ui/chat.dart:83
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::initState [EXTRACTED] lib/ui/chat.dart:70
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::showMessageMenu [EXTRACTED] lib/ui/chat.dart:954
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::showModelSheet [EXTRACTED] lib/ui/chat.dart:1522
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::didChangeDependencies [EXTRACTED] lib/ui/chat.dart:689
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::dispose [EXTRACTED] lib/ui/chat.dart:89
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::initState [EXTRACTED] lib/ui/chat.dart:76
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::showMessageMenu [EXTRACTED] lib/ui/chat.dart:958
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::showModelSheet [EXTRACTED] lib/ui/chat.dart:1526
 lib/ui/chat.dart --calls--> lib/ui/diff_page.dart::_load [INFERRED 0.35] lib/ui/chat.dart:0
 lib/ui/chat.dart --calls--> lib/ui/files_page.dart::_load [INFERRED 0.35] lib/ui/chat.dart:0
 lib/ui/chat.dart --calls--> lib/ui/home.dart::_SheetOption [INFERRED 0.35] lib/ui/chat.dart:0
@@ -559,41 +558,46 @@ lib/ui/diff_page.dart --calls--> lib/ui/widgets.dart::showSnack [INFERRED 0.6] l
 lib/ui/files_page.dart --calls--> lib/api/client.dart::fileStatus [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/api/client.dart::files [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/api/client.dart::readFile [INFERRED 0.6] lib/ui/files_page.dart:0
-lib/ui/files_page.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/files_page.dart:5
+lib/ui/files_page.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/files_page.dart:3
 lib/ui/files_page.dart --calls--> lib/models/models.dart::baseName [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/models/models.dart::dirName [INFERRED 0.6] lib/ui/files_page.dart:0
-lib/ui/files_page.dart --imports--> lib/state/store.dart [EXTRACTED] lib/ui/files_page.dart:6
+lib/ui/files_page.dart --imports--> lib/state/store.dart [EXTRACTED] lib/ui/files_page.dart:4
 lib/ui/files_page.dart --calls--> lib/state/store.dart::deleteEntry [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/state/store.dart::mkdirEntry [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/state/store.dart::send [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/state/store.dart::writeFile [INFERRED 0.6] lib/ui/files_page.dart:0
-lib/ui/files_page.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/files_page.dart:7
+lib/ui/files_page.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/files_page.dart:5
 lib/ui/files_page.dart --calls--> lib/ui/app_scope.dart::read [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/ui/chat.dart::_load [INFERRED 0.35] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/ui/diff_page.dart::_load [INFERRED 0.35] lib/ui/files_page.dart:0
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::ChangedFilesPage [EXTRACTED] lib/ui/files_page.dart:353
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::FileEditorPage [EXTRACTED] lib/ui/files_page.dart:481
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::FilesPage [EXTRACTED] lib/ui/files_page.dart:12
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_FileEditorPageState [EXTRACTED] lib/ui/files_page.dart:489
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_FileTile [EXTRACTED] lib/ui/files_page.dart:403
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_FilesPageState [EXTRACTED] lib/ui/files_page.dart:19
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_icon [EXTRACTED] lib/ui/files_page.dart:453
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_load [EXTRACTED] lib/ui/files_page.dart:40
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_menu [EXTRACTED] lib/ui/files_page.dart:242
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_open [EXTRACTED] lib/ui/files_page.dart:234
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_pillBorder [EXTRACTED] lib/ui/files_page.dart:346
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_q [EXTRACTED] lib/ui/files_page.dart:343
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_save [EXTRACTED] lib/ui/files_page.dart:535
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::build [EXTRACTED] lib/ui/files_page.dart:78
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::createState [EXTRACTED] lib/ui/files_page.dart:16
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::dispose [EXTRACTED] lib/ui/files_page.dart:35
-lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::initState [EXTRACTED] lib/ui/files_page.dart:29
-lib/ui/files_page.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/files_page.dart:8
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::ChangedFilesPage [EXTRACTED] lib/ui/files_page.dart:465
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::FileEditorPage [EXTRACTED] lib/ui/files_page.dart:593
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::FilesPage [EXTRACTED] lib/ui/files_page.dart:10
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_FileEditorPageState [EXTRACTED] lib/ui/files_page.dart:601
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_FileTile [EXTRACTED] lib/ui/files_page.dart:515
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_FilesPageState [EXTRACTED] lib/ui/files_page.dart:17
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_createMenu [EXTRACTED] lib/ui/files_page.dart:65
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_icon [EXTRACTED] lib/ui/files_page.dart:565
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_load [EXTRACTED] lib/ui/files_page.dart:142
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_menu [EXTRACTED] lib/ui/files_page.dart:354
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_newFile [EXTRACTED] lib/ui/files_page.dart:95
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_newFolder [EXTRACTED] lib/ui/files_page.dart:126
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_normDir [EXTRACTED] lib/ui/files_page.dart:41
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_open [EXTRACTED] lib/ui/files_page.dart:346
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_pillBorder [EXTRACTED] lib/ui/files_page.dart:458
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_q [EXTRACTED] lib/ui/files_page.dart:455
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_save [EXTRACTED] lib/ui/files_page.dart:647
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::_validName [EXTRACTED] lib/ui/files_page.dart:54
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::build [EXTRACTED] lib/ui/files_page.dart:180
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::createState [EXTRACTED] lib/ui/files_page.dart:14
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::dispose [EXTRACTED] lib/ui/files_page.dart:33
+lib/ui/files_page.dart --defines--> lib/ui/files_page.dart::initState [EXTRACTED] lib/ui/files_page.dart:27
+lib/ui/files_page.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/files_page.dart:6
 lib/ui/files_page.dart --calls--> lib/ui/primitives.dart::OCButton [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/ui/primitives.dart::OCIconTile [INFERRED 0.6] lib/ui/files_page.dart:0
-lib/ui/files_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/files_page.dart:9
+lib/ui/files_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/files_page.dart:7
 lib/ui/files_page.dart --calls--> lib/ui/theme.dart::mono [INFERRED 0.6] lib/ui/files_page.dart:0
-lib/ui/files_page.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/files_page.dart:10
+lib/ui/files_page.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/files_page.dart:8
 lib/ui/files_page.dart --calls--> lib/ui/widgets.dart::EmptyHint [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/ui/widgets.dart::LoadingView [INFERRED 0.6] lib/ui/files_page.dart:0
 lib/ui/files_page.dart --calls--> lib/ui/widgets.dart::StatusPill [INFERRED 0.6] lib/ui/files_page.dart:0

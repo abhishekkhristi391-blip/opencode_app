@@ -1,5 +1,5 @@
 # GRAPH REPORT
-27 files, 572 symbols, 1010 edges (690 EXTRACTED, 320 INFERRED)
+27 files, 577 symbols, 1014 edges (695 EXTRACTED, 319 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:464
@@ -9,7 +9,7 @@
 - showSnack (function) - 9 links - lib/ui/widgets.dart:132
 - EmptyHint (class) - 9 links - lib/ui/widgets.dart:147
 - LoadingView (class) - 7 links - lib/ui/widgets.dart:206
-- send (function) - 6 links - lib/state/store.dart:835
+- send (function) - 6 links - lib/state/store.dart:831
 - confirmDialog (function) - 6 links - lib/ui/widgets.dart:370
 - SectionTitle (class) - 6 links - lib/ui/widgets.dart:405
 
@@ -38,6 +38,8 @@
 - none
 
 ## Rationale / TODO notes
+- WHY: the raw message needs this before the UI can show anything. - lib/models/models.dart:189
+- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:264
 
 ## Suggested questions
 - What breaks if I change OCIconTile?   -> impact
