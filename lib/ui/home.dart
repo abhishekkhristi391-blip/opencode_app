@@ -103,22 +103,44 @@ class HomeShellState extends State<HomeShell> {
                   .length,
               onRetry: store.online ? null : store.connect,
             ),
-            leading: LIconButton(
-              icon: LI.menu,
-              label: S.drawerOpenTooltip,
-              onTap: _showDrawer,
-            ),
-            avatar: _AvatarButton(onTap: () => _showAvatarMenu(context)),
-            actions: _headerActions(context, store),
-          ),
-          Expanded(
-            child: Stack(
+            leading: Stack(
+              clipBehavior: Clip.none,
               children: [
-                _body(context, store),
-                const Positioned.fill(child: PromptOverlay()),
+                LIconButton(
+                  icon: LI.menu,
+                  label: S.drawerOpenTooltip,
+                  onTap: _showDrawer,
+                ),
+                // The badge on the avatar hides behind the drawer and behind the
+                // header on narrow screens, so the drawer handle carries a plain
+                // dot too: one glance anywhere in the app has to be enough.
+                if (store.pendingPromptCount > 0)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: t.acc,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: t.bg, width: 1.5),
+                      ),
+                    ),
+                  ),
               ],
             ),
+            avatar: _AvatarButton(
+              onTap: () => _showAvatarMenu(context),
+              pending: store.pendingPromptCount,
+            ),
+            actions: _headerActions(context, store),
           ),
+          // No PromptOverlay here: it is mounted above the whole Navigator in
+          // main.dart's `MaterialApp.builder`. Inside this Stack it covered the
+          // four tabs but not a pushed route, so opening Files or Settings hid
+          // a waiting approval completely.
+          Expanded(child: _body(context, store)),
         ],
       ),
     );
@@ -222,9 +244,11 @@ class HomeShellState extends State<HomeShell> {
   /// chat feed, and the footer identity plus connection line.
   Future<void> _showDrawer() async {
     final store = AppScope.read(context);
-    final pendingTodos = store.todos.where((t) => !t.done).length;
-    final pendingPrompts = store.permissions.length + store.questions.length;
-    final pending = pendingTodos + pendingPrompts;
+    // Todo count only — this badge lives on the Todos row, and a waiting
+    // approval is not an open task. The pending-request count rides the avatar
+    // badge and the Todos row's own indicator instead, so the two meanings can
+    // never be read off the same number.
+    final pending = store.todos.where((t) => !t.done).length;
     // The feed is the same list the History screen shows, so the drawer never
     // offers a session the page behind it does not.
     final recents = visibleSessions(context, true)
@@ -243,7 +267,8 @@ class HomeShellState extends State<HomeShell> {
         version: store.serverVersion,
         host: _hostLabel(store),
         index: index,
-        pending: pendingTodos > 0 ? pendingTodos : (pendingPrompts > 0 ? pendingPrompts : 0),
+        pending: pending,
+        pendingPrompts: store.pendingPromptCount,
         recents: visible,
         currentId: store.current?.id,
         state: ocLinkState(store),
@@ -285,9 +310,21 @@ class HomeShellState extends State<HomeShell> {
         host: host,
         version: store.serverVersion,
         state: ocLinkState(store),
+        pending: store.pendingPromptCount,
         onClose: () => Navigator.pop(ctx),
         onOpen: (page, title) => _pushAndClose(page, title),
+        onReviewPrompt: () {
+          Navigator.pop(ctx);
+          showPendingPrompt(context);
+        },
         onServer: () => _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
+        // Dismissing the menu only closes the menu. The prompt is still
+        // pending, so it is still on the server and the badge is still up —
+        // that is the whole point of rebuilding from GET /permission.
+        onReview: () {
+          Navigator.pop(ctx);
+          showPendingPrompt(context);
+        },
       ),
     );
   }
@@ -594,38 +631,168 @@ class HomeShellState extends State<HomeShell> {
 
 /// The avatar trigger in the header: the reference's `bg-primary` circle with
 /// a person glyph in `on-primary`, at 32dp inside a 48dp target.
-class _AvatarButton extends StatelessWidget {
-  const _AvatarButton({required this.onTap});
+class _AvatarButton extends StatefulWidget {
+  const _AvatarButton({required this.onTap, this.pending = 0});
   final VoidCallback onTap;
+
+  /// Pending permission/question requests across every session. Zero hides the
+  /// badge, so it clears the instant the last one is answered — here, or in the
+  /// TUI, which reaches us as a `*.replied` event.
+  final int pending;
+
+  @override
+  State<_AvatarButton> createState() => _AvatarButtonState();
+}
+
+class _AvatarButtonState extends State<_AvatarButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: OCMotion.pulse,
+  );
+
+  Timer? _settle;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pending > 0) _startPulse();
+  }
+
+  /// Three seconds of attention, then still. A badge that breathes forever is
+  /// noise once it has been on screen longer than it takes to notice it.
+  void _startPulse() {
+    _pulse.repeat(reverse: true);
+    _settle?.cancel();
+    _settle = Timer(const Duration(seconds: 3), () {
+      if (mounted) _pulse.stop();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_AvatarButton old) {
+    super.didUpdateWidget(old);
+    if (widget.pending > old.pending) {
+      _startPulse();
+    } else if (widget.pending == 0) {
+      _settle?.cancel();
+      _pulse.stop();
+      _pulse.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _settle?.cancel();
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
+    final n = widget.pending;
     return Semantics(
       button: true,
-      label: S.menuOpenTooltip,
+      label: n > 0
+          ? '${S.menuOpenTooltip}. ${S.promptSemantics(n)}'
+          : S.menuOpenTooltip,
       excludeSemantics: true,
       child: Tooltip(
-        message: S.menuOpenTooltip,
+        message: n > 0
+            ? '${S.menuOpenTooltip} \u2022 ${S.promptSemantics(n)}'
+            : S.menuOpenTooltip,
         child: Material(
           color: Colors.transparent,
+          shape: const CircleBorder(),
           child: InkWell(
-            onTap: onTap,
+            onTap: widget.onTap,
             customBorder: const CircleBorder(),
             child: SizedBox(
               width: OCSpace.tapTarget,
               height: OCSpace.tapTarget,
-              child: Center(
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: OCColors.cta,
-                    shape: BoxShape.circle,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: OCColors.cta,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: LIcon(LI.person, size: 18, color: OCColors.onCta),
+                      ),
+                    ),
                   ),
-                  child: Center(
-                    child: LIcon(LI.person, size: 18, color: OCColors.onCta),
-                  ),
-                ),
+                  if (n > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: _PromptCountBadge(
+                        n: n,
+                        pulse: _pulse,
+                        ring: t.bg,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The terracotta count bubble on the avatar: pending approvals and questions
+/// only.
+///
+/// Deliberately not [CountBadge]: that one means "open tasks" and rides the
+/// header action row, so reusing it here would make two different meanings look
+/// like one. This rides the avatar corner, fills with the accent, and takes a
+/// 2dp ring in the page background so it stays legible over the white circle.
+class _PromptCountBadge extends StatelessWidget {
+  const _PromptCountBadge({
+    required this.n,
+    required this.pulse,
+    required this.ring,
+  });
+
+  final int n;
+  final Animation<double> pulse;
+  final Color ring;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Semantics(
+      label: S.promptSemantics(n),
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: pulse,
+        builder: (context, _) => Transform.scale(
+          // Scale only. A colour flicker would read as a fresh event on every
+          // frame, which is exactly the false signal this badge must not send.
+          scale: 1 + 0.10 * pulse.value,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: t.acc,
+              borderRadius: BorderRadius.circular(OCRadius.pill),
+              border: Border.all(color: ring, width: 2),
+            ),
+            child: Text(
+              n > 9 ? '9+' : '$n',
+              style: OCTypography.caption.copyWith(
+                color: t.onAcc,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
               ),
             ),
           ),
@@ -678,6 +845,7 @@ class _Drawer extends StatelessWidget {
     required this.host,
     required this.index,
     required this.pending,
+    required this.pendingPrompts,
     required this.recents,
     required this.currentId,
     required this.state,
@@ -687,12 +855,20 @@ class _Drawer extends StatelessWidget {
     required this.onPushTodos,
     required this.onPushCommands,
     required this.onOpenSession,
+    required this.onReviewPrompt,
   });
 
   final String version;
   final String host;
   final int index;
+
+  /// Open todos, for the Todos row.
   final int pending;
+
+  /// Pending approvals and questions. Its own row, at the top of the
+  /// destinations: a blocked run is more urgent than any destination, and the
+  /// drawer is one of the places a user goes when something seems stuck.
+  final int pendingPrompts;
   final List<Session> recents;
   final String? currentId;
   final OcLinkState state;
@@ -702,6 +878,7 @@ class _Drawer extends StatelessWidget {
   final VoidCallback onPushTodos;
   final VoidCallback onPushCommands;
   final ValueChanged<Session> onOpenSession;
+  final VoidCallback onReviewPrompt;
 
   @override
   Widget build(BuildContext context) {
@@ -760,6 +937,14 @@ class _Drawer extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (pendingPrompts > 0)
+                        _DrawerNavRow(
+                          icon: LI.shield,
+                          label: S.menuWaitingForYou(pendingPrompts),
+                          selected: false,
+                          valueAccent: true,
+                          onTap: onReviewPrompt,
+                        ),
                       _DrawerNavRow(
                         icon: LI.chat,
                         label: S.drawerNavChats,
@@ -1231,6 +1416,8 @@ class _ServerMenu extends StatelessWidget {
     required this.onClose,
     required this.onOpen,
     required this.onServer,
+    required this.onReview,
+    this.pending = 0,
   });
 
   final String host;
@@ -1239,6 +1426,12 @@ class _ServerMenu extends StatelessWidget {
   final VoidCallback onClose;
   final void Function(Widget Function() page, String title) onOpen;
   final VoidCallback onServer;
+
+  /// Opens the oldest pending prompt without leaving the current screen.
+  final VoidCallback onReview;
+
+  /// Pending approvals/questions across all sessions. Zero hides the row.
+  final int pending;
 
   @override
   Widget build(BuildContext context) {
@@ -1275,6 +1468,14 @@ class _ServerMenu extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
+                      if (pending > 0)
+                        _MenuRow(
+                          icon: LI.shield,
+                          label: S.menuWaitingForYou(pending),
+                          accent: true,
+                          showChevron: true,
+                          onTap: onReview,
+                        ),
                       _MenuRow(
                         icon: LI.server,
                         label: S.menuSwitchServer,
@@ -1439,12 +1640,19 @@ class _MenuRow extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.value,
+    this.accent = false,
+    this.showChevron = true,
   });
 
   final LI icon;
   final String label;
   final VoidCallback onTap;
   final String? value;
+
+  /// The pending-approvals row: accent-filled icon tile, because this is the
+  /// one row in the menu that resolves a blocked run rather than navigating.
+  final bool accent;
+  final bool showChevron;
 
   @override
   Widget build(BuildContext context) {
@@ -1467,11 +1675,15 @@ class _MenuRow extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: OCColors.surfaceHighest,
+                    color: accent ? t.accSoft : OCColors.surfaceHighest,
                     borderRadius: BorderRadius.circular(OCRadius.xs),
                   ),
                   child: Center(
-                    child: LIcon(icon, size: 20, color: t.mute),
+                    child: LIcon(
+                      icon,
+                      size: 20,
+                      color: accent ? t.acc : t.mute,
+                    ),
                   ),
                 ),
                 const SizedBox(width: OCSpace.md),
@@ -1497,7 +1709,12 @@ class _MenuRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: OCSpace.sm),
-                LIcon(LI.chevronRight, size: 18, color: OCColors.textTertiary),
+                if (showChevron)
+                  LIcon(
+                    LI.chevronRight,
+                    size: 18,
+                    color: accent ? t.acc : OCColors.textTertiary,
+                  ),
               ],
             ),
           ),

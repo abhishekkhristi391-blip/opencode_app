@@ -491,6 +491,13 @@ class S {
   static const String composerWorkingSlow = 'Taking longer than usual';
   static const String waitingApproval = 'Waiting for your approval';
   static const String waitingAnswer = 'Waiting for your answer';
+  static String waitingYou(int n) => 'Waiting for you ($n)';
+  static const String promptReview = 'Review';
+  static const String promptLater = 'Later';
+  static const String promptTapToReview = 'Tap to review';
+  static const String promptAnswer = 'Answer';
+  static String promptSemantics(int n) =>
+      '$n requests waiting for your approval';
   static String composerWorking(String agent) =>
       agent.isEmpty ? 'Working\u2026' : '$agent is working\u2026';
   static String composerQueued(int n) =>
@@ -705,6 +712,10 @@ class S {
   static const permissionOnce = 'Once';
   static const permissionDefault = 'Default';
   static const questionTitle = 'The agent asked a question';
+  static const permFieldTool = 'Tool';
+  static const permFieldCommand = 'Command';
+  static const permFieldDirectories = 'Directories';
+  static const permFieldPatterns = 'Patterns';
   static const yourAnswer = 'Type your answer…';
   static const questionSubmit = 'Send';
   static const questionSelect = 'Choose an option';
@@ -860,6 +871,11 @@ class S {
   static const menuProviders = 'Model Provider & Keys';
   static const menuSettings = 'Settings';
   static const menuAbout = 'About & Changelog';
+
+  static String menuWaitingForYou(int n) => '$n waiting for you';
+  static String promptInSession(String title) => 'Session: $title';
+  static String promptOtherSession(String title) =>
+      'This request came from another chat: $title';
 
   static String menuServerVersion(String version) =>
       'OpenCode Server v$version';

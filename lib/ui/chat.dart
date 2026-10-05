@@ -16,6 +16,7 @@ import 'markdown.dart';
 import 'models_page.dart';
 import 'parts.dart';
 import 'primitives.dart';
+import 'prompts.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -2738,11 +2739,18 @@ class _FilePickerSheetState extends State<_FilePickerSheet> {
   }
 }
 
-/// "Codex is working…" under the composer, with a slow-run hint and a tap
-/// target that interrupts.
+/// The strip under the composer: "Codex is working…" while a run is in
+/// flight, with a slow-run hint and a tap target that interrupts.
 ///
 /// The busy bar used to sit *above* the transcript, so it scrolled away exactly
 /// when a long run most needed an escape hatch.
+///
+/// It is also the one honest report of *why* the agent is quiet. A pending
+/// permission or question means the run cannot advance at all until the user
+/// acts, which is a different situation from "thinking" — so the spinner is
+/// replaced by a static glyph, the slow warning is suppressed (a request that
+/// sits for a minute has not become slower, it has become blocked), and a chip
+/// opens the sheet that answers it.
 class _WorkingStrip extends StatefulWidget {
   final String agent;
   final VoidCallback onStop;
@@ -2760,10 +2768,20 @@ class _WorkingStripState extends State<_WorkingStrip> {
   @override
   void initState() {
     super.initState();
+    _armSlowTimer();
+  }
+
+  void _armSlowTimer() {
+    _timer?.cancel();
     _timer = Timer(_slowAfter, () {
       if (mounted) setState(() => _slow = true);
     });
   }
+
+  /// Whether the last build was in the blocked state. Answering the prompt has
+  /// to restart the slow timer, because the run genuinely begins again from
+  /// that moment and its old countdown belongs to the wait, not the work.
+  bool _wasBlocked = false;
 
   @override
   void dispose() {
@@ -2775,96 +2793,148 @@ class _WorkingStripState extends State<_WorkingStrip> {
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
     final t = context.oc;
-    final hasPrompt = store.permissions.isNotEmpty || store.questions.isNotEmpty;
+    final n = store.pendingPromptCount;
+    final perm = store.oldestPendingPermission;
+    final blocked = n > 0;
+
+    // The slow warning is only ever about *thinking*. While a prompt is out it
+    // would be a lie: the run is not slow, it is stopped.
+    if (_slow && !blocked) {
+      _slow = false;
+      _armSlowTimer();
+    }
+    if (_wasBlocked && !blocked) {
+      // Just answered: the eight seconds start counting again.
+      _slow = false;
+      _armSlowTimer();
+    }
+    _wasBlocked = blocked;
+
+    final String headline = blocked
+        ? (perm != null ? S.waitingApproval : S.waitingAnswer)
+        : S.composerWorking(widget.agent);
+
+    final String status = blocked
+        ? (n > 1 ? S.waitingYou(n) : S.promptTapToReview)
+        : (_slow ? S.composerWorkingSlow : S.composerStopHint);
+
+    // Tool or path, so the tap target says what is actually being approved
+    // rather than just "something".
+    final String? subtitle = perm != null ? perm.subject : null;
+
     return Padding(
       padding: const EdgeInsets.only(top: OCSpace.xs),
-      child: InkWell(
-        onTap: widget.onStop,
-        borderRadius: BorderRadius.circular(OCRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: OCSpace.sm,
-            vertical: OCSpace.xs,
-          ),
-          child: Row(
-            children: [
-              OCProgressRing(value: 0.7, size: 12, stroke: 1.6, color: t.acc),
-              const SizedBox(width: OCSpace.sm),
-              Text(
-                S.composerWorking(widget.agent),
-                style: OCTypography.caption.copyWith(color: t.mute),
-              ),
-              const Spacer(),
-              Text(
-                hasPrompt
-                    ? (store.permissions.isNotEmpty
-                        ? S.waitingApproval
-                        : S.waitingAnswer)
-                    : (_slow ? S.composerWorkingSlow : S.composerStopHint),
-                style: OCTypography.caption.copyWith(
-                  color: hasPrompt ? t.warn : (_slow ? t.warn : t.mute),
+      child: Semantics(
+        button: true,
+        label: blocked ? '$headline. $status' : status,
+        excludeSemantics: true,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            // Blocked: the useful action is answering, not interrupting. The
+            // stop target is still reachable from the composer's own control.
+            onTap: blocked ? () => showPendingPrompt(context) : widget.onStop,
+            borderRadius: BorderRadius.circular(OCRadius.pill),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: OCSpace.sm,
+                  vertical: OCSpace.xs,
+                ),
+                child: Row(
+                  children: [
+                    if (blocked)
+                      Icon(
+                        Icons.pause_rounded,
+                        size: 16,
+                        color: t.acc,
+                      )
+                    else
+                      OCProgressRing(
+                        value: 0.7,
+                        size: 12,
+                        stroke: 1.6,
+                        color: t.acc,
+                      ),
+                    const SizedBox(width: OCSpace.sm),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            headline,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: OCTypography.caption.copyWith(
+                              color: blocked ? t.ink : t.mute,
+                              fontWeight: blocked
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                          Text(
+                            subtitle ?? status,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: OCTypography.micro.copyWith(
+                              color: blocked ? t.acc : (_slow ? t.warn : t.mute),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (blocked) ...[
+                      const SizedBox(width: OCSpace.xs),
+                      _PromptChip(
+                        label: perm != null ? S.promptReview : S.promptAnswer,
+                        onTap: () => showPendingPrompt(context),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-  /// Eight seconds: long enough that a normal tool run never trips it, short
-  /// enough to still be useful information.
-  static const _slowAfter = Duration(seconds: 8);
-  Timer? _timer;
-  bool _slow = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer(_slowAfter, () {
-      if (mounted) setState(() => _slow = true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+/// The Review / Answer chip on the working strip. Separate from the strip's own
+/// tap so the affordance that answers is findable without knowing that tapping
+/// the background works too.
+class _PromptChip extends StatelessWidget {
+  const _PromptChip({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
-    return Padding(
-      padding: const EdgeInsets.only(top: OCSpace.xs),
-      child: InkWell(
-        onTap: widget.onStop,
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: t.accSoft,
         borderRadius: BorderRadius.circular(OCRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: OCSpace.sm,
-            vertical: OCSpace.xs,
-          ),
-          child: Row(
-            children: [
-              OCProgressRing(value: 0.7, size: 12, stroke: 1.6, color: t.acc),
-              const SizedBox(width: OCSpace.sm),
-              Text(
-                S.composerWorking(widget.agent),
-                style: OCTypography.caption.copyWith(color: t.mute),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(OCRadius.pill),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 32),
+            padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: OCTypography.micro.copyWith(
+                color: t.acc,
+                fontWeight: FontWeight.w700,
               ),
-              const Spacer(),
-              Text(
-                (store.permissions.isNotEmpty || store.questions.isNotEmpty)
-                    ? (store.permissions.isNotEmpty ? S.waitingApproval : S.waitingAnswer)
-                    : (_slow ? S.composerWorkingSlow : S.composerStopHint),
-                style: OCTypography.caption.copyWith(
-                  color: (store.permissions.isNotEmpty || store.questions.isNotEmpty)
-                      ? t.warn
-                      : (_slow ? t.warn : t.mute),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

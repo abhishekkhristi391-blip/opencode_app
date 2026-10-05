@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'state/store.dart';
 import 'ui/app_scope.dart';
 import 'ui/home.dart';
+import 'ui/prompts.dart';
 import 'ui/theme.dart';
 
 void main() {
@@ -66,6 +67,18 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
         themeMode: ThemeMode.dark,
         theme: buildAppTheme(),
         darkTheme: buildAppTheme(),
+        // The pending-prompt sheet is mounted here, above the Navigator, not in
+        // HomeShell's Stack. `builder` wraps whatever the Navigator puts on
+        // screen, so a pushed route (Files, Terminal, Settings, the file
+        // editor), a dialog, a bottom sheet and the drawer are all *under* the
+        // approval card. Inside a screen's own Stack any of those hid it, and a
+        // hidden permission is an agent that waits forever.
+        builder: (context, child) => Stack(
+          children: [
+            if (child != null) child,
+            const Positioned.fill(child: PromptOverlay()),
+          ],
+        ),
         home: const HomeShell(),
       ),
     );

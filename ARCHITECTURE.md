@@ -459,9 +459,22 @@ so cached chats stay reachable with the server down. `ConnectionErrorView` takes
 
 ## 10. PERMISSIONS & QUESTIONS — `lib/ui/prompts.dart`
 
-`PromptOverlay` is a `Positioned.fill` layer above the whole `IndexedStack`
-(`home.dart:101`), so a tool approval is never lost behind a pushed route. It shows
-`questions.first` if any, else `permissions.first`.
+`PromptOverlay` is a `Positioned.fill` layer installed by `MaterialApp.builder`
+(`lib/main.dart`), so it sits **above the Navigator** — not inside a screen's own
+Stack. That is the difference between "survives a tab switch" and "survives a
+pushed route": `Files`, `Terminal`, `Settings`, the file editor, a dialog, a
+bottom sheet and the drawer are all Navigator content and therefore all render
+*underneath* the approval card. It shows `oldestPendingPermission`, else
+`oldestPendingQuestion`.
+
+Pending state has exactly one source of truth, `OcStore.pendingPromptCount`
+(`store.dart`), and every surface reads it: the avatar badge, the hamburger dot,
+the drawer's "N waiting for you" row, the working strip and the overlay. Two
+lists are refetched from the server (`GET /permission`, `GET /question`) on
+connect, on every stream-up edge and on resume — see `resyncPrompts()` — because
+an event asked while the socket was down has no event left to deliver it.
+`PermissionReq` gains `tool`, `command`, `directories`, `subject` and
+`isBroadPattern` so the sheet can name what is being approved.
 
 - **Permission card** — calls `store.answerPermission(p, response)`
   (`store.dart:1699-1711`), which routes to the **v2** endpoint

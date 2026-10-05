@@ -153,12 +153,79 @@ class OcStore extends ChangeNotifier {
   List<PermissionReq> permissions = [];
   List<QuestionReq> questions = [];
 
+  /// Single source of truth for "is the agent blocked on a human". Every prompt
+  /// surface — the header badge, the working strip, the overlay — reads this,
+  /// so they cannot disagree about how many requests are waiting.
+  ///
+  /// Permissions first, then questions, both already oldest-first: a request
+  /// queued behind another is only reachable after the one before it clears.
   int get pendingPromptCount => permissions.length + questions.length;
 
-  dynamic get oldestPendingPrompt {
-    if (permissions.isNotEmpty) return permissions.first;
-    if (questions.isNotEmpty) return questions.first;
-    return null;
+  /// The oldest unanswered permission, or null. Read by the Review chip, the
+  /// avatar menu row and PromptOverlay so they all open the same request.
+  PermissionReq? get oldestPendingPermission =>
+      permissions.isEmpty ? null : permissions.first;
+
+  /// The oldest unanswered question, or null.
+  QuestionReq? get oldestPendingQuestion =>
+      questions.isEmpty ? null : questions.first;
+
+  /// True when the session can make no progress until the user replies.
+  bool get awaitingPrompt => pendingPromptCount > 0;
+
+  // ---- prompt sheet visibility ----
+  //
+  // The sheet used to be a permanent modal keyed off "is anything pending", so
+  // there was no way to get it out of the way without answering. These three
+  // members separate *pending* (a server fact, drives the badge) from *shown*
+  // (a presentation choice, driven by the user).
+
+  /// False once the user has dismissed the sheet. Cleared automatically the
+  /// moment a new request arrives, so a prompt is never silently withheld.
+  bool promptSheetDismissed = false;
+
+  /// Show the prompt sheet for the oldest pending request. A no-op when
+  /// nothing is pending, so a stale Review tap cannot open an empty card.
+  void openPromptSheet() {
+    if (!awaitingPrompt) return;
+    if (promptSheetDismissed) {
+      promptSheetDismissed = false;
+      notifyListeners();
+    }
+  }
+
+  /// Dismiss the sheet without answering. The request stays pending on the
+  /// server, so the badge, the strip and the drawer count keep reporting it.
+  void dismissPromptSheet() {
+    if (promptSheetDismissed) return;
+    promptSheetDismissed = true;
+    notifyListeners();
+  }
+
+  /// A request arrived. The sheet re-arms unconditionally — a prompt that
+  /// was dismissed while a *different* one was on screen must still be seen.
+  void _onPromptAdded() {
+    promptSheetDismissed = false;
+  }
+
+  /// A request was answered (here or in the TUI). Only clear the dismissal once
+  /// nothing at all is left, otherwise dismissing and then answering would pop
+  /// the sheet straight back open for the next request in the queue.
+  void _onPromptRemoved() {
+    if (!awaitingPrompt) promptSheetDismissed = false;
+  }
+
+  /// Display title for a session id, falling back to the id itself when the
+  /// session is not in the list the app holds (a subagent's session, or one
+  /// created while we were offline). Used to label a prompt that arrived from
+  /// another chat so it is obvious whose run is blocked.
+  String sessionLabel(String id) {
+    if (id.isEmpty) return S.dash;
+    if (current?.id == id) return current!.label;
+    for (final s in sessions) {
+      if (s.id == id) return s.label;
+    }
+    return id;
   }
 
   // ---- extras ----
@@ -479,7 +546,7 @@ class OcStore extends ChangeNotifier {
           refreshSessions(),
           refreshServerInfo(),
           refreshCommands(),
-          loadPending(),
+          resyncPrompts(),
         ]);
       } on ApiException catch (e) {
         fatalError = e.message;
@@ -551,7 +618,7 @@ class OcStore extends ChangeNotifier {
       // If the stream cannot come up at all (SSE refused while HTTP works),
       // nothing else will ever re-sync, so do it here instead.
       if (!live) {
-        unawaited(loadPending());
+        unawaited(resyncPrompts());
         final id = current?.id;
         if (id != null && !messagesLoading) unawaited(_resyncMessages(id));
         if (busy) unawaited(_probeBusyState());
@@ -611,7 +678,7 @@ class OcStore extends ChangeNotifier {
 
     // A permission or question asked while we were away has no event left to
     // deliver it, so the prompt card would simply never appear.
-    unawaited(loadPending());
+    unawaited(resyncPrompts());
     // Events missed while disconnected are gone and cannot be replayed, so the
     // server's own page is the only authority on what really happened.
     final id = current?.id;
@@ -1708,14 +1775,45 @@ class OcStore extends ChangeNotifier {
           .map((e) => PermissionReq.fromJson(asMap(e)))
           .where((p) => p.id.isNotEmpty)
           .toList();
+      // A fetch failure must NOT empty the list: the requests we already hold
+      // are still pending, and clearing them on a flaky link is exactly how a
+      // prompt goes missing. The catch below leaves the old list in place.
     } catch (e) {
       debugPrint('Failed to load pending permissions: $e');
     }
     notifyListeners();
   }
 
+  /// Re-fetch both pending lists. Called on connect, on every stream-up edge
+  /// and on resume, because an event asked while the socket was down is gone
+  /// for good and the server's own list is the only authority left.
+  Future<void> resyncPrompts() async {
+    // Snapshot the ids we already knew: a request that is merely still pending
+    // must not undo a dismissal, but a genuinely new one has to be shown.
+    final known = <String>{
+      for (final p in permissions) p.id,
+      for (final q in questions) q.id,
+    };
+    await loadPending();
+    if (_disposed) return;
+    if (!awaitingPrompt) {
+      promptSheetDismissed = false;
+    } else {
+      // A request we had never seen before has to be shown, however the sheet
+      // was left. One that was already on screen when it was dismissed stays
+      // dismissed, or every reconnect would reopen a card the user closed.
+      final fresh = [
+        ...permissions.where((e) => !known.contains(e.id)),
+        ...questions.where((e) => !known.contains(e.id)),
+      ];
+      if (fresh.isNotEmpty) promptSheetDismissed = false;
+    }
+    notifyListeners();
+  }
+
   Future<void> answerPermission(PermissionReq p, String response) async {
     permissions.removeWhere((e) => e.id == p.id);
+    _onPromptRemoved();
     notifyListeners();
     try {
       if (p.sessionId.isNotEmpty) {
@@ -1730,6 +1828,7 @@ class OcStore extends ChangeNotifier {
 
   Future<void> answerQuestion(QuestionReq q, List<List<String>> answers) async {
     questions.removeWhere((e) => e.id == q.id);
+    _onPromptRemoved();
     notifyListeners();
     try {
       await api.answerQuestion(q.id, answers);
@@ -1740,6 +1839,7 @@ class OcStore extends ChangeNotifier {
 
   Future<void> rejectQuestion(QuestionReq q) async {
     questions.removeWhere((e) => e.id == q.id);
+    _onPromptRemoved();
     notifyListeners();
     try {
       await api.rejectQuestion(q.id);
@@ -1868,13 +1968,16 @@ class OcStore extends ChangeNotifier {
             : PermissionReq.fromJson(asMap(p));
         if (req.id.isNotEmpty && !permissions.any((x) => x.id == req.id)) {
           permissions.add(req);
+          _onPromptAdded();
           notifyListeners();
         }
         break;
       case 'permission.replied':
       case 'permission.v2.replied':
         final id = asStr(p['permissionID'], asStr(p['id']));
+        // Answered anywhere — here or in the TUI — drops it on the spot.
         permissions.removeWhere((x) => x.id == id);
+        _onPromptRemoved();
         notifyListeners();
         break;
       case 'question.asked':
@@ -1882,6 +1985,7 @@ class OcStore extends ChangeNotifier {
         final q = QuestionReq.fromJson(asMap(p));
         if (q.id.isNotEmpty && !questions.any((x) => x.id == q.id)) {
           questions.add(q);
+          _onPromptAdded();
           // Question tool pauses the agent — treat as idle for UI so prompt is usable.
           if (_isCurrent(q.sessionId)) {
             _clearBusyTimer();
@@ -1897,6 +2001,7 @@ class OcStore extends ChangeNotifier {
         questions.removeWhere(
           (x) => x.id == asStr(p['questionID'], asStr(p['id'])),
         );
+        _onPromptRemoved();
         notifyListeners();
         break;
       case 'todo.updated':

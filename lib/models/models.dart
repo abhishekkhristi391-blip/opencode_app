@@ -628,6 +628,57 @@ class PermissionReq {
 
   String get title => permission.isEmpty ? 'Permission' : permission;
 
+  /// The tool that raised the request, when the server says so. v2 puts it in
+  /// `metadata.tool` as a string; v1 has no field for it at all.
+  String get tool {
+    final t = metadata['tool'];
+    if (t is String) return t;
+    if (t is Map && t['name'] is String) return t['name'] as String;
+    return '';
+  }
+
+  /// The exact command about to run. Only bash-style permissions carry one, and
+  /// the user is approving *this* string, so it is shown verbatim and uncut
+  /// rather than folded into the generic metadata dump.
+  String get command {
+    final c = metadata['command'];
+    if (c is String) return c;
+    if (c is List) return c.join(' ');
+    return '';
+  }
+
+  /// The directories an external-directory request covers, when present.
+  List<String> get directories =>
+      asList(metadata['directories']).map((e) => e.toString()).toList();
+
+  /// One line naming what is being approved: the tool if the server said, else
+  /// the first pattern or directory, else the permission kind. Used where a
+  /// single short label is needed — the working strip's second line.
+  String get subject {
+    if (tool.isNotEmpty) return tool;
+    if (patterns.isNotEmpty) return patterns.first;
+    if (directories.isNotEmpty) return directories.first;
+    return title;
+  }
+
+  /// True when the pattern is so wide that "always" means "always, everywhere".
+  /// `/*` on an external-directory request would grant the whole filesystem, and
+  /// a user who taps Allow always on that deserves to have been told first.
+  bool get isBroadPattern {
+    bool broad(String p) {
+      final t = p.trim();
+      return t == '/*' ||
+          t == '*' ||
+          t == '/**' ||
+          t == '~/*' ||
+          t.endsWith('/*') ||
+          t.endsWith('/**') ||
+          t.startsWith('*:');
+    }
+
+    return patterns.any(broad) || always.any(broad);
+  }
+
   String get detail {
     final md = metadata.entries
         .where((e) => e.value != null && e.key != 'diff')
