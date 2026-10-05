@@ -289,6 +289,12 @@ class HomeShellState extends State<HomeShell> {
           Navigator.pop(ctx);
           store.openSession(s.id);
         },
+        // Close the drawer, then open the sheet. The request stays pending on
+        // the server either way, so nothing is lost by leaving the drawer.
+        onReviewPrompt: () {
+          Navigator.pop(ctx);
+          showPendingPrompt(context);
+        },
       ),
     );
   }
