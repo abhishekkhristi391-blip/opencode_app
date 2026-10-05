@@ -734,7 +734,7 @@ class _ConfigEditorState extends State<_ConfigEditor> {
               try {
                 parsed = jsonDecode(c.text);
               } catch (e) {
-                showSnack(context, '${S.configInvalidJson}: $e', error: true);
+                showSnack(context, S.configInvalidJsonError(e), error: true);
                 return;
               }
               if (parsed is! Map<String, dynamic>) {

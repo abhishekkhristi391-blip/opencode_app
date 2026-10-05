@@ -671,6 +671,12 @@ class S {
   static const mcpConfigNote =
       'PATCH /config updates the global opencode config on the server.';
   static const configInvalidJson = 'Invalid JSON: %s';
+
+  /// The same message with the parser's error filled in. [configInvalidJson]
+  /// is a printf-style format and Dart has no printf, so the substitution is
+  /// done here rather than leaving a stray `%s` on screen.
+  static String configInvalidJsonError(Object e) =>
+      'Invalid JSON: \$e';
   static const configRootMustBeObject = 'The root value must be an object';
   static const externalDirectoryTitle =
       'Allow writing outside the project folder?';
@@ -1010,7 +1016,6 @@ class S {
   // "nothing is spelled out in a widget" rule and the one-language rule.
   // ------------------------------------------------------------------
   static const permTitle = 'Permission needed';
-  static const questionTitle = 'The agent asked a question';
   static const shareLinkTitle = 'Share link';
   static const commandsEmpty =
       'Add markdown command files to .opencode/command/ or '
@@ -1019,13 +1024,10 @@ class S {
 
   /// Header line naming the session a todo list belongs to.
   static String todosSession(String label) => 'Session: $label';
-  static const configInvalidJson = 'JSON is invalid';
   static const configNotRootObject = 'The config must be a JSON object';
-  static const cancel = 'Cancel';
   static const logout = 'Log out';
   static const copyDiff = 'Copy diff';
   static const diffBinaryNote = 'Binary or new file';
-  static const deleteFile = 'Delete';
   static const exitNoSave = 'Exit';
 
   /// "12 models" beside a provider name.

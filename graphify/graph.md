@@ -134,18 +134,19 @@ lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::saveSessions [EXTRACTED] l
 lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::upsertMessages [EXTRACTED] lib/db/chat_db.dart:132
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::S [EXTRACTED] lib/l10n/strings.dart:9
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::added [EXTRACTED] lib/l10n/strings.dart:392
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::agentPrimary [EXTRACTED] lib/l10n/strings.dart:917
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::agentPrimary [EXTRACTED] lib/l10n/strings.dart:923
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::cmdArgs [EXTRACTED] lib/l10n/strings.dart:308
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::cmdUseLabel [EXTRACTED] lib/l10n/strings.dart:310
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::cmdUseSkill [EXTRACTED] lib/l10n/strings.dart:309
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::composerModelAgent [EXTRACTED] lib/l10n/strings.dart:191
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::composerQueued [EXTRACTED] lib/l10n/strings.dart:493
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::composerWorking [EXTRACTED] lib/l10n/strings.dart:491
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::configInvalidJsonError [EXTRACTED] lib/l10n/strings.dart:678
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::diffAddedRemoved [EXTRACTED] lib/l10n/strings.dart:548
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::diffAppliesTo [EXTRACTED] lib/l10n/strings.dart:328
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerConnectedTo [EXTRACTED] lib/l10n/strings.dart:845
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerPending [EXTRACTED] lib/l10n/strings.dart:842
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::errorText [EXTRACTED] lib/l10n/strings.dart:1048
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerConnectedTo [EXTRACTED] lib/l10n/strings.dart:851
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerPending [EXTRACTED] lib/l10n/strings.dart:848
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::errorText [EXTRACTED] lib/l10n/strings.dart:1050
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::fileStats [EXTRACTED] lib/l10n/strings.dart:530
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesChangedCount [EXTRACTED] lib/l10n/strings.dart:432
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesCount [EXTRACTED] lib/l10n/strings.dart:251
@@ -154,22 +155,22 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesDeleteFailed [EXT
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesEmptyName [EXTRACTED] lib/l10n/strings.dart:351
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesExists [EXTRACTED] lib/l10n/strings.dart:387
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesFolderFailed [EXTRACTED] lib/l10n/strings.dart:389
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesItems [EXTRACTED] lib/l10n/strings.dart:905
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesItems [EXTRACTED] lib/l10n/strings.dart:911
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesNameHint [EXTRACTED] lib/l10n/strings.dart:353
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesNameLabel [EXTRACTED] lib/l10n/strings.dart:349
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesSelected [EXTRACTED] lib/l10n/strings.dart:906
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesSelected [EXTRACTED] lib/l10n/strings.dart:912
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::forkCreated [EXTRACTED] lib/l10n/strings.dart:498
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::formatContext [EXTRACTED] lib/l10n/strings.dart:921
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyDeleteBody [EXTRACTED] lib/l10n/strings.dart:893
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::formatContext [EXTRACTED] lib/l10n/strings.dart:927
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyDeleteBody [EXTRACTED] lib/l10n/strings.dart:899
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyFiles [EXTRACTED] lib/l10n/strings.dart:300
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::jumpUnread [EXTRACTED] lib/l10n/strings.dart:865
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::label [EXTRACTED] lib/l10n/strings.dart:1046
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::mcpCount [EXTRACTED] lib/l10n/strings.dart:685
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::menuServerVersion [EXTRACTED] lib/l10n/strings.dart:855
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::jumpUnread [EXTRACTED] lib/l10n/strings.dart:871
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::label [EXTRACTED] lib/l10n/strings.dart:1048
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::mcpCount [EXTRACTED] lib/l10n/strings.dart:691
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::menuServerVersion [EXTRACTED] lib/l10n/strings.dart:861
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::messageCount [EXTRACTED] lib/l10n/strings.dart:252
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsContext [EXTRACTED] lib/l10n/strings.dart:458
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsCount [EXTRACTED] lib/l10n/strings.dart:1032
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsProvider [EXTRACTED] lib/l10n/strings.dart:915
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsCount [EXTRACTED] lib/l10n/strings.dart:1034
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsProvider [EXTRACTED] lib/l10n/strings.dart:921
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsSelected [EXTRACTED] lib/l10n/strings.dart:459
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::moreToolsCount [EXTRACTED] lib/l10n/strings.dart:205
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::netTimeout [EXTRACTED] lib/l10n/strings.dart:415
@@ -177,31 +178,31 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::netUnreachable [EXTRAC
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::partsAgent [EXTRACTED] lib/l10n/strings.dart:311
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::partsThinkingLines [EXTRACTED] lib/l10n/strings.dart:486
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::partsThoughtFor [EXTRACTED] lib/l10n/strings.dart:484
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::permMorePending [EXTRACTED] lib/l10n/strings.dart:1037
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::permMorePending [EXTRACTED] lib/l10n/strings.dart:1039
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::permSuggestingRules [EXTRACTED] lib/l10n/strings.dart:422
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::serverOnlineVersion [EXTRACTED] lib/l10n/strings.dart:111
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsCount [EXTRACTED] lib/l10n/strings.dart:496
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsCountOne [EXTRACTED] lib/l10n/strings.dart:497
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsDeleteBody [EXTRACTED] lib/l10n/strings.dart:281
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setMcpLabel [EXTRACTED] lib/l10n/strings.dart:464
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setMcpServers [EXTRACTED] lib/l10n/strings.dart:1004
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setMcpServers [EXTRACTED] lib/l10n/strings.dart:1010
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPassword [EXTRACTED] lib/l10n/strings.dart:376
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPermExternalBody [EXTRACTED] lib/l10n/strings.dart:372
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPermExternalTitle [EXTRACTED] lib/l10n/strings.dart:370
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::settingsConnectedVersion [EXTRACTED] lib/l10n/strings.dart:688
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::skillsCount [EXTRACTED] lib/l10n/strings.dart:686
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::slashCommand [EXTRACTED] lib/l10n/strings.dart:1047
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::statusCached [EXTRACTED] lib/l10n/strings.dart:782
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::settingsConnectedVersion [EXTRACTED] lib/l10n/strings.dart:694
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::skillsCount [EXTRACTED] lib/l10n/strings.dart:692
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::slashCommand [EXTRACTED] lib/l10n/strings.dart:1049
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::statusCached [EXTRACTED] lib/l10n/strings.dart:788
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tasksProgress [EXTRACTED] lib/l10n/strings.dart:564
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tasksProgressSemantics [EXTRACTED] lib/l10n/strings.dart:565
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::termuxSetupNote [EXTRACTED] lib/l10n/strings.dart:967
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::thinkingGroup [EXTRACTED] lib/l10n/strings.dart:860
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::thinkingSteps [EXTRACTED] lib/l10n/strings.dart:863
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::todosSession [EXTRACTED] lib/l10n/strings.dart:1021
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::termuxSetupNote [EXTRACTED] lib/l10n/strings.dart:973
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::thinkingGroup [EXTRACTED] lib/l10n/strings.dart:866
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::thinkingSteps [EXTRACTED] lib/l10n/strings.dart:869
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::todosSession [EXTRACTED] lib/l10n/strings.dart:1026
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tokensUsed [EXTRACTED] lib/l10n/strings.dart:253
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolDone [EXTRACTED] lib/l10n/strings.dart:198
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolRunning [EXTRACTED] lib/l10n/strings.dart:197
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolsCount [EXTRACTED] lib/l10n/strings.dart:687
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolsCount [EXTRACTED] lib/l10n/strings.dart:693
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::useSkillPrompt [EXTRACTED] lib/l10n/strings.dart:597
 lib/main.dart --defines--> lib/main.dart::OpenCodeApp [EXTRACTED] lib/main.dart:13
 lib/main.dart --defines--> lib/main.dart::_OpenCodeAppState [EXTRACTED] lib/main.dart:20
@@ -1079,6 +1080,7 @@ lib/ui/settings_page.dart --calls--> lib/api/client.dart::revert [INFERRED 0.35]
 lib/ui/settings_page.dart --calls--> lib/api/client.dart::setApiKey [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/api/client.dart::upgrade [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/settings_page.dart:7
+lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::configInvalidJsonError [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::modelsCount [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setMcpLabel [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setMcpServers [INFERRED 0.6] lib/ui/settings_page.dart:0
