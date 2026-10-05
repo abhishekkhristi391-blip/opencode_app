@@ -80,7 +80,9 @@ class PendingPrompt {
   final PermissionReq? permission;
   final QuestionReq? question;
 
-  const PendingPrompt._(this.seq, this.permission, this.question);
+  /// Public because the store builds these: a private constructor would make
+  /// the queue unconstructable from the only place that populates it.
+  const PendingPrompt(this.seq, this.permission, this.question);
 
   String get id => permission?.id ?? question?.id ?? '';
 

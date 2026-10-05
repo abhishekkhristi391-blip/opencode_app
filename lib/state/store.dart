@@ -172,9 +172,9 @@ class OcStore extends ChangeNotifier {
     // prompt the user is told about and then cannot reach.
     final out = <PendingPrompt>[
       for (final x in permissions)
-        PendingPrompt._(_arrival.putIfAbsent(x.id, () => ++_promptSeq), x, null),
+        PendingPrompt(_arrival.putIfAbsent(x.id, () => ++_promptSeq), x, null),
       for (final x in questions)
-        PendingPrompt._(_arrival.putIfAbsent(x.id, () => ++_promptSeq), null, x),
+        PendingPrompt(_arrival.putIfAbsent(x.id, () => ++_promptSeq), null, x),
     ]..sort((a, b) => a.seq.compareTo(b.seq));
     return out;
   }
@@ -1839,29 +1839,29 @@ class OcStore extends ChangeNotifier {
     // list assignments and let a slower, staler response overwrite a fresher
     // one. A caller that arrives mid-flight sets the flag instead of starting
     // a second run, and gets exactly one more pass when the first finishes.
-    if (_resyncing) {
-      _resyncAgain = true;
+    if (_promptSyncing) {
+      _promptResyncAgain = true;
       return;
     }
-    _resyncing = true;
+    _promptSyncing = true;
     try {
       await _resyncPromptsOnce();
     } finally {
-      _resyncing = false;
-      if (_resyncAgain && !_disposed) {
-        _resyncAgain = false;
+      _promptSyncing = false;
+      if (_promptResyncAgain && !_disposed) {
+        _promptResyncAgain = false;
         // Not awaited: this is the tail of the previous run and the caller is
         // already gone. Looping here guarantees a request that arrived during
         // the in-flight pass is still picked up.
         unawaited(resyncPrompts());
       } else {
-        _resyncAgain = false;
+        _promptResyncAgain = false;
       }
     }
   }
 
-  bool _resyncing = false;
-  bool _resyncAgain = false;
+  bool _promptSyncing = false;
+  bool _promptResyncAgain = false;
 
   Future<void> _resyncPromptsOnce() async {
     // Snapshot the ids we already knew: a request that is merely still pending
@@ -2083,7 +2083,7 @@ class OcStore extends ChangeNotifier {
         if (req.id.isEmpty) {
           // Never swallow a prompt we failed to understand: re-read the
           // server's own lists, which are authoritative.
-          _promptParseFailed(e, 'permission ${req.type}');
+          _promptParseFailed(e, 'permission asked');
           break;
         }
         // An id we already hold is the *same* request. `permission.updated`
