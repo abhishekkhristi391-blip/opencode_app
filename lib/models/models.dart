@@ -463,6 +463,12 @@ class Todo {
 
   bool get done => status == 'completed';
   bool get active => status == 'in_progress' || status == 'running';
+
+  /// Dropped by the agent. Not a completion, so it is kept out of the "done"
+  /// count rather than inflating progress, and out of "pending" too — the server
+  /// documents `cancelled` alongside pending/in_progress/completed, and showing
+  /// it as still-to-do is the one thing that would be a lie.
+  bool get cancelled => status == 'cancelled';
 }
 
 // ---------- files ----------

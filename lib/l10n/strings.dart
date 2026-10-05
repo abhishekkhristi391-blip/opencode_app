@@ -575,19 +575,20 @@ class S {
   // ------------------------------------------------------------------
   // tasks
   // ------------------------------------------------------------------
-  static const tasksTitle = 'Tasks';
-  static const tasksEmptyTitle = 'No tasks yet';
-  static const tasksEmptyBodyNoSession = 'Start a chat first.';
-  static const tasksEmptyBody =
-      'Tasks appear here as soon as the agent writes its todo list.';
-  static const tasksInProgress = 'In progress';
-  static const tasksPending = 'Pending';
-  static const tasksCompleted = 'Completed';
-  static const tasksActive = 'active';
-  static const tasksDoneLabel = 'done';
+  // The Tasks screen's copy. One family only: an earlier `tasks*` set sat here
+  // unused while the page read `todos*`, and two names for one string is how
+  // the two drift apart.
+  static const todosEmptyTitle = 'No tasks yet';
+  static const todosEmptyNoChat = 'Start a chat first.';
+  static const todosEmptyHint =
+      'Tasks appear here as soon as the agent uses the todo tool.';
+  static const todosInProgress = 'In progress';
+  static const todosPending = 'Pending';
+  static const todosCompleted = 'Completed';
+  static const todosCancelled = 'Dropped';
 
-  static String tasksProgress(int done, int total) => '$done / $total done';
-  static String tasksProgressSemantics(int done, int total) =>
+  static String todosProgress(int done, int total) => '$done / $total done';
+  static String todosProgressSemantics(int done, int total) =>
       '$done of $total tasks done';
 
   // ------------------------------------------------------------------
@@ -985,10 +986,6 @@ class S {
   static const aboutVersionLabel = 'Version';
 
   // --- misc -------------------------------------------------------------
-  static const todosEmptyTitle = 'No tasks yet';
-  static const todosEmptyNoChat = 'Start a chat first.';
-  static const todosEmptyHint =
-      'Tasks appear here as soon as the agent uses the todo tool.';
   static const questionCustomHint = 'Other / type your own answer';
   static const cmdArgsHint = 'Type the arguments';
   static const setInitAgents = 'Create AGENTS.md (/init)';

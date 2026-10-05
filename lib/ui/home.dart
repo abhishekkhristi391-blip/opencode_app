@@ -75,10 +75,25 @@ class HomeShellState extends State<HomeShell> {
     if (index != i) setState(() => index = i);
   }
 
-  void _pushAndClose(Widget Function() page, String title) {
+  void _pushAndClose(
+  Widget Function() page,
+  String title, [
+  List<Widget> actions = const [],
+]) {
     Navigator.of(context).pop();
-    pushScreen(context, title: title, child: page());
+    pushScreen(context, title: title, child: page(), actions: actions);
   }
+
+  /// The Tasks screen's own title-bar action. The stream is the fast path, but a
+  /// user staring at a number they do not believe should not have to wait for
+  /// the next event to be told otherwise.
+  static List<Widget> _todosActions(OcStore store) => [
+    IconButton(
+      tooltip: S.refresh,
+      icon: const Icon(Icons.refresh),
+      onPressed: store.refreshTodos,
+    ),
+  ];
 
   /// The reference labels the Files row with the workspace it points at.
   static String? _worktree(OcStore store) {
@@ -150,16 +165,26 @@ class HomeShellState extends State<HomeShell> {
 
   /// Header actions for the current tab. Each screen gets the ones that mean
   /// something there.
-  List<HeaderAction> _headerActions(BuildContext context, OcStore store) {
+  List<Widget> _headerActions(BuildContext context, OcStore store) {
     switch (index) {
       case 0: // Chat
         return [
-          HeaderAction(
-            icon: LI.tasks,
-            label: S.headerTasksTooltip,
-            badge: store.todos.where((t) => !t.done).length,
-            onTap: () =>
-                _openSessionScreen(context, S.navTasks, const TodosPage()),
+          // The badge reads the list live through `todoList` instead of the
+          // store's own notifications: a todo change must repaint this one
+          // number, not the transcript sitting underneath it.
+          ListenableBuilder(
+            listenable: store.todoList,
+            builder: (ctx, _) => HeaderAction(
+              icon: LI.tasks,
+              label: S.headerTasksTooltip,
+              badge: store.openTodos,
+              onTap: () => _openSessionScreen(
+                ctx,
+                S.navTasks,
+                const TodosPage(),
+                _todosActions(store),
+              ),
+            ),
           ),
           HeaderAction(
             icon: LI.plus,
@@ -246,11 +271,6 @@ class HomeShellState extends State<HomeShell> {
   /// chat feed, and the footer identity plus connection line.
   Future<void> _showDrawer() async {
     final store = AppScope.read(context);
-    // Todo count only — this badge lives on the Todos row, and a waiting
-    // approval is not an open task. The pending-request count rides the avatar
-    // badge and the Todos row's own indicator instead, so the two meanings can
-    // never be read off the same number.
-    final pending = store.todos.where((t) => !t.done).length;
     // The feed is the same list the History screen shows, so the drawer never
     // offers a session the page behind it does not.
     final recents = visibleSessions(context, true)
@@ -265,36 +285,47 @@ class HomeShellState extends State<HomeShell> {
       constraints: const BoxConstraints.expand(),
       backgroundColor: Colors.transparent,
       barrierColor: OCColors.surfaceLowest.withValues(alpha: 0.80),
-      builder: (ctx) => _Drawer(
-        version: store.serverVersion,
-        host: _hostLabel(store),
-        index: index,
-        pending: pending,
-        pendingPrompts: store.pendingPromptCount,
-        recents: visible,
-        currentId: store.current?.id,
-        state: ocLinkState(store),
-        onClose: () => Navigator.pop(ctx),
-        onNewChat: () async {
-          Navigator.pop(ctx);
-          await store.newSession();
-          if (mounted) goTo(0);
-        },
-        onPick: _navigate,
-        onPushTodos: () =>
-            _pushAndClose(() => const TodosPage(), S.drawerNavTodos),
-        onPushCommands: () =>
-            _pushAndClose(() => const CommandsPage(), S.navCommands),
-        onOpenSession: (s) {
-          Navigator.pop(ctx);
-          store.openSession(s.id);
-        },
-        // Close the drawer, then open the sheet. The request stays pending on
-        // the server either way, so nothing is lost by leaving the drawer.
-        onReviewPrompt: () {
-          Navigator.pop(ctx);
-          showPendingPrompt(context);
-        },
+      builder: (ctx) => ListenableBuilder(
+        // The todo count is read here, while the sheet is open, so it must
+        // follow the list rather than freeze at whatever it was when the drawer
+        // opened. Todo count only: a waiting approval is not an open task, and it
+        // rides the avatar badge and the Review row instead, so the two meanings
+        // can never be read off the same number.
+        listenable: store.todoList,
+        builder: (context, _) => _Drawer(
+          version: store.serverVersion,
+          host: _hostLabel(store),
+          index: index,
+          pending: store.openTodos,
+          pendingPrompts: store.pendingPromptCount,
+          recents: visible,
+          currentId: store.current?.id,
+          state: ocLinkState(store),
+          onClose: () => Navigator.pop(ctx),
+          onNewChat: () async {
+            Navigator.pop(ctx);
+            await store.newSession();
+            if (mounted) goTo(0);
+          },
+          onPick: _navigate,
+          onPushTodos: () => _pushAndClose(
+            () => const TodosPage(),
+            S.drawerNavTodos,
+            _todosActions(store),
+          ),
+          onPushCommands: () =>
+              _pushAndClose(() => const CommandsPage(), S.navCommands),
+          onOpenSession: (s) {
+            Navigator.pop(ctx);
+            store.openSession(s.id);
+          },
+          // Close the drawer, then open the sheet. The request stays pending on
+          // the server either way, so nothing is lost by leaving the drawer.
+          onReviewPrompt: () {
+            Navigator.pop(ctx);
+            showPendingPrompt(context);
+          },
+        ),
       ),
     );
   }
@@ -592,11 +623,19 @@ class HomeShellState extends State<HomeShell> {
   }
 
   /// Session-scoped screens guard against "no session yet" themselves.
-  void _openSessionScreen(BuildContext context, String title, Widget page) {
+  void _openSessionScreen(
+    BuildContext context,
+    String title,
+    Widget page, [
+    List<Widget> actions = const [],
+  ]) {
     final store = AppScope.read(context);
     pushScreen(
       context,
       title: title,
+      // No session means no screen of its own below, so its actions would be
+      // left pointing at nothing.
+      actions: store.current == null ? const [] : actions,
       child: store.current == null
           ? EmptyHint(
               icon: Icons.forum_outlined,

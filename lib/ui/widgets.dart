@@ -10,14 +10,19 @@ import 'theme.dart';
 
 /// Pushes a plain content screen with a token title bar. Used by every
 /// secondary screen so they share one title style and one back button.
+///
+/// [actions] are the screen's own title-bar actions (a refresh, say). They are
+/// passed in per screen rather than hard-coded, for the same reason the shell's
+/// header actions are: one screen's refresh button must not appear on another.
 Future<void> pushScreen(
   BuildContext context, {
   required String title,
   required Widget child,
+  List<Widget> actions = const [],
 }) => Navigator.of(context).push(
   MaterialPageRoute(
     builder: (_) => Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(title), actions: actions),
       body: SafeArea(child: child),
     ),
   ),
@@ -686,8 +691,14 @@ OcLinkState ocLinkState(OcStore store) {
 
 /// One header button. [label] is the tooltip AND the semantics label, so the
 /// two can never drift apart.
-class HeaderAction {
+///
+/// A widget rather than a description of one, so that an action which has to
+/// repaint on its own — the todo badge follows `store.todoList` instead of the
+/// app-wide notifier — can wrap itself in a `ListenableBuilder` and still sit in
+/// the same list as the plain ones.
+class HeaderAction extends StatelessWidget {
   const HeaderAction({
+    super.key,
     required this.icon,
     required this.label,
     required this.onTap,
@@ -704,6 +715,15 @@ class HeaderAction {
 
   /// Uses the accent colour. Reserved for the single primary action.
   final bool accent;
+
+  @override
+  Widget build(BuildContext context) => HeaderButton(
+    icon: icon,
+    label: label,
+    onTap: onTap,
+    badge: badge,
+    accent: accent,
+  );
 }
 
 /// The app bar: [leading], title, one [StatusPill], then [actions] and [avatar].
@@ -728,7 +748,11 @@ class AppHeader extends StatelessWidget {
 
   final String title;
   final StatusPill status;
-  final List<HeaderAction> actions;
+
+  /// Plain widgets, not only [HeaderAction]s: an action that repaints on its own
+  /// signal (the todo badge) wraps itself in a `ListenableBuilder`, and the type
+  /// has to allow that without a second parallel list.
+  final List<Widget> actions;
 
   /// Anything that does not fit the icon row, e.g. a search field.
   final Widget? trailing;
@@ -792,14 +816,7 @@ class AppHeader extends StatelessWidget {
                       const SizedBox(width: OCSpace.sm),
                       trailing!,
                     ],
-                    for (final a in actions)
-                      HeaderButton(
-                        icon: a.icon,
-                        label: a.label,
-                        onTap: a.onTap,
-                        badge: a.badge,
-                        accent: a.accent,
-                      ),
+                    for (final a in actions) a,
                     if (avatar != null) ...[
                       const SizedBox(width: OCSpace.sm),
                       avatar!,

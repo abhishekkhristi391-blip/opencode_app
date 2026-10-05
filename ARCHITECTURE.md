@@ -77,7 +77,7 @@ This is deliberate and documented at `lib/state/store.dart:398-401` and
 | `lib/ui/files_page.dart` | 806 | Remote file browser + `ChangedFilesPage` + `FileEditorPage` (read/save via server shell). |
 | `lib/ui/diff_page.dart` | 482 | Session diffs and git (worktree/staged/all) diffs with a unified-diff renderer. |
 | `lib/ui/terminal_page.dart` | 293 | Shell over the server's util session. Command history, shortcuts, wrap toggle. |
-| `lib/ui/todos_page.dart` | 152 | The agent's todo list for the current session. |
+| `lib/ui/todos_page.dart` | 152 | The agent's todo list for the current session. Rebuilds from the store on `todoList`; owns no copy. |
 | `lib/ui/commands_page.dart` | 223 | Slash commands + skills browser. |
 | `lib/ui/models_page.dart` | 426 | Provider/model picker with search + connected-only filter. |
 | `lib/ui/settings_page.dart` | 724 | Server URL, session actions, provider API keys, raw config editor, MCP. |
@@ -302,7 +302,7 @@ removed (`store.dart:1326-1330`). One language: English.
 | `permission.replied` / `.v2.replied` | remove from `permissions` |
 | `question.asked` / `question.v2.asked` | add `QuestionReq`; **also force `busy = false`** because the question tool pauses the agent and the composer must be usable |
 | `question.replied` / `.rejected` / `.v2.replied` | remove from `questions` |
-| `todo.updated` | `_debouncedTodos()` — 600 ms debounce; used to fire an HTTP call + rebuild on every event (`store.dart:1884-1886`, `:211-216`) |
+| `todo.updated` | apply `properties.todos` **straight into the store** — the event carries the whole list, so no HTTP call and no rebuild beyond the todos section. A payload that is not the documented shape is logged and re-fetched, never dropped |
 | `server.connected` | `online = true` |
 | `file.edited`, `lsp.updated`, `mcp.tools.changed`, `installation.updated` | ignored (no refetch) |
 
@@ -584,12 +584,15 @@ the recovery is "revert this message" because the server has no restore endpoint
 
 ---
 
-## 13. NOTIFICATION STRATEGY — why there are TWO notifiers
+## 13. NOTIFICATION STRATEGY — why there are THREE notifiers
 
 This is a deliberate performance architecture, not an accident.
 
 `OcStore extends ChangeNotifier` (app-wide) **plus** a second `MessageListSignal extends
-ChangeNotifier` (`store.dart:68-74`) that only the transcript listens to.
+ChangeNotifier` (`store.dart:68-74`) that only the transcript listens to, **plus** a third,
+`TodoListSignal` (`store.dart:76-85`), for the same reason one level down: an agent walks
+its todo list with a `todo.updated` event every few hundred milliseconds, and the transcript
+has no business repainting for any of them.
 
 Why: token streaming rewrites `messages` many times a second. Firing the app-wide
 notifier that often rebuilt **every** mounted subscriber — the composer, the sessions tab
@@ -597,11 +600,14 @@ kept alive in the `IndexedStack`, the busy and error bars — even though only t
 displays the text (`store.dart:59-67`).
 
 - `messageList` → transcript rebuild only (`_scheduleMessageNotify`, 60 ms throttle)
+- `todoList` → the Tasks page and the two todo badges only
 - the app-wide notifier → everything else (`_scheduleNotify`, 60 ms throttle)
 - `messageListenable = Listenable.merge([this, messageList])` (`store.dart:91-94`) — built
   **once** because `Listenable.merge` re-subscribes on every construction. The merge is what
   makes the split safe: any mutation that still notifies the app also refreshes the
-  transcript, so **no update path can silently leave the list stale.**
+  transcript, so **no update path can silently leave the list stale.** A todo change is the
+  one deliberate exception, and it can never leave the transcript stale — the transcript
+  does not render todos.
 
 Throttling detail (`store.dart:183-208`): the **first** change of a burst paints
 immediately, then a 60 ms window coalesces the rest, and a trailing rebuild is guaranteed
@@ -611,6 +617,8 @@ Per-widget subscriptions:
 | Widget | Listens to |
 |---|---|
 | `_ChatMessages` | `store.messageListenable` (`chat.dart:439-442`) |
+| `TodosPage` | the store for app-wide state + `store.todoList` for the list |
+| header / drawer todo badges | `store.todoList` only (`home.dart`) |
 | `_ComposerWidget`, `_ErrorBarWidget`, `_BusyBarWidget` | `AppScope.of(context)` (the store) |
 | `_MessageTile` | nothing — it re-renders when the list rebuilds, and caches on a signature |
 

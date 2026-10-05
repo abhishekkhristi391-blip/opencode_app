@@ -73,12 +73,27 @@ class MessageListSignal extends ChangeNotifier {
   void notify() => notifyListeners();
 }
 
+/// Todos-section rebuild signal.
+///
+/// `todo.updated` fires several times per second while an agent walks its list.
+/// Going through the app-wide notifier for that rebuilt the whole shell — and
+/// with it the transcript, which is the most expensive widget in the app and has
+/// nothing to do with a checklist. Only the Tasks page and the two badges read
+/// this.
+class TodoListSignal extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
 class OcStore extends ChangeNotifier {
   final OcClient api = OcClient();
   EventStream? _stream;
 
   /// Fires when the *contents* of the message list change.
   final messageList = MessageListSignal();
+
+  /// Fires when the todo list changes. Deliberately not the app-wide
+  /// notifier: a todo update must not rebuild the transcript.
+  final todoList = TodoListSignal();
 
   /// What the transcript listens to: [messageList] for token-level edits plus
   /// this store for the app-wide state that also changes the list's own chrome
@@ -128,6 +143,11 @@ class OcStore extends ChangeNotifier {
   List<FileDiff> liveDiff = [];
   List<Todo> todos = [];
   final Set<String> toolsEnabled = {};
+
+  /// Tasks still to come: not finished, and not dropped by the agent. Both
+  /// badges count this, so the number on the button is the number of rows the
+  /// list is still waiting on.
+  int get openTodos => todos.where((t) => !t.done && !t.cancelled).length;
 
   // ---- catalog ----
   List<Agent> agents = [];
@@ -318,9 +338,19 @@ class OcStore extends ChangeNotifier {
   }
 
   Timer? _todoTimer;
+
+  /// Keeps a burst of todo updates from turning into a burst of HTTP calls.
+  ///
+  /// Only used on the *fallback* path, where the event payload could not be
+  /// read: a server that sends a shape we do not understand can send it in a
+  /// tight loop, and one refetch per malformed event would be a request storm.
+  /// The live path never needs this — a readable `todo.updated` carries the
+  /// whole list and is applied without any network at all.
   void _debouncedTodos() {
+    if (_disposed) return;
     _todoTimer?.cancel();
-    _todoTimer = Timer(const Duration(milliseconds: 600), () {
+    _todoTimer = Timer(const Duration(milliseconds: 400), () {
+      _todoTimer = null;
       if (!_disposed) unawaited(refreshTodos());
     });
   }
@@ -714,6 +744,10 @@ class OcStore extends ChangeNotifier {
     // A permission or question asked while we were away has no event left to
     // deliver it, so the prompt card would simply never appear.
     unawaited(resyncPrompts());
+    // Todo updates that landed while the socket was down are gone with it, and
+    // the list is the one panel the user watches during a run. Single-flight, so
+    // this coalesces with the resume path that is usually running alongside it.
+    unawaited(refreshTodos());
     // Events missed while disconnected are gone and cannot be replayed, so the
     // server's own page is the only authority on what really happened.
     final id = current?.id;
@@ -1053,15 +1087,96 @@ class OcStore extends ChangeNotifier {
   // todos / diff
   // =====================================================================
 
+  /// Re-read the current session's todo list from the server.
+  ///
+  /// Single-flight: a request that arrives while a fetch is running is answered
+  /// by exactly one more fetch when that one lands. The triggers are
+  /// independent of each other — page open, session switch, resume, reconnect,
+  /// the idle edge — and several of them routinely land in the same second, so
+  /// they have to coalesce rather than queue up behind each other.
   Future<void> refreshTodos() async {
     final id = current?.id;
     if (id == null) return;
-    try {
-      todos = await api.todos(id);
-    } catch (e) {
-      debugPrint('Failed to refresh todos: $e');
+    if (_todosInFlight) {
+      _todosQueued = true;
+      return;
     }
-    notifyListeners();
+    _todosInFlight = true;
+    try {
+      try {
+        final list = await api.todos(id);
+        // A session switch mid-await must not paint the previous chat's list.
+        if (current?.id == id && !_disposed) {
+          todos = list;
+          _todosFetchedAt = DateTime.now();
+        }
+      } catch (e) {
+        debugPrint('Failed to refresh todos: $e');
+      }
+    } finally {
+      _todosInFlight = false;
+      todoList.notify();
+    }
+    // Whatever asked while we were fetching was asking about the session that is
+    // open *now* — which is not necessarily the one we just read — so it gets one
+    // more fetch here rather than being silently dropped.
+    if (_todosQueued && !_disposed) {
+      _todosQueued = false;
+      unawaited(refreshTodos());
+    }
+  }
+
+  bool _todosInFlight = false;
+  bool _todosQueued = false;
+
+  /// When the list was last read from the server, by either path.
+  DateTime? _todosFetchedAt;
+
+  /// Last time [ensureTodosFresh] asked for one, so a stale list is re-read at
+  /// most once per stale window no matter how often a widget rebuilds.
+  DateTime _todosLastFetch = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Apply a `todo.updated` payload. The event carries the whole list, so this
+  /// is the live path: no HTTP round trip, and only the todos section rebuilds.
+  ///
+  /// Returns false when the payload is not the documented shape, so the caller
+  /// can fall back to a refetch — a list that quietly stops moving is worse than
+  /// a wasted request.
+  bool _applyTodosPayload(Map<String, dynamic> p) {
+    final raw = p['todos'];
+    if (raw is! List) return false;
+    final list = <Todo>[];
+    for (final item in raw) {
+      if (item is! Map) return false;
+      final j = asMap(item);
+      if (asStr(j['status']).isEmpty) return false;
+      list.add(Todo.fromJson(j));
+    }
+    todos = list;
+    _todosFetchedAt = DateTime.now();
+    return true;
+  }
+
+  /// A list that has not been re-read for a while is not worth trusting while
+  /// the agent is mid-run, so the page asks for a refetch instead of showing a
+  /// number it cannot stand behind. No banner: the fix is to go and get it.
+  static const _staleAfter = Duration(seconds: 20);
+
+  bool get todosStale {
+    if (!busy) return false;
+    final at = _todosFetchedAt;
+    if (at == null) return true;
+    return DateTime.now().difference(at) > _staleAfter;
+  }
+
+  /// Safe to call from anywhere, as often as a widget rebuilds: it does nothing
+  /// unless the list is stale *and* an agent is running, and then at most once
+  /// per stale window.
+  void ensureTodosFresh() {
+    if (_disposed || !todosStale) return;
+    if (DateTime.now().difference(_todosLastFetch) < _staleAfter) return;
+    _todosLastFetch = DateTime.now();
+    unawaited(refreshTodos());
   }
 
   Future<void> refreshDiff() async {
@@ -1375,6 +1490,7 @@ class OcStore extends ChangeNotifier {
         busyStatus = '';
         _settleStuckStreaming();
         notifyListeners();
+        unawaited(refreshTodos());
         return;
       }
       if (asStr(asMap(st)['type']) != 'busy') {
@@ -1387,6 +1503,8 @@ class OcStore extends ChangeNotifier {
         // The idle event was lost: re-sync so the answer is not left cut off.
         unawaited(_resyncMessages(id));
         notifyListeners();
+        // Same reason: the todo list's last update went with it.
+        unawaited(refreshTodos());
       } else {
         // Still genuinely running: restart the silence window.
         _touchActivity();
@@ -2006,6 +2124,10 @@ class OcStore extends ChangeNotifier {
             // The server declared the session idle, so a prompt typed during
             // the run is safe to release.
             unawaited(_flushQueue());
+            // The agent writes its last todo update immediately before it
+            // finishes, so this edge is the one time the list is worth re-reading
+            // without waiting to be asked.
+            unawaited(refreshTodos());
           }
           if (busy) _startBusyTimer();
           notifyListeners();
@@ -2159,7 +2281,19 @@ class OcStore extends ChangeNotifier {
         notifyListeners();
         break;
       case 'todo.updated':
-        // FIX: debounced. Used to fire an HTTP call + rebuild on every event.
+        // The event carries the whole list, so it is applied straight into the
+        // store: the Tasks page and the badges move while the agent works,
+        // without an HTTP call per update and without touching the transcript.
+        if (!_isCurrent(asStr(p['sessionID']))) break;
+        if (_applyTodosPayload(p)) {
+          todoList.notify();
+          break;
+        }
+        // Never swallow an event we could not read: the server's own endpoint
+        // is the authority, so ask it rather than leaving the list frozen.
+        debugPrint(
+          'Todo event unusable: ${e.type} keys=${p.keys.toList()}',
+        );
         _debouncedTodos();
         break;
       case 'server.connected':
@@ -2422,6 +2556,9 @@ class OcStore extends ChangeNotifier {
     if (_disposed) return;
     reconnectStream();
     unawaited(_verifyReachability(full: true));
+    // Anything the frozen process missed is gone for good: the socket came back
+    // with an empty backlog, so the todo list has to be asked for again.
+    unawaited(refreshTodos());
   }
 
   @override
