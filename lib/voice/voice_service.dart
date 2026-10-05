@@ -389,8 +389,14 @@ class VoiceService extends ChangeNotifier {
     unawaited(_persist((p) => p.setBool(_kIntro, true)));
   }
 
+  /// The UI has shown the reason voice stopped; forget it.
+  ///
+  /// Clears [failure] as well as [notice] on purpose. A reason that stays set
+  /// would be re-shown every time the strip rebuilds, and the mic button has no
+  /// way to say "I read that" on its own.
   void clearNotice() {
-    if (_notice == null) return;
+    if (_failure == null && _notice == null) return;
+    _failure = null;
     _notice = null;
     notifyListeners();
   }
@@ -513,11 +519,12 @@ class VoiceService extends ChangeNotifier {
       // Handlers, not the returned future: flutter_tts resolves one utterance
       // at a time, and this service owns a queue on top of it.
       await _tts.awaitSpeakCompletion(false);
-      unawaited(_tts.setStartHandler(_onSpeakStart));
-      unawaited(_tts.setCompletionHandler(_onSpeakDone));
-      unawaited(_tts.setCancelHandler(_onSpeakDone));
-      unawaited(_tts.setPauseHandler(_onSpeakDone));
-      unawaited(_tts.setErrorHandler(_onSpeakError));
+      // These five return void, not a Future. Handlers, not futures.
+      _tts.setStartHandler(_onSpeakStart);
+      _tts.setCompletionHandler(_onSpeakDone);
+      _tts.setCancelHandler(_onSpeakDone);
+      _tts.setPauseHandler(_onSpeakDone);
+      _tts.setErrorHandler(_onSpeakError);
       // Flush, never add: a reply the user cut off must not keep playing behind
       // the next one.
       await _tts.setQueueMode(0);
@@ -633,8 +640,7 @@ class VoiceService extends ChangeNotifier {
       await stopDictation();
       return;
     }
-    _clearNotice();
-    _failure = null;
+    clearNotice();
     await _beginListen();
   }
 
@@ -674,8 +680,10 @@ class VoiceService extends ChangeNotifier {
 
   Future<void> _beginListen() async {
     if (_suspended) return;
-    // Already open: nothing to do. Reached when a tap lands twice quickly.
+    // Already open: nothing to do. Reached when a tap lands twice quickly, or
+    // when the hands-free timer fires while the mic button just opened it.
     if (_phase == VoicePhase.listening && _stt.isListening) return;
+    if (_listenInFlight) return;
     final token = _listenToken;
     if (!_recognizerReady) {
       if (_phase != VoicePhase.idle &&
@@ -895,6 +903,9 @@ class VoiceService extends ChangeNotifier {
   bool _blockedByOverlay = false;
   bool _waitingForLink = false;
   bool _sawRun = false;
+
+  /// Consecutive recognitions that heard nothing. Reset by any words.
+  int _emptyResults = 0;
   String? _lastHandledId;
   String? _sessionId;
   DateTime _lastActivity = DateTime.now();
@@ -918,8 +929,7 @@ class VoiceService extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    _clearNotice();
-    _failure = null;
+    clearNotice();
     _conversation = true;
     _emptyResults = 0;
     _blockedByOverlay =
@@ -1296,12 +1306,18 @@ class VoiceService extends ChangeNotifier {
       RegExp(r'\[([^\]]*)\]\([^)]*\)'),
       (m) => m.group(1) ?? '',
     );
-    text = text.replaceAll(RegExp(r'(?m)^\s{0,3}#{1,6}\s+'), '');
-    text = text.replaceAll(RegExp(r'(?m)^\s{0,3}>\s?'), '');
-    text = text.replaceAll(RegExp(r'(?m)^\s{0,3}([-*+]|\d+[.)])\s+'), '');
-    text = text.replaceAll(RegExp(r'(?m)^\s{0,3}([-*_]\s*){3,}$'), ' ');
+    // `multiLine: true` is a constructor flag, not an inline `(?m)`: Dart's
+    // RegExp rejects inline flags outright ("Invalid group"). Every heading,
+    // quote and bullet rule below is anchored to the start of a line.
+    text = text.replaceAll(RegExp(r'^\s{0,3}#{1,6}\s+', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'^\s{0,3}>\s?', multiLine: true), '');
+    text = text.replaceAll(
+      RegExp(r'^\s{0,3}([-*+]|\d+[.)])\s+', multiLine: true),
+      '',
+    );
+    text = text.replaceAll(RegExp(r'^\s{0,3}([-*_]\s*){3,}$', multiLine: true), ' ');
     text = text.replaceAllMapped(
-      RegExp(r'(?m)^\s*\|.*\|\s*$'),
+      RegExp(r'^\s*\|.*\|\s*$', multiLine: true),
       (m) => m.group(0)!.replaceAll('|', ' '),
     );
     text = text.replaceAll(RegExp(r'(\*\*|__|~~|\*|_)'), '');
