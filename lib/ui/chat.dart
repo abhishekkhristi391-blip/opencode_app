@@ -24,17 +24,17 @@ import '../voice/voice_service.dart';
 
 // Split out of the original 3719-line chat.dart. Every part below is a verbatim
 // line range of that file: a pure move, no logic touched.
-part 'lib/ui/chat/chat_page.dart';
-part 'lib/ui/chat/chat_transcript.dart';
-part 'lib/ui/chat/chat_status.dart';
-part 'lib/ui/chat/chat_welcome.dart';
-part 'lib/ui/chat/chat_message.dart';
-part 'lib/ui/chat/chat_reply_meta.dart';
-part 'lib/ui/chat/chat_message_actions.dart';
-part 'lib/ui/chat/chat_composer.dart';
-part 'lib/ui/chat/chat_agent_sheets.dart';
-part 'lib/ui/chat/chat_send_button.dart';
-part 'lib/ui/chat/chat_voice_strip.dart';
-part 'lib/ui/chat/chat_input_controls.dart';
-part 'lib/ui/chat/chat_file_picker.dart';
-part 'lib/ui/chat/chat_run_progress.dart';
+part 'chat/chat_page.dart';
+part 'chat/chat_transcript.dart';
+part 'chat/chat_status.dart';
+part 'chat/chat_welcome.dart';
+part 'chat/chat_message.dart';
+part 'chat/chat_reply_meta.dart';
+part 'chat/chat_message_actions.dart';
+part 'chat/chat_composer.dart';
+part 'chat/chat_agent_sheets.dart';
+part 'chat/chat_send_button.dart';
+part 'chat/chat_voice_strip.dart';
+part 'chat/chat_input_controls.dart';
+part 'chat/chat_file_picker.dart';
+part 'chat/chat_run_progress.dart';
