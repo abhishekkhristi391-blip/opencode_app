@@ -505,6 +505,11 @@ enum OcLinkState {
 /// server was gone. [offlineCached] says both things.
 ///
 /// The dot pulses only while reconnecting, and only if the OS has animations on.
+///
+/// No pill chrome: the reference draws a bare 8dp dot next to a small label.
+/// All four states stay separable without relying on hue alone - each carries a
+/// text label, [offlineCached] and [reconnecting] additionally get a ring, so
+/// colour-blind users and greyscale screenshots can still tell them apart.
 class StatusPill extends StatefulWidget {
   const StatusPill({
     super.key,
@@ -572,6 +577,10 @@ class _StatusPillState extends State<StatusPill>
       OcLinkState.reconnecting => t.warn,
       OcLinkState.offline || OcLinkState.offlineCached => t.err,
     };
+    // Two of the four states get a ring as well as a hue, so the state does not
+    // depend on colour alone.
+    final ringed = widget.state == OcLinkState.offlineCached ||
+        widget.state == OcLinkState.reconnecting;
     final label =
         widget.state == OcLinkState.offlineCached && widget.cachedCount != null
         ? S.statusCached(widget.cachedCount!)
@@ -581,14 +590,8 @@ class _StatusPillState extends State<StatusPill>
       liveRegion: widget.state != OcLinkState.connected,
       label: label,
       excludeSemantics: true,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 260),
-        padding: EdgeInsets.fromLTRB(10, 5, widget.onRetry == null ? 10 : 4, 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(OCRadius.pill),
-          border: Border.all(color: color.withValues(alpha: 0.30)),
-        ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -597,12 +600,18 @@ class _StatusPillState extends State<StatusPill>
                   ? _pulse.drive(Tween(begin: 0.3, end: 1.0))
                   : const AlwaysStoppedAnimation(1),
               child: Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: ringed
+                      ? Border.all(color: color.withValues(alpha: 0.45))
+                      : null,
+                ),
               ),
             ),
-            const SizedBox(width: 7),
+            const SizedBox(width: 6),
             // Ellipsis, never wrap: this sits in a header row next to up to
             // three 48px buttons, and at 1.3x text scale a long status would
             // otherwise take the buttons off-screen.
@@ -611,9 +620,9 @@ class _StatusPillState extends State<StatusPill>
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: OCTypography.meta.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
+                style: OCTypography.caption.copyWith(
+                  color: t.mute,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -624,12 +633,12 @@ class _StatusPillState extends State<StatusPill>
                   widget.detail!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: OCTypography.caption.copyWith(color: t.mute),
+                  style: OCTypography.micro.copyWith(color: t.mute),
                 ),
               ),
             ],
             if (widget.onRetry != null) ...[
-              const SizedBox(width: 4),
+              const SizedBox(width: OCSpace.xs),
               Semantics(
                 button: true,
                 label: S.statusRetryTooltip,
@@ -637,18 +646,17 @@ class _StatusPillState extends State<StatusPill>
                 child: InkWell(
                   onTap: widget.onRetry,
                   borderRadius: BorderRadius.circular(OCRadius.pill),
-                  child: Padding(
-                    // 48dp tall hit area on a 26dp pill: the visible dot is
-                    // small, the target must not be.
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: OCSpace.sm,
-                      vertical: 9,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: OCSpace.tapTarget,
                     ),
-                    child: Text(
-                      S.statusRetry,
-                      style: OCTypography.meta.copyWith(
-                        color: t.ink,
-                        fontWeight: FontWeight.w600,
+                    child: Center(
+                      child: Text(
+                        S.statusRetry,
+                        style: OCTypography.meta.copyWith(
+                          color: t.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -698,11 +706,15 @@ class HeaderAction {
   final bool accent;
 }
 
-/// The app bar: title, one [StatusPill], and whatever actions this screen needs.
+/// The app bar: [leading], title, one [StatusPill], then [actions] and [avatar].
 ///
 /// Actions are passed in per screen instead of being hard-coded, because the
 /// same three icons (Tasks / New chat / More) on Files and Terminal meant
 /// Tasks opened on the terminal and New chat discarded the terminal.
+///
+/// [leading] and [avatar] are the shell's navigation affordances: the drawer
+/// handle on the left and the server menu trigger on the right. Both are
+/// 48dp even though the reference draws 44.
 class AppHeader extends StatelessWidget {
   const AppHeader({
     super.key,
@@ -710,6 +722,8 @@ class AppHeader extends StatelessWidget {
     required this.status,
     this.actions = const [],
     this.trailing,
+    this.leading,
+    this.avatar,
   });
 
   final String title;
@@ -719,50 +733,89 @@ class AppHeader extends StatelessWidget {
   /// Anything that does not fit the icon row, e.g. a search field.
   final Widget? trailing;
 
+  /// Left slot, outside the title block. The drawer handle.
+  final Widget? leading;
+
+  /// Right slot after the action row, e.g. the avatar button.
+  final Widget? avatar;
+
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        OCSpace.screenX,
-        OCSpace.sm,
-        OCSpace.sm,
-        OCSpace.sm,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: OCTypography.title.copyWith(
-                    color: t.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: OCSpace.xs),
-                status,
-              ],
-            ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: OCColors.bg.withValues(alpha: 0.90),
+        // The reference's `shadow-[0_4px_20px_rgba(0,0,0,0.35)]`.
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x59000000),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: OCSpace.sm),
-            trailing!,
-          ],
-          for (final a in actions)
-            HeaderButton(
-              icon: a.icon,
-              label: a.label,
-              onTap: a.onTap,
-              badge: a.badge,
-              accent: a.accent,
-            ),
         ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 56,
+              child: Padding(
+                padding: const EdgeInsets.only(left: OCSpace.screenX),
+                child: Row(
+                  children: [
+                    if (leading != null) ...[
+                      leading!,
+                      const SizedBox(width: OCSpace.xs),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: OCTypography.title.copyWith(
+                              color: t.ink,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          status,
+                        ],
+                      ),
+                    ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: OCSpace.sm),
+                      trailing!,
+                    ],
+                    for (final a in actions)
+                      HeaderButton(
+                        icon: a.icon,
+                        label: a.label,
+                        onTap: a.onTap,
+                        badge: a.badge,
+                        accent: a.accent,
+                      ),
+                    if (avatar != null) ...[
+                      const SizedBox(width: OCSpace.sm),
+                      avatar!,
+                    ],
+                    const SizedBox(width: OCSpace.sm),
+                  ],
+                ),
+              ),
+            ),
+            // The reference's 1px `bg-outline-variant/30` under the bar.
+            Container(
+              height: 1,
+              color: OCColors.border.withValues(alpha: 0.3),
+            ),
+          ],
+        ),
       ),
     );
   }

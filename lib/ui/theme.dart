@@ -611,9 +611,6 @@ class OCSpace {
   /// Card padding.
   static const cardPad = 16.0;
 
-  /// Gap above the bottom nav.
-  static const navGap = 8.0;
-
   /// Legacy 6/40 steps. Kept so nothing has to be retuned in one pass.
   static const xxs = 6.0;
   static const xxxl = 40.0;

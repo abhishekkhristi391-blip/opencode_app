@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
+import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
 import 'about_page.dart';
@@ -19,17 +20,20 @@ import 'theme.dart';
 import 'todos_page.dart';
 import 'widgets.dart';
 
-/// One bottom-navigation destination. There is no drawer and no hamburger:
-/// everything that used to live in the drawer is either a tab or behind the
-/// More button in the header.
+/// A destination the drawer can switch to.
 class _Tab {
   final String label;
   final LI icon;
+
   const _Tab(this.label, this.icon);
 }
 
-/// The single shell: a header (title, connection status, three actions), the
-/// current page, and a four-destination bottom bar.
+/// The single shell: a header (drawer handle, title, connection status, actions,
+/// avatar), the current page, and the navigation drawer.
+///
+/// There is no bottom navigation bar. It duplicated the header's own actions
+/// and pushed the composer above a permanent strip on every screen; the
+/// reference navigates from the drawer instead.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -40,19 +44,15 @@ class HomeShell extends StatefulWidget {
 class HomeShellState extends State<HomeShell> {
   int index = 0;
 
-  /// Exactly four tabs. More is not a tab — it is the third header button,
-  /// which opens a bottom sheet.
+  /// The four pages kept alive in the shell. Todos and Commands are pushed as
+  /// screens rather than held in the stack: they are not a tab you sit on.
   static const tabs = <_Tab>[
-    _Tab(S.navChat, LI.chat),
-    _Tab(S.navSessions, LI.history),
-    _Tab(S.navFiles, LI.folder),
-    _Tab(S.navTerminal, LI.terminal),
+    _Tab(S.drawerNavChats, LI.chat),
+    _Tab(S.drawerNavHistory, LI.history),
+    _Tab(S.drawerNavFiles, LI.folder),
+    _Tab(S.drawerNavTerminal, LI.terminal),
   ];
 
-  /// Keyed so the header can command the visible page (focus its search, reload,
-  /// clear the terminal) instead of the shell owning a second copy of that
-  /// state. The keys are stable for the life of the shell, which matters because
-  /// the pages live in an IndexedStack and are never rebuilt.
   static final _pages = <Widget>[
     const ChatPage(),
     SessionsPage(key: _historyKey),
@@ -66,6 +66,24 @@ class HomeShellState extends State<HomeShell> {
 
   void goTo(int i) => setState(() => index = i);
 
+  /// Closes the drawer and switches pages. Every drawer destination goes
+  /// through here so the overlay is never left mounted over the new page.
+  void _navigate(int i) {
+    Navigator.of(context).pop();
+    if (index != i) setState(() => index = i);
+  }
+
+  void _pushAndClose(Widget Function() page, String title) {
+    Navigator.of(context).pop();
+    pushScreen(context, title: title, child: page());
+  }
+
+  /// The reference labels the Files row with the workspace it points at.
+  static String? _worktree(OcStore store) {
+    final dir = store.paths?.worktree ?? '';
+    return dir.isEmpty ? null : dir;
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
@@ -73,26 +91,25 @@ class HomeShellState extends State<HomeShell> {
 
     return Scaffold(
       backgroundColor: t.bg,
-      // The reference pads for the notch inside the app itself rather than
-      // letting the Scaffold do it, so the header keeps its own rhythm.
       body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-            child: AppHeader(
-              title: tabs[index.clamp(0, tabs.length - 1)].label,
-              status: StatusPill(
-                state: ocLinkState(store),
-                detail: store.serverVersion,
-                cachedCount: store.sessions
-                    .where((s) => s.title != OcStore.utilSessionTitle)
-                    .length,
-                onRetry: store.online ? null : store.connect,
-              ),
-              // Per screen. The same three icons on every tab meant Tasks opened
-              // from the terminal and "New chat" threw away terminal state.
-              actions: _headerActions(context, store),
+          AppHeader(
+            title: tabs[index.clamp(0, tabs.length - 1)].label,
+            status: StatusPill(
+              state: ocLinkState(store),
+              detail: store.serverVersion,
+              cachedCount: store.sessions
+                  .where((s) => s.title != OcStore.utilSessionTitle)
+                  .length,
+              onRetry: store.online ? null : store.connect,
             ),
+            leading: LIconButton(
+              icon: LI.menu,
+              label: S.drawerOpenTooltip,
+              onTap: _showDrawer,
+            ),
+            avatar: _AvatarButton(onTap: () => _showAvatarMenu(context)),
+            actions: _headerActions(context, store),
           ),
           Expanded(
             child: Stack(
@@ -103,12 +120,6 @@ class HomeShellState extends State<HomeShell> {
             ),
           ),
         ],
-      ),
-      // 8dp of breathing room above the bar, per the nav spec: the content used
-      // to run straight into the top border with no separation.
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(top: OCSpace.navGap),
-        child: BottomNav(index: index, busy: store.busy, onSelect: goTo),
       ),
     );
   }
@@ -129,7 +140,6 @@ class HomeShellState extends State<HomeShell> {
           HeaderAction(
             icon: LI.plus,
             label: S.headerNewChat,
-            accent: true,
             onTap: () async {
               await store.newSession();
               if (index != 0 && mounted) goTo(0);
@@ -151,7 +161,6 @@ class HomeShellState extends State<HomeShell> {
           HeaderAction(
             icon: LI.plus,
             label: S.headerNewChat,
-            accent: true,
             onTap: () async {
               await store.newSession();
               if (mounted) goTo(0);
@@ -181,7 +190,6 @@ class HomeShellState extends State<HomeShell> {
           HeaderAction(
             icon: LI.plus,
             label: S.headerNewSessionTooltip,
-            accent: true,
             onTap: () => _newTerminalSession(context),
           ),
         ];
@@ -209,6 +217,88 @@ class HomeShellState extends State<HomeShell> {
 
   void _newTerminalSession(BuildContext context) =>
       _terminalKey.currentState?.newSession();
+
+  /// The navigation drawer: identity and version, the destinations, a recent
+  /// chat feed, and the footer identity plus connection line.
+  Future<void> _showDrawer() async {
+    final store = AppScope.read(context);
+    final pending = store.todos.where((t) => !t.done).length;
+    // The feed is the same list the History screen shows, so the drawer never
+    // offers a session the page behind it does not.
+    final recents = visibleSessions(context, true)
+      ..sort((a, b) => b.updated.compareTo(a.updated));
+    final visible = recents.take(8).toList();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      // The panel is the full height of the screen in the reference, not a
+      // sheet that grows with its content.
+      constraints: const BoxConstraints.expand(),
+      backgroundColor: Colors.transparent,
+      barrierColor: OCColors.surfaceLowest.withValues(alpha: 0.80),
+      builder: (ctx) => _Drawer(
+        version: store.serverVersion,
+        host: _hostLabel(store),
+        index: index,
+        pending: pending,
+        recents: visible,
+        currentId: store.current?.id,
+        state: ocLinkState(store),
+        onClose: () => Navigator.pop(ctx),
+        onNewChat: () async {
+          Navigator.pop(ctx);
+          await store.newSession();
+          if (mounted) goTo(0);
+        },
+        onPick: _navigate,
+        onPushTodos: () =>
+            _pushAndClose(() => const TodosPage(), S.drawerNavTodos),
+        onPushCommands: () =>
+            _pushAndClose(() => const CommandsPage(), S.navCommands),
+        onOpenSession: (s) {
+          Navigator.pop(ctx);
+          openSession(context, s.id);
+        },
+      ),
+    );
+  }
+
+  /// The server menu, anchored under the avatar.
+  ///
+  /// The reference also offers Resource Usage (CPU/RAM), a latency pill and a
+  /// TLS session id. None of those exist in this client and inventing them
+  /// would be showing numbers the app never measured, so they are left out.
+  Future<void> _showAvatarMenu(BuildContext context) async {
+    final store = AppScope.read(context);
+    final host = _hostLabel(store);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      constraints: const BoxConstraints.expand(),
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.60),
+      builder: (ctx) => _ServerMenu(
+        host: host,
+        version: store.serverVersion,
+        state: ocLinkState(store),
+        onClose: () => Navigator.pop(ctx),
+        onOpen: (page, title) => _pushAndClose(page, title),
+        onServer: () => _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
+      ),
+    );
+  }
+
+  /// `host:port` from the address the store is actually configured with, or an
+  /// em dash when it has not resolved one yet.
+  static String _hostLabel(OcStore store) {
+    final raw = store.baseUrl.trim();
+    if (raw.isEmpty) return S.dash;
+    final noScheme = raw.replaceFirst(RegExp(r'^[a-z]+://'), '');
+    final host = noScheme.split('/').first;
+    return host.isEmpty ? S.dash : host;
+  }
 
   Widget _body(BuildContext context, store) {
     if (!store.booted) {
@@ -500,44 +590,576 @@ class HomeShellState extends State<HomeShell> {
   }
 }
 
-class BottomNav extends StatelessWidget {
-  final int index;
-  final bool busy;
-  final ValueChanged<int> onSelect;
-  const BottomNav({
+/// The avatar trigger in the header: the reference's `bg-primary` circle with
+/// a person glyph in `on-primary`, at 32dp inside a 48dp target.
+class _AvatarButton extends StatelessWidget {
+  const _AvatarButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: S.menuOpenTooltip,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: S.menuOpenTooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: OCSpace.tapTarget,
+              height: OCSpace.tapTarget,
+              child: Center(
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: OCColors.cta,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: LIcon(LI.person, size: 18, color: OCColors.onCta),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A pill badge used in the drawer: `bg-surface-container-highest` for neutral
+/// values, `bg-secondary-container` for the pending-todos count.
+class _DrawerBadge extends StatelessWidget {
+  const _DrawerBadge(this.label, {this.accent = false, this.pill = false});
+  final String label;
+  final bool accent;
+  final bool pill;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 150),
+      padding: EdgeInsets.symmetric(
+        horizontal: accent ? OCSpace.sm : 6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: accent ? OCColors.secondary : OCColors.surfaceHighest,
+        borderRadius: BorderRadius.circular(
+          pill ? OCRadius.full : OCRadius.xs,
+        ),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.end,
+        style: OCTypography.micro.copyWith(
+          color: accent ? OCColors.onSecondary : OCColors.textTertiary,
+        ),
+      ),
+    );
+  }
+}
+
+/// The navigation drawer. 82% of the width, capped at 340, on
+/// `surface-container-low`, with the destinations above a recent-chat feed.
+class _Drawer extends StatelessWidget {
+  const _Drawer({
+    required this.version,
+    required this.host,
     required this.index,
-    required this.busy,
-    required this.onSelect,
+    required this.pending,
+    required this.recents,
+    required this.currentId,
+    required this.state,
+    required this.onClose,
+    required this.onNewChat,
+    required this.onPick,
+    required this.onPushTodos,
+    required this.onPushCommands,
+    required this.onOpenSession,
   });
+
+  final String version;
+  final String host;
+  final int index;
+  final int pending;
+  final List<Session> recents;
+  final String? currentId;
+  final OcLinkState state;
+  final VoidCallback onClose;
+  final VoidCallback onNewChat;
+  final ValueChanged<int> onPick;
+  final VoidCallback onPushTodos;
+  final VoidCallback onPushCommands;
+  final ValueChanged<Session> onOpenSession;
 
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FractionallySizedBox(
+        widthFactor: 0.82,
+        child: Container(
+          width: 340,
+          color: OCColors.surface,
+          height: double.infinity,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: OCSpace.screenX,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: OCSpace.md,
+                          bottom: OCSpace.lg,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      S.appName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: OCTypography.headline.copyWith(
+                                        color: OCColors.cta,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: OCSpace.sm),
+                                  _DrawerBadge(
+                                    version.isEmpty ? S.appVersion : version,
+                                    pill: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _DrawerIconButton(
+                              icon: LI.close,
+                              label: S.drawerCloseTooltip,
+                              onTap: onClose,
+                            ),
+                          ],
+                        ),
+                      ),
+                      _DrawerNavRow(
+                        icon: LI.chat,
+                        label: S.drawerNavChats,
+                        selected: index == 0,
+                        onTap: () => onPick(0),
+                      ),
+                      _DrawerNavRow(
+                        icon: LI.history,
+                        label: S.drawerNavHistory,
+                        selected: index == 1,
+                        onTap: () => onPick(1),
+                      ),
+                      _DrawerNavRow(
+                        icon: LI.folder,
+                        label: S.drawerNavFiles,
+                        selected: index == 2,
+                        value: HomeShellState._worktree(
+                          AppScope.read(context),
+                        ),
+                        onTap: () => onPick(2),
+                      ),
+                      _DrawerNavRow(
+                        icon: LI.terminal,
+                        label: S.drawerNavTerminal,
+                        selected: index == 3,
+                        onTap: () => onPick(3),
+                      ),
+                      _DrawerNavRow(
+                        icon: LI.tasks,
+                        label: S.drawerNavTodos,
+                        value: pending > 0 ? S.drawerPending(pending) : null,
+                        valueAccent: true,
+                        onTap: onPushTodos,
+                      ),
+                      _DrawerNavRow(
+                        icon: LI.spark,
+                        label: S.drawerNavCommands,
+                        onTap: onPushCommands,
+                      ),
+                      const SizedBox(height: OCSpace.lg),
+                      const Divider(height: 1, color: OCColors.surfaceVariant),
+                      const SizedBox(height: OCSpace.lg),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              S.drawerRecents.toUpperCase(),
+                              style: OCTypography.micro.copyWith(
+                                color: OCColors.textTertiary,
+                                letterSpacing: 0.8,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: OCSpace.sm),
+                      if (recents.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: OCSpace.md,
+                          ),
+                          child: Text(
+                            S.drawerRecentsEmpty,
+                            style: OCTypography.caption.copyWith(
+                              color: t.mute,
+                            ),
+                          ),
+                        )
+                      else
+                        for (final s in recents)
+                          _DrawerRecentRow(
+                            session: s,
+                            active: s.id == currentId,
+                            onTap: () => onOpenSession(s),
+                          ),
+                    ],
+                  ),
+                ),
+              ),
+              _DrawerFooter(
+                host: host,
+                state: state,
+                onNewChat: onNewChat,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A 56dp drawer destination. Selected = `surface-container-high` with white
+/// text and a terracotta dot on the right, never colour alone.
+class _DrawerNavRow extends StatelessWidget {
+  const _DrawerNavRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+    this.value,
+    this.valueAccent = false,
+  });
+
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+  final String? value;
+  final bool valueAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: OCSpace.xs),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(OCRadius.sm),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 56),
+            padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
+            decoration: BoxDecoration(
+              color: selected ? OCColors.surfaceHigh : Colors.transparent,
+              borderRadius: BorderRadius.circular(OCRadius.sm),
+            ),
+            child: Row(
+              children: [
+                LIcon(
+                  icon,
+                  size: 22,
+                  color: selected ? OCColors.orange : t.mute,
+                ),
+                const SizedBox(width: OCSpace.md),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: OCTypography.meta.copyWith(
+                      color: selected ? OCColors.cta : t.mute,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (value != null && value!.isNotEmpty) ...[
+                  const SizedBox(width: OCSpace.sm),
+                  _DrawerBadge(value!, accent: valueAccent, pill: valueAccent),
+                ] else if (selected) ...[
+                  const SizedBox(width: OCSpace.sm),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: OCColors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A recent-chat row. Active session gets `surface-container-high` plus a
+/// terracotta bar on the leading edge.
+class _DrawerRecentRow extends StatelessWidget {
+  const _DrawerRecentRow({
+    required this.session,
+    required this.active,
+    required this.onTap,
+  });
+
+  final Session session;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final where = session.directory.trim();
+    final age = fmtAge(session.updated);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(OCRadius.sm),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.sm + 2,
+              10,
+              OCSpace.sm + 2,
+              10,
+            ),
+            decoration: BoxDecoration(
+              color: active ? OCColors.surfaceHigh : Colors.transparent,
+              borderRadius: BorderRadius.circular(OCRadius.sm),
+            ),
+            child: Row(
+              children: [
+                if (active)
+                  Container(
+                    width: 6,
+                    height: 24,
+                    margin: const EdgeInsets.only(right: 2),
+                    decoration: BoxDecoration(
+                      color: OCColors.orange,
+                      borderRadius: BorderRadius.circular(OCRadius.full),
+                    ),
+                  ),
+                LIcon(
+                  LI.chat,
+                  size: 19,
+                  color: active ? OCColors.orange : OCColors.textTertiary,
+                ),
+                const SizedBox(width: OCSpace.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        session.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.body.copyWith(
+                          color: active ? OCColors.cta : t.mute,
+                        ),
+                      ),
+                      if (where.isNotEmpty || age.isNotEmpty)
+                        Text(
+                          [baseName(where), age]
+                              .where((e) => e.isNotEmpty)
+                              .join(' \u2022 '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: OCTypography.micro.copyWith(color: t.mute),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Drawer footer: identity, the white New chat pill, and the connection line.
+class _DrawerFooter extends StatelessWidget {
+  const _DrawerFooter({
+    required this.host,
+    required this.state,
+    required this.onNewChat,
+  });
+
+  final String host;
+  final OcLinkState state;
+  final VoidCallback onNewChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final color = switch (state) {
+      OcLinkState.connected => t.ok,
+      OcLinkState.reconnecting => t.warn,
+      OcLinkState.offline || OcLinkState.offlineCached => t.err,
+    };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: OCSpace.sm),
-      decoration: BoxDecoration(
-        color: t.card,
-        border: Border(top: BorderSide(color: t.line)),
+      color: OCColors.surfaceElevated,
+      padding: const EdgeInsets.fromLTRB(
+        OCSpace.screenX,
+        OCSpace.md,
+        OCSpace.screenX,
+        0,
       ),
       child: SafeArea(
         top: false,
-        // The bar sits above the gesture bar; this keeps the labels off it.
-        minimum: const EdgeInsets.only(bottom: OCSpace.sm),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var i = 0; i < HomeShellState.tabs.length; i++)
-              Expanded(
-                child: _NavItem(
-                  tab: HomeShellState.tabs[i],
-                  selected: i == index,
-                  // A running turn only shows on the tabs that own that output.
-                  showBusy:
-                      busy &&
-                      (HomeShellState.tabs[i].icon == LI.terminal ||
-                          HomeShellState.tabs[i].icon == LI.history),
-                  onTap: () => onSelect(i),
+            Row(
+              children: [
+                OCAvatar(label: host, size: 40, accent: OCAccent.orange),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        host,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.meta.copyWith(
+                          color: OCColors.cta,
+                        ),
+                      ),
+                      Text(
+                        S.drawerIdentity,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.micro.copyWith(
+                          color: OCColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: OCSpace.sm),
+                Semantics(
+                  button: true,
+                  label: S.drawerNewChat,
+                  excludeSemantics: true,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onNewChat,
+                      borderRadius: BorderRadius.circular(OCRadius.full),
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minHeight: OCSpace.tapTarget,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: OCSpace.cardPad,
+                        ),
+                        decoration: BoxDecoration(
+                          color: OCColors.cta,
+                          borderRadius: BorderRadius.circular(OCRadius.full),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            LIcon(
+                              LI.plus,
+                              size: 18,
+                              color: OCColors.onCta,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              S.drawerNewChat,
+                              style: OCTypography.meta.copyWith(
+                                color: OCColors.onCta,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: OCSpace.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: OCSpace.md,
+                vertical: 6,
               ),
+              decoration: BoxDecoration(
+                color: OCColors.surface,
+                borderRadius: BorderRadius.circular(OCRadius.xs),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: OCSpace.sm),
+                  Expanded(
+                    child: Text(
+                      S.drawerConnectedTo(host),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: OCTypography.micro.copyWith(color: t.mute),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: OCSpace.md),
           ],
         ),
       ),
@@ -545,99 +1167,338 @@ class BottomNav extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final _Tab tab;
-  final bool selected;
-  final bool showBusy;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.tab,
-    required this.selected,
+/// A round icon button: `surface-container` fill, 48dp target.
+class _DrawerIconButton extends StatelessWidget {
+  const _DrawerIconButton({
+    required this.icon,
+    required this.label,
     required this.onTap,
-    this.showBusy = false,
   });
+
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: OCSpace.tapTarget,
+              height: OCSpace.tapTarget,
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    color: OCColors.surfaceElevated,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: LIcon(icon, size: 20, color: context.oc.mute),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The server menu, anchored under the avatar.
+///
+/// The reference shows a latency pill, a TLS session id and a Resource Usage
+/// row. This client measures none of them, so the rows that need real numbers
+/// are absent rather than showing placeholders.
+class _ServerMenu extends StatelessWidget {
+  const _ServerMenu({
+    required this.host,
+    required this.version,
+    required this.state,
+    required this.onClose,
+    required this.onOpen,
+    required this.onServer,
+  });
+
+  final String host;
+  final String version;
+  final OcLinkState state;
+  final VoidCallback onClose;
+  final void Function(Widget Function() page, String title) onOpen;
+  final VoidCallback onServer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topRight,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          OCSpace.md,
+          0,
+          OCSpace.md,
+          0,
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 350),
+          child: Material(
+            color: OCColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(OCRadius.lg),
+            clipBehavior: Clip.antiAlias,
+            elevation: 0,
+            shadowColor: const Color(0xB3000000),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ServerMenuHeader(
+                  host: host,
+                  version: version,
+                  state: state,
+                  onClose: onClose,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: OCSpace.xs,
+                  ),
+                  child: Column(
+                    children: [
+                      _MenuRow(
+                        icon: LI.server,
+                        label: S.menuSwitchServer,
+                        value: host,
+                        onTap: onServer,
+                      ),
+                      _MenuRow(
+                        icon: LI.key,
+                        label: S.menuProviders,
+                        value: S.moreModel,
+                        onTap: () => onOpen(
+                          () => const SettingsPage(),
+                          S.menuProviders,
+                        ),
+                      ),
+                      _MenuRow(
+                        icon: LI.settings,
+                        label: S.menuSettings,
+                        onTap: () => onOpen(
+                          () => const SettingsPage(),
+                          S.navSettings,
+                        ),
+                      ),
+                      _MenuRow(
+                        icon: LI.info,
+                        label: S.menuAbout,
+                        value: version.isEmpty ? S.appVersion : version,
+                        onTap: () => onOpen(
+                          () => const AboutPage(),
+                          S.navAbout,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: OCSpace.xs),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Identity, server version and the connection state at the top of the menu.
+class _ServerMenuHeader extends StatelessWidget {
+  const _ServerMenuHeader({
+    required this.host,
+    required this.version,
+    required this.state,
+    required this.onClose,
+  });
+
+  final String host;
+  final String version;
+  final OcLinkState state;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
-    // Measured: mute #8E8993 on card #212024 is 4.74:1, above the 4.5:1 floor,
-    // so the inactive label already passed. Only the active state needed help.
-    final color = selected ? t.accInk : t.mute;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: tab.label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(OCRadius.xs),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // 3dp accent tab on the selected item, 28dp wide. Previously the
-            // only difference was a lighter fill behind the icon, which was too
-            // faint to find the current tab at a glance.
-            Positioned(
-              top: 0,
-              child: AnimatedContainer(
-                duration: OCMotion.micro,
-                curve: Curves.easeOut,
-                width: selected ? 28 : 0,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: t.acc,
-                  borderRadius: BorderRadius.circular(OCRadius.full),
+    final color = switch (state) {
+      OcLinkState.connected => t.ok,
+      OcLinkState.reconnecting => t.warn,
+      OcLinkState.offline || OcLinkState.offlineCached => t.err,
+    };
+    return Container(
+      width: double.infinity,
+      color: OCColors.surfaceHigh.withValues(alpha: 0.60),
+      padding: const EdgeInsets.all(OCSpace.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    OCAvatar(
+                      label: host,
+                      size: 48,
+                      accent: OCAccent.orange,
+                      status: switch (state) {
+                        OcLinkState.connected => OCStatus.online,
+                        OcLinkState.reconnecting => OCStatus.busy,
+                        OcLinkState.offline ||
+                        OcLinkState.offlineCached => OCStatus.offline,
+                      },
+                    ),
+                    const SizedBox(width: OCSpace.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            host,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: OCTypography.meta.copyWith(color: t.ink),
+                          ),
+                          Text(
+                            version.isEmpty
+                                ? S.appVersion
+                                : S.menuServerVersion(version),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: OCTypography.micro.copyWith(color: t.mute),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              _DrawerIconButton(
+                icon: LI.close,
+                label: S.menuCloseTooltip,
+                onTap: onClose,
+              ),
+            ],
+          ),
+          const SizedBox(height: OCSpace.sm),
+          // The state is spelled out, never left to the dot colour alone.
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color.withValues(alpha: 0.45)),
+                ),
+              ),
+              const SizedBox(width: OCSpace.sm),
+              Expanded(
+                child: Text(
+                  state.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: OCTypography.micro.copyWith(
+                    color: t.mute,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A menu row: 36dp icon tile on `surface-container-highest`, label, optional
+/// value, chevron.
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.value,
+  });
+
+  final LI icon;
+  final String label;
+  final VoidCallback onTap;
+  final String? value;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(OCRadius.sm),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: OCSpace.md,
+              vertical: 10,
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: OCSpace.sm, bottom: 6),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: OCColors.surfaceHighest,
+                    borderRadius: BorderRadius.circular(OCRadius.xs),
+                  ),
+                  child: Center(
+                    child: LIcon(icon, size: 20, color: t.mute),
+                  ),
+                ),
+                const SizedBox(width: OCSpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      LIcon(
-                        tab.icon,
-                        // 24px: was 22, which read smaller than the 11px label
-                        // under it needed to balance.
-                        size: 24,
-                        color: color,
-                        // Reference `nav button.on svg { stroke-width: 2.4 }`.
-                        strokeWidth: selected ? 2.4 : 1.8,
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.meta.copyWith(color: t.ink),
                       ),
-                      if (showBusy)
-                        Positioned(
-                          right: -4,
-                          top: -2,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: t.acc,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: t.card, width: 1.5),
-                            ),
-                          ),
+                      if (value != null && value!.isNotEmpty)
+                        Text(
+                          value!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: OCTypography.micro.copyWith(color: t.mute),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    tab.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: OCTypography.meta.copyWith(
-                      color: color,
-                      fontSize: 11,
-                      height: 1.2,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: OCSpace.sm),
+                LIcon(LI.chevronRight, size: 18, color: OCColors.textTertiary),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

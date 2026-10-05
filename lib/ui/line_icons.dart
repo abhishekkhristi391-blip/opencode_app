@@ -144,6 +144,9 @@ enum LI {
   /// `info`: informational rows (MCP, LSP, colour mode).
   info,
 
+  /// `dns`: a host / server row in the avatar menu.
+  server,
+
   /// `code` / `code_blocks`: code file kinds, terminal.
   code,
 
@@ -978,6 +981,27 @@ class LLinePainter extends CustomPainter {
         );
 
         break;
+      case LI.server:
+        // `dns`: a rack - two uprights on a shelf, two status dots.
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(4, 4.5);
+            p.lineTo(20, 4.5);
+            p.lineTo(20, 10.5);
+            p.lineTo(4, 10.5);
+            p.close();
+            p.moveTo(4, 13.5);
+            p.lineTo(20, 13.5);
+            p.lineTo(20, 19.5);
+            p.lineTo(4, 19.5);
+            p.close();
+          }),
+          stroke,
+        );
+        canvas.drawCircle(const Offset(7.4, 7.5), 1.1, fill);
+        canvas.drawCircle(const Offset(7.4, 16.5), 1.1, fill);
+        break;
+
       case LI.info:
         canvas.drawCircle(const Offset(12, 12), 8.6, stroke);
         canvas.drawPath(

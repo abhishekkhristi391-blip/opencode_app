@@ -821,6 +821,41 @@ class S {
   static const sheetSettingsUsage = 'Settings & token usage';
   static const sheetAbout = 'About';
 
+  // --- navigation drawer -----------------------------------------------
+  // The shell navigates from the drawer, so these are the app's primary
+  // destinations. The old bottom-navigation labels are gone with the bar.
+  static const drawerOpenTooltip = 'Open navigation';
+  static const drawerCloseTooltip = 'Close navigation';
+  static const drawerNavChats = 'Chats';
+  static const drawerNavHistory = 'History';
+  static const drawerNavFiles = 'Files';
+  static const drawerNavTerminal = 'Terminal';
+  static const drawerNavTodos = 'Todos';
+  static const drawerNavCommands = 'Commands & Skills';
+  static const drawerRecents = 'Recents';
+  static const drawerRecentsEmpty = 'No chats yet';
+  static const drawerNewChat = 'New chat';
+
+  /// Subtitle for the drawer footer identity block. The app has no account, so
+  /// it labels the host it is attached to rather than inventing a plan tier.
+  static const drawerIdentity = 'OpenCode';
+
+  static String drawerPending(int n) => n == 1 ? '1 pending' : '$n pending';
+
+  /// [host] is the server address the store actually holds.
+  static String drawerConnectedTo(String host) => 'Connected to $host';
+
+  // --- avatar / server menu --------------------------------------------
+  static const menuOpenTooltip = 'Server menu';
+  static const menuCloseTooltip = 'Close menu';
+  static const menuSwitchServer = 'Switch Server';
+  static const menuProviders = 'Model Provider & Keys';
+  static const menuSettings = 'Settings';
+  static const menuAbout = 'About & Changelog';
+
+  static String menuServerVersion(String version) =>
+      'OpenCode Server v$version';
+
   // --- fix 4: running chat --------------------------------------------
   static const thinkingCollapsedTooltip = 'Show what the agent was thinking';
   static String thinkingGroup(int seconds, int steps) => seconds >= 60

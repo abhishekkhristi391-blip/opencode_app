@@ -1,9 +1,9 @@
 # GRAPH REPORT
-27 files, 687 symbols, 1203 edges (821 EXTRACTED, 382 INFERRED)
+27 files, 704 symbols, 1229 edges (839 EXTRACTED, 390 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:473
-- mono (function) - 12 links - lib/ui/theme.dart:911
+- mono (function) - 12 links - lib/ui/theme.dart:908
 - OCButton (class) - 11 links - lib/ui/primitives.dart:110
 - showSnack (function) - 10 links - lib/ui/widgets.dart:134
 - read (function) - 9 links - lib/ui/app_scope.dart:17
@@ -11,15 +11,15 @@
 - clear (function) - 7 links - lib/ui/terminal_page.dart:42
 - LoadingView (class) - 7 links - lib/ui/widgets.dart:221
 - asMap (function) - 6 links - lib/models/models.dart:5
-- LIcon (class) - 6 links - lib/ui/line_icons.dart:169
+- LIcon (class) - 6 links - lib/ui/line_icons.dart:172
 
 ## Communities (modules that talk to each other)
 1. 26 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...
 
 ## Folder dependencies (who imports whom)
 - lib/ui -> lib/l10n  (15 imports)
+- lib/ui -> lib/models  (12 imports)
 - lib/ui -> lib/state  (11 imports)
-- lib/ui -> lib/models  (11 imports)
 - lib -> lib/ui  (3 imports)
 - lib/api -> lib/models  (2 imports)
 - lib/state -> lib/api  (2 imports)
