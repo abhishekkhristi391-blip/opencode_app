@@ -258,7 +258,7 @@ class HomeShellState extends State<HomeShell> {
             _pushAndClose(() => const CommandsPage(), S.navCommands),
         onOpenSession: (s) {
           Navigator.pop(ctx);
-          openSession(context, s.id);
+          store.openSession(s.id);
         },
       ),
     );
