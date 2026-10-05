@@ -1253,16 +1253,27 @@ class _MessageTileState extends State<_MessageTile> {
           maxWidth: MediaQuery.of(context).size.width * 0.86,
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          // The reference's `p-space-md`.
+          padding: const EdgeInsets.all(OCSpace.md),
           decoration: BoxDecoration(
-            color: t.ink,
-            // Reference: 20px radii with a 6px tail on the bottom right.
+            // `bg-surface-container-highest text-on-surface`, not an inverted
+            // ink fill: on this canvas a white bubble was the brightest thing
+            // on screen and outranked the assistant's own prose.
+            color: OCColors.surfaceHighest,
+            // Reference: 22px radii with a 6px tail on the bottom right.
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(20),
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
+              bottomLeft: Radius.circular(22),
               bottomRight: Radius.circular(6),
             ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                offset: Offset(0, 4),
+                blurRadius: 12,
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1271,7 +1282,8 @@ class _MessageTileState extends State<_MessageTile> {
               if (text.isNotEmpty)
                 Markdown(
                   text,
-                  base: OCTypography.body.copyWith(color: t.bg, height: 1.45),
+                  // user-body stays Inter; only the fill changed.
+                  base: OCTypography.body.copyWith(color: t.ink),
                   onLink: (url) => launchUrl(
                     Uri.parse(url),
                     mode: LaunchMode.externalApplication,
@@ -1305,7 +1317,9 @@ class _MessageTileState extends State<_MessageTile> {
             padding: const EdgeInsets.only(top: 14, bottom: 4),
             child: Markdown(
               text,
-              base: OCTypography.body.copyWith(color: t.ink, height: 1.45),
+              // assistantBody, not body: the reference sets the assistant's
+              // prose in Source Serif 4 and the user's in Inter.
+              base: OCTypography.assistantBody.copyWith(color: t.ink),
               onLink: (url) => launchUrl(
                 Uri.parse(url),
                 mode: LaunchMode.externalApplication,
@@ -1403,21 +1417,31 @@ class _ActionBtn extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LIcon(icon, size: 16, color: t.mute),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: OCTypography.micro.copyWith(color: t.mute, fontSize: 12),
+      child: Material(
+        // The reference draws the reply actions as bare 32dp circular hits
+        // that tint on hover/press. The old pill-plus-caption put a text label
+        // under every reply, which is a lot of chrome for two verbs.
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          // 48dp hit area even though the disc is 32.
+          child: SizedBox(
+            width: OCSpace.tapTarget,
+            height: OCSpace.tapTarget,
+            child: Center(
+              child: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: OCColors.surfaceElevated,
+                ),
+                child: LIcon(icon, size: 16, color: t.mute),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1723,15 +1747,22 @@ class _Composer extends StatelessWidget {
         OCSpace.sm,
       ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
+        // The reference's `p-3.5`.
+        padding: const EdgeInsets.all(OCSpace.md),
         decoration: BoxDecoration(
           // surfaceElevated, not card: the input box used to share its fill with
           // the suggestion cards, so the bottom of the screen read as one slab.
           color: t.surfaceElevated,
           borderRadius: BorderRadius.circular(OCRadius.composer),
-          border: Border.all(color: t.line),
-          boxShadow: [
-            BoxShadow(color: t.line, offset: const Offset(0, 1), blurRadius: 0),
+          // The reference lifts the composer with `shadow-2xl` and no outline.
+          // A 1dp border plus a 0-blur shadow made it look like a text field
+          // rather than a card floating over the transcript.
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              offset: Offset(0, 8),
+              blurRadius: 24,
+            ),
           ],
         ),
         child: Column(
@@ -1757,11 +1788,16 @@ class _Composer extends StatelessWidget {
             Row(
               children: [
                 _CircleButton(
-                  icon: LI.attach,
-                  bg: Colors.transparent,
-                  fg: t.mute,
+                  // The reference draws `add` on a `container-highest` disc,
+                  // not a bare paperclip: the glyph is "add", the sheet that
+                  // opens is the attachments picker.
+                  icon: LI.plus,
+                  bg: OCColors.surfaceHighest,
+                  fg: t.ink,
                   semanticLabel: S.composerAttachTooltip,
                   onTap: () => _showAttachSheet(context),
+                  diameter: 32,
+                  glyph: 18,
                 ),
                 const SizedBox(width: 2),
                 _ModelPill(store: store),
@@ -2268,37 +2304,37 @@ class _SendButton extends StatelessWidget {
       valueListenable: controller,
       builder: (context, value, _) {
         if (store.busy) {
+          // Stop replaces Send in the same slot, so it keeps the same terracotta
+          // container instead of flipping to a high-contrast disc mid-turn.
           return _CircleButton(
             icon: LI.stop,
-            bg: t.ink,
-            fg: t.bg,
+            bg: OCColors.secondary,
+            fg: OCColors.onSecondary,
             semanticLabel: S.chatStopTooltip,
             onTap: onStop,
+            diameter: 36,
+            glyph: 20,
           );
         }
         final canSend =
             value.text.trim().isNotEmpty || store.attachments.isNotEmpty;
         if (canSend) {
           return _CircleButton(
+            // The reference's `bg-secondary-container text-on-secondary-container`.
             icon: LI.send,
-            bg: t.acc,
-            fg: const Color(0xFFFFFFFF),
+            bg: OCColors.secondary,
+            fg: OCColors.onSecondary,
             semanticLabel: S.chatSendTooltip,
             onTap: onSend,
+            diameter: 36,
+            glyph: 20,
           );
         }
-        // Voice chat lands in a later prompt; keep the affordance visible so
-        // the composer reads the same as the reference.
-        return _CircleButton(
-          icon: LI.mic,
-          // bg, not card: the composer box is surfaceElevated, so a card-filled
-          // circle would be darker than the box around it and read as a hole.
-          bg: t.bg,
-          fg: t.ink,
-          semanticLabel: S.composerVoiceTooltip,
-          onTap: () => showSnack(context, S.composerVoiceTooltip),
-          border: t.line,
-        );
+        // The reference puts a dictation button here. This client has no speech
+        // recognition, and the old placeholder just raised a snackbar saying so,
+        // so the slot stays empty until dictation is real. The attach and model
+        // chips carry the row on their own.
+        return const SizedBox.shrink();
       },
     );
   }
@@ -2310,14 +2346,21 @@ class _CircleButton extends StatelessWidget {
   final Color fg;
   final String semanticLabel;
   final VoidCallback onTap;
-  final Color? border;
+
+  /// Visible disc. Defaults to the 48dp minimum; the reference draws the small
+  /// in-composer controls at 32-36 inside it.
+  final double diameter;
+
+  /// Glyph size, which the reference keeps at 18-20 regardless of the disc.
+  final double glyph;
   const _CircleButton({
     required this.icon,
     required this.bg,
     required this.fg,
     required this.semanticLabel,
     required this.onTap,
-    this.border,
+    this.diameter = 48,
+    this.glyph = 20,
   });
 
   @override
@@ -2331,20 +2374,19 @@ class _CircleButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
-          child: Container(
-            // 48dp, not 40: the attach / mic / send controls are the only
-            // things a thumb has to find without looking, and 40dp is under the
-            // minimum target. The glyph stays 20px so the row does not bloat.
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: border == null
-                ? null
-                : BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: border!),
-                  ),
-            child: LIcon(icon, size: 20, color: fg),
+          // 48dp hit area on every control: the visible disc may be 32 or 36,
+          // but the target a thumb has to find never shrinks with it.
+          child: SizedBox(
+            width: OCSpace.tapTarget,
+            height: OCSpace.tapTarget,
+            child: Center(
+              child: Container(
+                width: diameter,
+                height: diameter,
+                alignment: Alignment.center,
+                child: LIcon(icon, size: glyph, color: fg),
+              ),
+            ),
           ),
         ),
       ),

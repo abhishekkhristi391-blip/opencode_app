@@ -139,10 +139,14 @@ class OCColors {
   static const warningInk = Color(0xFFF0C078);
 
   // --- code ---------------------------------------------------------------
-  /// `surface-container-lowest` - one step below the canvas, so a code block
-  /// reads as a well rather than a card.
-  static const codeBg = _lowest;
+  /// `surface-container-highest` - the reference draws code blocks as the
+  /// highest step of the container ladder, not a well below the canvas, so the
+  /// header strip one step down (`surfaceHigh`) reads as a lighter band.
+  static const codeBg = _highest;
   static const codeInk = Color(0xFFC8C7BE);
+
+  /// `tertiary-fixed-dim` - inline code tint inside assistant prose.
+  static const codeAccent = Color(0xFFA0C9FF);
 
   // --- terminal ANSI (dark, readable) -------------------------------------
   static const ansiBlack = Color(0xFF474741);
@@ -659,8 +663,8 @@ class OCRadius {
   /// Alias for [row]; the chat empty state's cards use it.
   static const suggestion = row;
 
-  /// The composer field.
-  static const composer = 20.0;
+  /// The composer card. The reference draws `rounded-[26px]`.
+  static const composer = 26.0;
 
   /// Top corners of a bottom sheet.
   static const sheet = 20.0;

@@ -44,8 +44,6 @@ enum LI {
   /// `more_horiz`, 3 uses.
   moreHoriz,
 
-  /// Voice input (5 bars). Not rendered: the designs have no mic.
-  mic,
 
   /// Up arrow: send.
   send,
@@ -417,20 +415,6 @@ class LLinePainter extends CustomPainter {
         for (final cx in const [6.0, 12.0, 18.0]) {
           canvas.drawCircle(Offset(cx, 12), 1.25, fill);
         }
-
-        break;
-      case LI.mic:
-        // Five vertical bars, tallest in the middle: the reference's voice icon.
-        const bars = <int, double>{4: 2.6, 8: 6.4, 12: 9.4, 16: 5.4, 20: 2.6};
-        bars.forEach((x, h) {
-          canvas.drawPath(
-            _path((p) {
-              p.moveTo(x.toDouble(), 12 - h / 2);
-              p.lineTo(x.toDouble(), 12 + h / 2);
-            }),
-            stroke,
-          );
-        });
 
         break;
       case LI.send:

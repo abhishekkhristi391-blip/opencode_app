@@ -360,12 +360,25 @@ class _CollapsibleState extends State<_Collapsible> {
 
   @override
   Widget build(BuildContext context) {
-    final shape = BorderRadius.circular(OCRadius.inner);
+    // The reference draws these as `rounded-xl` (12) cards, one step tighter
+    // than the 16 the app used, so a stack of tool cards reads as a list of
+    // chips rather than a column of large panels. One constant drives the card
+    // and its header band, which must stay flush.
+    const r = 12.0;
+    final shape = BorderRadius.circular(r);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: OCSpace.xs),
       decoration: BoxDecoration(
         color: context.oc.surfaceElevated,
         borderRadius: shape,
+        // The reference's `shadow-sm`.
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            offset: Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -375,10 +388,22 @@ class _CollapsibleState extends State<_Collapsible> {
             InkWell(
               borderRadius: shape,
               onTap: () => setState(() => open = !open),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: OCSpace.md,
-                  vertical: OCSpace.md,
+              child: Container(
+                // `px-space-md py-2 bg-surface-container-high`: the reference
+                // separates a tool card's header from its body with a filled
+                // band, the same way the code block does.
+                padding: const EdgeInsets.fromLTRB(
+                  OCSpace.md,
+                  8,
+                  OCSpace.md,
+                  8,
+                ),
+                decoration: const BoxDecoration(
+                  color: OCColors.surfaceHigh,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(r),
+                    topRight: Radius.circular(r),
+                  ),
                 ),
                 child: Row(
                   children: [

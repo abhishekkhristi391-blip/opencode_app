@@ -3,7 +3,7 @@
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:473
-- mono (function) - 12 links - lib/ui/theme.dart:908
+- mono (function) - 12 links - lib/ui/theme.dart:912
 - OCButton (class) - 11 links - lib/ui/primitives.dart:110
 - showSnack (function) - 10 links - lib/ui/widgets.dart:134
 - read (function) - 9 links - lib/ui/app_scope.dart:17
@@ -11,7 +11,7 @@
 - clear (function) - 7 links - lib/ui/terminal_page.dart:42
 - LoadingView (class) - 7 links - lib/ui/widgets.dart:221
 - asMap (function) - 6 links - lib/models/models.dart:5
-- LIcon (class) - 6 links - lib/ui/line_icons.dart:172
+- LIcon (class) - 6 links - lib/ui/line_icons.dart:170
 
 ## Communities (modules that talk to each other)
 1. 26 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...

@@ -190,7 +190,6 @@ class S {
   static const composerModelPill = 'Model and agent';
   static String composerModelAgent(String model, String agent) =>
       '$model · $agent';
-  static const composerVoiceTooltip = 'Voice chat';
   static const composerAttachTooltip = 'Attach a file or image';
 
   // Tool-call timeline.

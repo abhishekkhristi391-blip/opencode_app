@@ -338,14 +338,17 @@ class Markdown extends StatelessWidget {
   }
 
   static TextStyle _codeStyle(BuildContext context, TextStyle base) {
-    // Inline code keeps a light tint so it stays distinguishable from body
-    // text; the dark code *blocks* use OCTokens.code instead.
-    final t = OCTokens.of(context);
+    // Inline code takes fixed palette steps rather than token reads: the tint
+    // pairs with the assistant prose it always appears inside, and the dark
+    // code *blocks* use OCTokens.code instead.
     return base.copyWith(
       fontFamily: OCTypography.mono(color: null).fontFamily,
       fontSize: (base.fontSize ?? 14) - 0.5,
-      backgroundColor: t.bg == OCTokens.dark.bg ? t.accSoft : t.accSoft,
-      color: t.ink,
+      // The reference's `bg-surface-container-high text-tertiary-fixed-dim`:
+      // a blue-tinted token so a symbol inside prose never reads as body text.
+      backgroundColor: OCColors.surfaceHigh,
+      color: OCColors.codeAccent,
+      fontWeight: FontWeight.w500,
     );
   }
 }
@@ -520,23 +523,30 @@ class _CodeBlock extends StatelessWidget {
       decoration: BoxDecoration(
         // Reference `--code`: dark in both themes.
         color: t.code,
-        borderRadius: BorderRadius.circular(12),
+        // `rounded-2xl`, not 12.
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x59000000),
+            offset: Offset(0, 6),
+            blurRadius: 18,
+          ),
+        ],
       ),
+      // The header strip is a filled band, so it has to be clipped by the
+      // block's radius instead of painting square corners over it.
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(
               OCSpace.md,
+              8,
               OCSpace.xs,
-              OCSpace.xs,
-              OCSpace.xs,
+              8,
             ),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: t.codeInk.withValues(alpha: 0.18)),
-              ),
-            ),
+            decoration: const BoxDecoration(color: OCColors.surfaceHigh),
             child: Row(
               children: [
                 Expanded(
