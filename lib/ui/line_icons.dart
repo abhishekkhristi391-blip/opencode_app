@@ -1,9 +1,12 @@
 // Hand-rolled line icons.
 //
-// The visual reference (design/clean-chat-ui.html) uses outline glyphs with a
-// 1.8 stroke and round caps, not Material's filled icons. Flutter has no font
-// of its own that matches, so the handful of glyphs the redesign needs are
-// drawn here on a 24x24 grid.
+// The designs use Material Symbols *outlined* glyphs at a 1.5px stroke with
+// round caps. Flutter has no font of its own that matches, so the glyphs the
+// screens actually use are drawn here on a 24x24 grid.
+//
+// Scope rule: only glyphs a screen in `design/` uses are drawn. Fabricated
+// glyphs are not added speculatively, because an unused enum value is dead code
+// that still has to be switched over.
 //
 // Add a glyph by extending [LI] and adding one `case` to [LLinePainter].
 // Prefer keeping the shape to straight lines, quadratics and `addArc` on a
@@ -12,6 +15,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import 'theme.dart';
 
 /// The glyphs the redesign draws. Names mirror the reference's icons.
 enum LI {
@@ -33,10 +38,13 @@ enum LI {
   /// New chat.
   plus,
 
-  /// Overflow.
+  /// Overflow. Three VERTICAL dots - the designs' `more_vert`, 16 uses.
   more,
 
-  /// Voice input (5 bars).
+  /// `more_horiz`, 3 uses.
+  moreHoriz,
+
+  /// Voice input (5 bars). Not rendered: the designs have no mic.
   mic,
 
   /// Up arrow: send.
@@ -48,6 +56,9 @@ enum LI {
   /// Accordion affordances, pickers.
   chevronDown,
   chevronRight,
+
+  /// `expand_less`.
+  chevronUp,
 
   /// Composer attachment.
   attach,
@@ -94,6 +105,65 @@ enum LI {
 
   /// Mark read.
   done,
+
+  // --- added for the redesign ---------------------------------------------
+
+  /// `menu`: hamburger, 16 uses across every screen header.
+  menu,
+
+  /// `person`: the avatar popup trigger, 15 uses.
+  person,
+
+  /// `add_comment`: the new-chat FAB, 15 uses.
+  newComment,
+
+  /// `arrow_outward` / `north_east`: share, open-in-editor, diff links.
+  externalLink,
+
+  /// `bolt`: a running or active agent.
+  bolt,
+
+  /// `hourglass_top`: waiting on the server.
+  hourglass,
+
+  /// `keyboard_return`: the composer's return hint.
+  enter,
+
+  /// `logout`: sign out.
+  logout,
+
+  /// `shield`: permission requests.
+  shield,
+
+  /// `key`: provider API keys.
+  key,
+
+  /// `lock`: an authenticated server.
+  lock,
+
+  /// `info`: informational rows (MCP, LSP, colour mode).
+  info,
+
+  /// `code` / `code_blocks`: code file kinds, terminal.
+  code,
+
+  /// `save`: the file editor.
+  save,
+
+  /// `description`: a file row.
+  doc,
+
+  /// `psychology`: agents.
+  brain,
+
+  /// `smart_toy`: MCP servers.
+  robot,
+
+  /// `arrow_back`: sheets and sub-screens.
+  arrowBack,
+
+  /// `difference`: the diff viewer.
+  diff,
 }
 
 class LIcon extends StatelessWidget {
@@ -102,7 +172,7 @@ class LIcon extends StatelessWidget {
     super.key,
     this.size = 22,
     this.color,
-    this.strokeWidth = 1.8,
+    this.strokeWidth = _stroke,
   });
 
   final LI icon;
@@ -131,8 +201,9 @@ class LIcon extends StatelessWidget {
   }
 }
 
-/// A tappable line icon. Sets the 44px minimum tap target the platform
-/// guidelines want without changing the glyph size.
+/// A tappable line icon. The glyph keeps its own size; the hit area is grown to
+/// the 48dp minimum with [OCSpace.tapTarget] rather than by padding arithmetic,
+/// so shrinking the glyph can never shrink the target.
 class LIconButton extends StatelessWidget {
   const LIconButton({
     required this.icon,
@@ -141,7 +212,7 @@ class LIconButton extends StatelessWidget {
     this.label,
     this.size = 22,
     this.color,
-    this.strokeWidth = 1.8,
+    this.strokeWidth = _stroke,
     this.padding = const EdgeInsets.all(10),
     this.semanticLabel,
   });
@@ -176,15 +247,25 @@ class LIconButton extends StatelessWidget {
         ),
       ),
     );
-    if (!enabled) return Padding(padding: padding, child: glyph);
+    final target = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: OCSpace.tapTarget,
+        minHeight: OCSpace.tapTarget,
+      ),
+      child: Padding(padding: padding, child: Center(child: glyph)),
+    );
+    if (!enabled) return target;
     return InkResponse(
       onTap: onTap,
       radius: size * 1.1,
       containedInkWell: false,
-      child: Padding(padding: padding, child: glyph),
+      child: target,
     );
   }
 }
+
+/// The designs' stroke. Every glyph defaults to it.
+const double _stroke = 1.5;
 
 class LLinePainter extends CustomPainter {
   LLinePainter({
@@ -249,6 +330,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.history:
         canvas.drawCircle(const Offset(12, 12), 8.5, stroke);
         canvas.drawPath(
@@ -260,6 +342,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.folder:
         canvas.drawPath(
           _path((p) {
@@ -274,6 +357,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.terminal:
         canvas.drawPath(
           _path((p) {
@@ -286,6 +370,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.tasks:
         canvas.drawPath(
           _path((p) {
@@ -303,6 +388,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.plus:
       case LI.attach:
         canvas.drawPath(
@@ -315,11 +401,21 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.more:
+        // Vertical dots: the designs' `more_vert` is the overflow affordance on
+        // rows and in the header.
+        for (final cy in const [6.0, 12.0, 18.0]) {
+          canvas.drawCircle(Offset(12, cy), 1.25, fill);
+        }
+
+        break;
+      case LI.moreHoriz:
         for (final cx in const [6.0, 12.0, 18.0]) {
           canvas.drawCircle(Offset(cx, 12), 1.25, fill);
         }
 
+        break;
       case LI.mic:
         // Five vertical bars, tallest in the middle: the reference's voice icon.
         const bars = <int, double>{4: 2.6, 8: 6.4, 12: 9.4, 16: 5.4, 20: 2.6};
@@ -333,6 +429,7 @@ class LLinePainter extends CustomPainter {
           );
         });
 
+        break;
       case LI.send:
         canvas.drawPath(
           _path((p) {
@@ -345,6 +442,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.stop:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -354,6 +452,7 @@ class LLinePainter extends CustomPainter {
           fill,
         );
 
+        break;
       case LI.chevronDown:
         canvas.drawPath(
           _path((p) {
@@ -364,6 +463,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.chevronRight:
         canvas.drawPath(
           _path((p) {
@@ -374,6 +474,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.copy:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -392,6 +493,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.undo:
         // Arrow curving back over a semicircle.
         canvas.drawPath(
@@ -410,6 +512,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.trash:
         canvas.drawPath(
           _path((p) {
@@ -427,6 +530,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.arrowDown:
         canvas.drawPath(
           _path((p) {
@@ -439,6 +543,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.close:
         canvas.drawPath(
           _path((p) {
@@ -450,6 +555,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.search:
         canvas.drawCircle(const Offset(10.8, 10.8), 6.8, stroke);
         canvas.drawPath(
@@ -460,6 +566,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.tune:
         canvas.drawCircle(const Offset(12, 12), 3.1, stroke);
         for (final (start, sweep) in const [
@@ -497,6 +604,7 @@ class LLinePainter extends CustomPainter {
           );
         }
 
+        break;
       case LI.check:
         canvas.drawPath(
           _path((p) {
@@ -507,6 +615,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.fork:
         canvas.drawPath(
           _path((p) {
@@ -520,9 +629,11 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.dot:
         canvas.drawCircle(const Offset(12, 12), 3.6, fill);
 
+        break;
       case LI.spark:
         canvas.drawPath(
           _path((p) {
@@ -539,6 +650,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.warning:
         canvas.drawPath(
           _path((p) {
@@ -553,6 +665,7 @@ class LLinePainter extends CustomPainter {
         );
         canvas.drawCircle(const Offset(12, 16.7), 0.95, fill);
 
+        break;
       case LI.refresh:
         canvas.drawPath(
           _path((p) {
@@ -573,6 +686,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.download:
         canvas.drawPath(
           _path((p) {
@@ -587,6 +701,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.keyboard:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
@@ -611,6 +726,7 @@ class LLinePainter extends CustomPainter {
           stroke,
         );
 
+        break;
       case LI.settings:
         // Gear: circle plus eight teeth, matching the reference's
         // circle-in-circle-with-ticks treatment.
@@ -628,6 +744,7 @@ class LLinePainter extends CustomPainter {
           );
         }
 
+        break;
       case LI.done:
         canvas.drawCircle(const Offset(12, 12), 8.6, stroke);
         canvas.drawPath(
@@ -638,6 +755,377 @@ class LLinePainter extends CustomPainter {
           }),
           stroke,
         );
+
+      // --- added for the redesign -------------------------------------------
+
+        break;
+      case LI.menu:
+        for (final y in const [7.0, 12.0, 17.0]) {
+          canvas.drawPath(
+            _path((p) {
+              p.moveTo(4, y);
+              p.lineTo(20, y);
+            }),
+            stroke,
+          );
+        }
+
+        break;
+      case LI.person:
+        canvas.drawCircle(const Offset(12, 8.2), 3.6, stroke);
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(4.8, 20.2);
+            p.quadraticBezierTo(6.6, 14.8, 12, 14.8);
+            p.quadraticBezierTo(17.4, 14.8, 19.2, 20.2);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.newComment:
+        // Rounded bubble with a plus: the designs' `add_comment`.
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(7, 4.5);
+            p.lineTo(17, 4.5);
+            p.quadraticBezierTo(20, 4.5, 20, 7.5);
+            p.lineTo(20, 13.5);
+            p.quadraticBezierTo(20, 16.5, 17, 16.5);
+            p.lineTo(11.5, 16.5);
+            p.lineTo(7, 19.5);
+            p.lineTo(7, 16.4);
+            p.quadraticBezierTo(4, 16.4, 4, 13.4);
+            p.lineTo(4, 7.5);
+            p.quadraticBezierTo(4, 4.5, 7, 4.5);
+            p.close();
+          }),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(12, 8.4);
+            p.lineTo(12, 12.6);
+            p.moveTo(9.9, 10.5);
+            p.lineTo(14.1, 10.5);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.chevronUp:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(5.5, 15);
+            p.lineTo(12, 8.5);
+            p.lineTo(18.5, 15);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.externalLink:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(19.5, 10.5);
+            p.lineTo(19.5, 19.5);
+            p.lineTo(4.5, 19.5);
+            p.lineTo(4.5, 5);
+            p.lineTo(13.5, 5);
+          }),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(12.5, 11.5);
+            p.lineTo(20, 4);
+            p.moveTo(15, 4);
+            p.lineTo(20, 4);
+            p.lineTo(20, 9);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.bolt:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(13.5, 3);
+            p.lineTo(6, 13.2);
+            p.lineTo(11.2, 13.2);
+            p.lineTo(10.5, 21);
+            p.lineTo(18, 10.8);
+            p.lineTo(12.8, 10.8);
+            p.close();
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.hourglass:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(6.5, 3.5);
+            p.lineTo(17.5, 3.5);
+            p.lineTo(17.5, 6);
+            p.quadraticBezierTo(17.5, 10.2, 13.4, 12);
+            p.quadraticBezierTo(17.5, 13.8, 17.5, 18);
+            p.lineTo(17.5, 20.5);
+            p.lineTo(6.5, 20.5);
+            p.lineTo(6.5, 18);
+            p.quadraticBezierTo(6.5, 13.8, 10.6, 12);
+            p.quadraticBezierTo(6.5, 10.2, 6.5, 6);
+            p.close();
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.enter:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(19, 5);
+            p.lineTo(19, 14);
+            p.quadraticBezierTo(19, 19, 14, 19);
+            p.lineTo(5, 19);
+            p.moveTo(9.5, 14);
+            p.lineTo(4.5, 19);
+            p.lineTo(9.5, 19);
+          }),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(4.5, 5);
+            p.lineTo(4.5, 19);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.logout:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(13.5, 4.5);
+            p.lineTo(4.5, 4.5);
+            p.lineTo(4.5, 19.5);
+            p.lineTo(13.5, 19.5);
+          }),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(10, 12);
+            p.lineTo(19.5, 12);
+            p.moveTo(15.8, 8.3);
+            p.lineTo(19.5, 12);
+            p.lineTo(15.8, 15.7);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.shield:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(12, 3);
+            p.lineTo(19.5, 6);
+            p.lineTo(19.5, 11.5);
+            p.quadraticBezierTo(19.5, 17.5, 12, 21);
+            p.quadraticBezierTo(4.5, 17.5, 4.5, 11.5);
+            p.lineTo(4.5, 6);
+            p.close();
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.key:
+        canvas.drawCircle(const Offset(7.6, 12), 3.5, stroke);
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(11.1, 12);
+            p.lineTo(19.5, 12);
+            p.moveTo(16.6, 12);
+            p.lineTo(16.6, 14.6);
+            p.moveTo(19, 12);
+            p.lineTo(19, 14.2);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.lock:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(5, 10.5, 14, 9.5),
+            const Radius.circular(2.4),
+          ),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(8, 10.5);
+            p.lineTo(8, 7.6);
+            p.addArc(
+              Rect.fromCircle(center: const Offset(12, 7.6), radius: 4),
+              math.pi,
+              math.pi,
+            );
+            p.lineTo(16, 10.5);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.info:
+        canvas.drawCircle(const Offset(12, 12), 8.6, stroke);
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(12, 11.2);
+            p.lineTo(12, 16.4);
+          }),
+          stroke,
+        );
+        canvas.drawCircle(const Offset(12, 7.9), 1.0, fill);
+
+        break;
+      case LI.code:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(8.5, 7.5);
+            p.lineTo(3.5, 12);
+            p.lineTo(8.5, 16.5);
+            p.moveTo(15.5, 7.5);
+            p.lineTo(20.5, 12);
+            p.lineTo(15.5, 16.5);
+            p.moveTo(13.6, 4.5);
+            p.lineTo(10.4, 19.5);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.save:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(4.5, 5.5);
+            p.lineTo(16, 5.5);
+            p.lineTo(19.5, 9);
+            p.lineTo(19.5, 18.5);
+            p.lineTo(4.5, 18.5);
+            p.close();
+          }),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(8, 5.5);
+            p.lineTo(8, 10.5);
+            p.lineTo(15, 10.5);
+            p.lineTo(15, 5.5);
+            p.moveTo(8, 18.5);
+            p.lineTo(8, 13.5);
+            p.lineTo(16, 13.5);
+            p.lineTo(16, 18.5);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.doc:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(6, 3.5);
+            p.lineTo(14, 3.5);
+            p.lineTo(18.5, 8);
+            p.lineTo(18.5, 20.5);
+            p.lineTo(6, 20.5);
+            p.close();
+            p.moveTo(14, 3.5);
+            p.lineTo(14, 8);
+            p.lineTo(18.5, 8);
+            p.moveTo(9, 12.5);
+            p.lineTo(15.5, 12.5);
+            p.moveTo(9, 16);
+            p.lineTo(15.5, 16);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.brain:
+        // Head profile with two filled nodes: stands in for the designs'
+        // `psychology` on the Agents row.
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(15.5, 20.5);
+            p.lineTo(15.5, 18.4);
+            p.cubicTo(18.4, 16.8, 19.8, 14.1, 19.8, 10.9);
+            p.cubicTo(19.8, 6.4, 16.4, 3.5, 12, 3.5);
+            p.cubicTo(7.6, 3.5, 4.2, 6.4, 4.2, 10.9);
+            p.cubicTo(4.2, 13.5, 5.5, 15.8, 8.5, 17.3);
+            p.lineTo(8.5, 20.5);
+          }),
+          stroke,
+        );
+        canvas.drawCircle(const Offset(12, 9.8), 1.05, fill);
+        canvas.drawCircle(const Offset(15.4, 13.4), 1.05, fill);
+
+        break;
+      case LI.robot:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(4.5, 8, 15, 11.5),
+            const Radius.circular(3),
+          ),
+          stroke,
+        );
+        canvas.drawCircle(const Offset(9.4, 13.6), 1.25, fill);
+        canvas.drawCircle(const Offset(14.6, 13.6), 1.25, fill);
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(12, 8);
+            p.lineTo(12, 4.8);
+            p.moveTo(4.5, 11.8);
+            p.lineTo(2.6, 11.8);
+            p.moveTo(19.5, 11.8);
+            p.lineTo(21.4, 11.8);
+          }),
+          stroke,
+        );
+        canvas.drawCircle(const Offset(12, 3.6), 1.35, fill);
+
+        break;
+      case LI.arrowBack:
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(19, 12);
+            p.lineTo(5, 12);
+            p.moveTo(11, 6);
+            p.lineTo(5, 12);
+            p.lineTo(11, 18);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.diff:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(4, 4, 11, 11),
+            const Radius.circular(2.2),
+          ),
+          stroke,
+        );
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(9, 9, 11, 11),
+            const Radius.circular(2.2),
+          ),
+          stroke,
+        );
+        break;
     }
   }
 

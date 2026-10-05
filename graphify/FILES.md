@@ -85,8 +85,9 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (1): lib/main.dart
 - If changed, affects 1 file(s): lib/main.dart
 
-## lib/ui/line_icons.dart  (648 lines)
-- Defines (read with exact line ranges): class LI L17+, class LIcon L99+, function build L114-135, class LIconButton L136+, class LLinePainter L189+, function paint L203-223, function _path L224-229, function _draw L230-644, function shouldRepaint L645-648
+## lib/ui/line_icons.dart  (1136 lines)
+- Defines (read with exact line ranges): class LI L22+, class LIcon L169+, function build L184-206, class LIconButton L207+, class LLinePainter L270+, function paint L284-304, function _path L305-310, function _draw L311-1132, function shouldRepaint L1133-1136
+- Imports: lib/ui/theme.dart
 - Imported by (5): lib/ui/chat.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/parts.dart, lib/ui/widgets.dart
 - If changed, affects 15 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
 
@@ -108,8 +109,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (2): lib/ui/chat.dart, lib/ui/diff_page.dart
 - If changed, affects 8 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
-## lib/ui/primitives.dart  (1544 lines)
-- Defines (read with exact line ranges): class OCAccent L20+, function at L66-72, class OCButtonVariant L73+, class OCButton L98+, function createState L125-127, class _OCButtonState L128+, function build L271-346, class OCCardVariant L347+, class OCCard L359+, class OCInnerCell L411+, class OCIconTile L464+, class OCStatus L538+, class OCAvatar L543+, class OCAvatarStack L626+, class OCToggle L699+, class OCSegmentedControl L772+, class OCSegment L810+, class _SegmentItem L817+, class OCProgressBar L889+, class OCProgressRing L941+, class _RingPainter L1005+, function paint L1019-1046, function shouldRepaint L1047-1060, class OCChip L1061+, class OCListRow L1147+, class OCBreadcrumbs L1272+, class OCFilterButton L1382+, class OCSkeleton L1442+, class _OCSkeletonState L1458+, function dispose L1466-1489, class OCSkeletonList L1490+
+## lib/ui/primitives.dart  (1556 lines)
+- Defines (read with exact line ranges): class OCAccent L22+, function at L75-81, class OCButtonVariant L82+, class OCButton L110+, function createState L137-139, class _OCButtonState L140+, function build L283-355, class OCCardVariant L356+, class OCCard L368+, class OCInnerCell L420+, class OCIconTile L473+, class OCStatus L547+, class OCAvatar L552+, class OCAvatarStack L637+, class OCToggle L710+, class OCSegmentedControl L783+, class OCSegment L821+, class _SegmentItem L828+, class OCProgressBar L900+, class OCProgressRing L952+, class _RingPainter L1017+, function paint L1031-1058, function shouldRepaint L1059-1072, class OCChip L1073+, class OCListRow L1158+, class OCBreadcrumbs L1284+, class OCFilterButton L1394+, class OCSkeleton L1454+, class _OCSkeletonState L1470+, function dispose L1478-1501, class OCSkeletonList L1502+
 - Imports: lib/ui/theme.dart
 - Imported by (14): lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, lib/ui/terminal_page.dart ...
 - If changed, affects 15 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
@@ -140,8 +141,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 
 ## lib/ui/theme.dart  (1251 lines)
 - Defines (read with exact line ranges): class OCColors L17+, class OCTokens L232+, function of L372-375, function copyWith L376-444, function lerp L445-493, class OCShadow L494+, class OCGradient L537+, class OCTokensX L568+, class OCSpace L573+, class OCRadius L631+, class OCMotion L684+, class OCTypography L721+, function _wght L750-754, function _sans L755-778, function _serif L779-796, function _mono L797-897, function numeric L898-910, function mono L911-922, function monoSmall L923-925, function monoLarge L926-929, function code L930-933, function codeBlock L934-958, class _TextStyleExt L959+, function withColor L960-971, function buildAppTheme L972-973, function _buildTheme L974-1224, function _fieldBorder L1225-1230, function _textTheme L1231-1251
-- Imported by (17): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/primitives.dart, lib/ui/prompts.dart ...
-- If changed, affects 17 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
+- Imported by (18): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/primitives.dart ...
+- If changed, affects 18 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart ...
 
 ## lib/ui/todos_page.dart  (152 lines)
 - Defines (read with exact line ranges): class TodosPage L10+, function build L14-99, class _TodoTile L100+

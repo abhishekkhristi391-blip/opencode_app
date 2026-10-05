@@ -1,10 +1,12 @@
-// Design-system primitives — build_order step 2 of design-system.json:
-// Pill/Button, Card, InnerCell, IconTile, Avatar(+Stack), Toggle, Progress.
+// Design-system primitives: Button, Card, InnerCell, IconTile, Avatar(+Stack),
+// Toggle, SegmentedControl, Progress, Chip, ListRow, Breadcrumbs, Skeleton.
 //
 // Rules baked in here:
-//  * min 44x44 tap target
+//  * min 48x48 tap target (the design draws 44; 48 wins)
 //  * press = scale(0.97), disabled = 40% opacity
-//  * soft diffuse shadows, never harsh borders or pure-black shadows
+//  * two action colours only: white `cta` for the primary action, terracotta
+//    `accent` for secondary/selected. No third hue is a button.
+//  * surfaces come from the container ladder in theme.dart, never from a border
 //  * status is never colour-only (dots ship with a label or icon)
 //  * no hard-coded colours/sizes: everything comes from theme.dart tokens
 
@@ -61,7 +63,14 @@ class OCAccent {
   );
 
   /// Cycle used when a screen needs several tiles without hand-picking.
-  static const rotation = <OCAccent>[purple, orange, blue, green, pink, yellow];
+  static const rotation = <OCAccent>[
+    orange,
+    blue,
+    green,
+    purple,
+    pink,
+    yellow,
+  ];
 
   static OCAccent at(int i) => rotation[i % rotation.length];
 }
@@ -71,25 +80,28 @@ class OCAccent {
 // ---------------------------------------------------------------------
 
 enum OCButtonVariant {
-  /// #0D0D12 fill, white label, 56 tall full-width pill. The dominant CTA.
+  /// White fill, dark label — M3 `bg-primary text-on-primary`. 56 tall,
+  /// radius 16. The dominant CTA.
   primaryBlack,
 
-  /// cta_orange_soft gradient, 48 tall, radius 14. Secondary/filled action.
+  /// Terracotta fill, dark label — M3 `bg-secondary text-on-secondary`.
+  /// 48 tall, radius 16.
   primaryOrange,
 
-  /// cta_sunset gradient, 52 tall pill, colored_cta_glow shadow.
+  /// Terracotta ramp fill with a soft glow. 52 tall pill.
   primaryGradient,
 
-  /// #F0F0F7 fill, ink label, 40 tall pill, optional 16-18px leading glyph.
+  /// `surface-container` fill, ink label, 40 tall pill.
   secondaryPill,
 
-  /// 32 tall, radius 10, caption/700. Inline affordance ("Start", "Details").
+  /// `surface-container-high` fill, 32 tall, radius 12. Inline affordance
+  /// ("Start", "Details").
   smallInline,
 
-  /// White fill + hairline, 36 tall pill, caption/600.
+  /// Transparent fill + hairline outline, 36 tall pill.
   ghostOutline,
 
-  /// redTint fill with redInk label — destructive confirmations.
+  /// errorSoft fill with errorInk label — destructive confirmations.
   danger,
 }
 
@@ -143,7 +155,7 @@ class _OCButtonState extends State<OCButton> {
       >{
         OCButtonVariant.primaryBlack: (
           h: 56,
-          r: 9999,
+          r: 16,
           px: 24,
           text: OCTypography.button,
           gap: 8,
@@ -151,7 +163,7 @@ class _OCButtonState extends State<OCButton> {
         ),
         OCButtonVariant.primaryOrange: (
           h: 48,
-          r: 14,
+          r: 16,
           px: 20,
           text: OCTypography.button,
           gap: 8,
@@ -175,9 +187,9 @@ class _OCButtonState extends State<OCButton> {
         ),
         OCButtonVariant.smallInline: (
           h: 32,
-          r: 10,
+          r: 12,
           px: 14,
-          text: OCTypography.button,
+          text: OCTypography.metaStrong,
           gap: 6,
           icon: 16,
         ),
@@ -185,13 +197,13 @@ class _OCButtonState extends State<OCButton> {
           h: 36,
           r: 9999,
           px: 16,
-          text: OCTypography.button,
+          text: OCTypography.metaStrong,
           gap: 6,
           icon: 16,
         ),
         OCButtonVariant.danger: (
           h: 48,
-          r: 14,
+          r: 16,
           px: 20,
           text: OCTypography.button,
           gap: 8,
@@ -210,31 +222,31 @@ class _OCButtonState extends State<OCButton> {
     switch (widget.variant) {
       case OCButtonVariant.primaryBlack:
         return (
-          bg: OCColors.ctaSolid,
-          fg: OCColors.textInverse,
+          bg: OCColors.cta,
+          fg: OCColors.onCta,
           gradient: null,
           shadow: OCShadow.floatingCta,
           border: null,
         );
       case OCButtonVariant.primaryOrange:
         return (
-          bg: OCColors.orange,
-          fg: OCColors.textInverse,
-          gradient: OCGradient.ctaOrangeSoft,
+          bg: OCColors.secondary,
+          fg: OCColors.onSecondary,
+          gradient: null,
           shadow: OCShadow.none,
           border: null,
         );
       case OCButtonVariant.primaryGradient:
         return (
-          bg: OCColors.pinkHot,
-          fg: OCColors.textInverse,
+          bg: OCColors.secondary,
+          fg: OCColors.onSecondary,
           gradient: OCGradient.ctaSunset,
           shadow: OCShadow.coloredCtaGlow,
           border: null,
         );
       case OCButtonVariant.secondaryPill:
         return (
-          bg: OCColors.canvas,
+          bg: OCColors.surfaceElevated,
           fg: OCColors.textPrimary,
           gradient: null,
           shadow: OCShadow.none,
@@ -289,10 +301,7 @@ class _OCButtonState extends State<OCButton> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: spec.text.copyWith(
-              color: paint.fg,
-              fontWeight: FontWeight.w700,
-            ),
+            style: spec.text.copyWith(color: paint.fg),
           ),
         ),
         if (widget.trailingIcon != null) ...[
@@ -345,17 +354,17 @@ class _OCButtonState extends State<OCButton> {
 // ---------------------------------------------------------------------
 
 enum OCCardVariant {
-  /// White on the pale canvas — the default container.
+  /// `surface-container-low` on the `surface` canvas — the default container.
   default_,
 
-  /// Pastel gradient fill; put white inner cells on top of it.
+  /// Warm container gradient; put inner cells on top of it.
   tinted,
 
-  /// Gradient fill meant to sit behind illustration/avatar slots.
+  /// Container gradient meant to sit behind illustration/avatar slots.
   hero,
 }
 
-/// White rounded container: radius 24, soft shadow, 16px padding.
+/// `surface-container-low` container: radius 16, soft shadow, 16px padding.
 class OCCard extends StatelessWidget {
   const OCCard({
     super.key,
@@ -378,7 +387,6 @@ class OCCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final paint = switch (variant) {
       OCCardVariant.default_ => gradient,
       OCCardVariant.tinted => gradient ?? OCGradient.heroPastelBlend,
@@ -389,7 +397,8 @@ class OCCard extends StatelessWidget {
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: paint == null ? cs.surface : Colors.transparent,
+        // A card is one container step above the canvas the page sits on.
+        color: paint == null ? OCColors.surface : Colors.transparent,
         gradient: paint,
         borderRadius: shape,
         boxShadow: OCShadow.card,
@@ -406,8 +415,8 @@ class OCCard extends StatelessWidget {
   }
 }
 
-/// The #F6F6FA / radius-16 fill used for rows and stat tiles inside a card.
-/// Separation comes from fill contrast, never from a shadow.
+/// The `surface-container` / radius-12 fill used for rows and stat tiles inside
+/// a card. Separation comes from fill contrast, never from a shadow or a border.
 class OCInnerCell extends StatelessWidget {
   const OCInnerCell({
     super.key,
@@ -419,7 +428,7 @@ class OCInnerCell extends StatelessWidget {
     this.margin = EdgeInsets.zero,
     this.onTap,
     this.accent,
-    this.radius = OCRadius.inner,
+    this.radius = OCRadius.sm,
   });
 
   final Widget child;
@@ -459,15 +468,15 @@ class OCInnerCell extends StatelessWidget {
 // IconTile
 // ---------------------------------------------------------------------
 
-/// Tinted squircle that holds a glyph: radius 16, accent tint fill,
-/// accent base glyph. 52px for app-icon grids, 28px for inline chips.
+/// Tinted squircle that holds a glyph: radius 12, container fill, accent glyph.
+/// 48dp for grids, 28dp for inline chips.
 class OCIconTile extends StatelessWidget {
   const OCIconTile({
     super.key,
     required this.icon,
-    this.accent = OCAccent.purple,
-    this.size = 52,
-    this.iconSize = 24,
+    this.accent = OCAccent.orange,
+    this.size = 48,
+    this.iconSize = 22,
     this.solid = false,
     this.color,
     this.onTap,
@@ -510,7 +519,7 @@ class OCIconTile extends StatelessWidget {
       child: Icon(
         icon,
         size: iconSize,
-        color: solid ? OCColors.textInverse : (color ?? accent.ink),
+        color: solid ? OCColors.onCta : (color ?? accent.ink),
       ),
     );
 
@@ -563,7 +572,9 @@ class OCAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    // The design separates avatars from the canvas with a 2px
+    // `ring-surface-container-lowest`, not a white ring.
+    const ringColor = OCColors.surfaceLowest;
     final tone = accent ?? OCAccent.at(label.hashCode.abs());
     final initial = label.trim().isEmpty
         ? '?'
@@ -575,7 +586,7 @@ class OCAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: tone.tint,
         shape: BoxShape.circle,
-        border: Border.all(color: cs.surface, width: 2), // 2px white ring
+        border: Border.all(color: ringColor, width: 2),
       ),
       alignment: Alignment.center,
       child: emoji != null
@@ -613,7 +624,7 @@ class OCAvatar extends StatelessWidget {
             height: dot,
             decoration: BoxDecoration(
               color: color,
-              border: Border.all(color: cs.surface, width: 2),
+              border: Border.all(color: ringColor, width: 2),
             ),
           ),
         ),
@@ -622,7 +633,7 @@ class OCAvatar extends StatelessWidget {
   }
 }
 
-/// Overlapping circles, -8px margin, white ring between them.
+/// Overlapping circles, -8px margin, deepest-container ring between them.
 class OCAvatarStack extends StatelessWidget {
   const OCAvatarStack({
     super.key,
@@ -694,8 +705,8 @@ class OCAvatarStack extends StatelessWidget {
 // Toggle
 // ---------------------------------------------------------------------
 
-/// 44x26 switch: #FF8A1F on, #D9D9E3 off, 22px white thumb with a soft shadow.
-/// [onChanged] null renders the disabled state.
+/// M3 switch: 52x32, white track with a dark thumb when on, `container-high`
+/// track when off. 48dp hit area. [onChanged] null renders the disabled state.
 class OCToggle extends StatelessWidget {
   const OCToggle({
     super.key,
@@ -731,11 +742,11 @@ class OCToggle extends StatelessWidget {
               child: AnimatedContainer(
                 duration: OCMotion.base,
                 curve: OCMotion.curve,
-                width: 44,
-                height: 26,
-                padding: const EdgeInsets.all(2),
+                width: 52,
+                height: 32,
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: value ? OCColors.toggleOn : OCColors.toggleOff,
+                  color: value ? OCColors.cta : OCColors.surfaceHigh,
                   borderRadius: BorderRadius.circular(OCRadius.full),
                 ),
                 child: AnimatedAlign(
@@ -745,10 +756,10 @@ class OCToggle extends StatelessWidget {
                       ? Alignment.centerRight
                       : Alignment.centerLeft,
                   child: Container(
-                    width: 22,
-                    height: 22,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
-                      color: OCColors.surface,
+                      color: value ? OCColors.onCta : OCColors.textSecondary,
                       shape: BoxShape.circle,
                       boxShadow: OCShadow.toggleThumb,
                     ),
@@ -767,8 +778,8 @@ class OCToggle extends StatelessWidget {
 // Segmented control
 // ---------------------------------------------------------------------
 
-/// #F0F0F7 track, 4px padding, 36px pill items, white + soft shadow on the
-/// active one.
+/// `surface-container-low` track, 4px padding, 40px pill items; the active one
+/// is `bg-primary` white with a dark label — the design's segmented control.
 class OCSegmentedControl<T> extends StatelessWidget {
   const OCSegmentedControl({
     super.key,
@@ -786,7 +797,7 @@ class OCSegmentedControl<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(OCSpace.xs),
       decoration: BoxDecoration(
-        color: OCColors.canvas,
+        color: OCColors.surface,
         borderRadius: BorderRadius.circular(OCRadius.full),
       ),
       child: Row(
@@ -838,10 +849,10 @@ class _SegmentItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: OCMotion.base,
           curve: OCMotion.curve,
-          height: 36,
+          height: 40,
           padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
           decoration: BoxDecoration(
-            color: selected ? OCColors.surface : Colors.transparent,
+            color: selected ? OCColors.cta : Colors.transparent,
             borderRadius: BorderRadius.circular(OCRadius.full),
             boxShadow: selected ? OCShadow.segmentedActive : OCShadow.none,
           ),
@@ -852,9 +863,9 @@ class _SegmentItem extends StatelessWidget {
               if (icon != null) ...[
                 Icon(
                   icon,
-                  size: 15,
+                  size: 16,
                   color: selected
-                      ? OCColors.textPrimary
+                      ? OCColors.onCta
                       : OCColors.textSecondary,
                 ),
                 const SizedBox(width: OCSpace.xs + 2),
@@ -864,10 +875,10 @@ class _SegmentItem extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: OCTypography.caption.copyWith(
+                  style: OCTypography.meta.copyWith(
                     fontWeight: FontWeight.w600,
                     color: selected
-                        ? OCColors.textPrimary
+                        ? OCColors.onCta
                         : OCColors.textSecondary,
                   ),
                 ),
@@ -915,7 +926,7 @@ class OCProgressBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(OCRadius.full),
         child: Container(
           height: height,
-          color: trackColor ?? OCColors.yellowTint,
+          color: trackColor ?? OCColors.surfaceHighest,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: animate ? 0 : target, end: target),
             duration: OCMotion.emphasis,
@@ -968,7 +979,8 @@ class OCProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = value.clamp(0.0, 1.0);
-    final ring = color ?? context.oc.acc;
+    // The design's progress colour is `primary`, not the accent.
+    final ring = color ?? context.oc.cta;
     return Semantics(
       label: semanticLabel,
       value: '${(target * 100).round()}%',
@@ -1081,7 +1093,7 @@ class OCChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final fg = selected ? accent.ink : OCColors.textPrimary;
+    final fg = selected ? OCColors.textPrimary : OCColors.textSecondary;
     return Semantics(
       button: true,
       enabled: enabled,
@@ -1096,22 +1108,21 @@ class OCChip extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(minHeight: OCSpace.tapTarget),
             padding: const EdgeInsets.symmetric(
-              horizontal: OCSpace.lg,
-              vertical: OCSpace.sm,
+              horizontal: OCSpace.md,
+              vertical: OCSpace.xs + 2,
             ),
+            // Unselected = `container-low`, selected = `container-high`. No
+            // border: the design's chips are separated by fill alone.
             decoration: BoxDecoration(
-              color: selected ? accent.tint : OCColors.surfaceSubtle,
+              color: selected ? OCColors.surfaceHigh : OCColors.surface,
               borderRadius: BorderRadius.circular(OCRadius.full),
-              border: selected
-                  ? Border.all(color: accent.base, width: 1.5)
-                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18, color: selected ? accent.ink : fg),
-                  const SizedBox(width: OCSpace.sm),
+                  Icon(icon, size: 16, color: selected ? accent.ink : fg),
+                  const SizedBox(width: OCSpace.xs + 2),
                 ],
                 if (maxWidth != null)
                   ConstrainedBox(
@@ -1120,13 +1131,13 @@ class OCChip extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: OCTypography.bodyStrong.copyWith(color: fg),
+                      style: OCTypography.metaStrong.copyWith(color: fg),
                     ),
                   )
                 else
                   Text(
                     label,
-                    style: OCTypography.bodyStrong.copyWith(color: fg),
+                    style: OCTypography.metaStrong.copyWith(color: fg),
                   ),
               ],
             ),
@@ -1208,9 +1219,10 @@ class OCListRow extends StatelessWidget {
               vertical: OCSpace.sm,
             ),
             decoration: BoxDecoration(
+              // A selected row is a container step up, not an accent wash.
               color:
                   background ??
-                  (selected ? context.oc.accSoft : Colors.transparent),
+                  (selected ? OCColors.surfaceHigh : Colors.transparent),
               borderRadius: shape,
             ),
             child: Row(
