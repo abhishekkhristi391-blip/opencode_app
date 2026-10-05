@@ -50,9 +50,10 @@ class OCColors {
   /// `surface-bright`.
   static const surfaceBright = Color(0xFF3A3938);
 
-  /// Terminal viewport. The design draws the terminal window as
-  /// `container-low`; the code blocks inside chat sit one step deeper.
-  static const terminalBg = _low;
+  /// Terminal viewport. The reference draws the terminal window as
+  /// `container-lowest`, one step below the canvas, so the output well is
+  /// deeper than the `container-low` card its header sits on.
+  static const terminalBg = _lowest;
 
   /// Terminal foreground - M3 `on-surface`.
   static const terminalText = Color(0xFFE6E2DF);

@@ -219,7 +219,9 @@ class _SessionDiffTile extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: OCColors.surface,
-        borderRadius: BorderRadius.circular(OCRadius.card),
+        // `rounded-xl`, matching the settings groups: a diff file is the same
+        // kind of panel, so the two should not read at different depths.
+        borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(

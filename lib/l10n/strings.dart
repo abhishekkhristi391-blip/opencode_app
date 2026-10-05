@@ -1003,6 +1003,10 @@ class S {
   /// Group heading that carries a count, e.g. "MCP servers (3)".
   static String setMcpServers(int count) => 'MCP servers ($count)';
 
+  /// Terminal output placeholder. Was a Hinglish literal in the widget.
+  static const terminalEmpty =
+      'Type a command and press Enter.\nShortcuts are above the output.';
+
   // ------------------------------------------------------------------
   // helpers
   // ------------------------------------------------------------------

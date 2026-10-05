@@ -165,11 +165,17 @@ class TerminalPageState extends State<TerminalPage> {
         Expanded(
           child: Container(
             width: double.infinity,
-            color: context.oc.terminalBg,
+            // The reference's `rounded-lg` well, inset from the canvas.
+            margin: const EdgeInsets.symmetric(horizontal: OCSpace.sm),
+            decoration: BoxDecoration(
+              color: context.oc.terminalBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            clipBehavior: Clip.antiAlias,
             child: out.text.isEmpty
                 ? Center(
                     child: Text(
-                      'Command likho aur Enter dabao.\nShortcut upar diye hain.',
+                      S.terminalEmpty,
                       textAlign: TextAlign.center,
                       style: OCTypography.caption.copyWith(
                         height: 1.6,
@@ -195,9 +201,14 @@ class TerminalPageState extends State<TerminalPage> {
         if (running) const OCProgressBar(value: 1, height: 4, animate: false),
         Container(
           decoration: BoxDecoration(
-            color: context.oc.card,
-            border: Border(top: BorderSide(color: context.oc.line)),
+            // The reference's prompt row is a `container-lowest` pill, not a
+            // top-bordered strip: the border made the bar read as a divider
+            // between the output and the keyboard rather than as an input.
+            color: context.oc.terminalBg,
+            borderRadius: BorderRadius.circular(8),
           ),
+          margin: const EdgeInsets.symmetric(horizontal: OCSpace.sm),
+          clipBehavior: Clip.antiAlias,
           child: SafeArea(
             top: false,
             child: Padding(

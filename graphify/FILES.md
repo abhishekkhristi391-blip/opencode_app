@@ -21,7 +21,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (1): lib/state/store.dart
 - If changed, affects 17 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
 
-## lib/l10n/strings.dart  (1013 lines)
+## lib/l10n/strings.dart  (1017 lines)
 - Defines (read with exact line ranges): class S L9+, function serverOnlineVersion L111-190, function composerModelAgent L191-196, function toolRunning L197-197, function toolDone L198-204, function moreToolsCount L205-250, function filesCount L251-251, function messageCount L252-252, function tokensUsed L253-280, function sessionsDeleteBody L281-299, function historyFiles L300-307, function cmdArgs L308-308, function cmdUseSkill L309-309, function cmdUseLabel L310-310, function partsAgent L311-327, function diffAppliesTo L328-344, function filesDeleteBody L345-348, function filesNameLabel L349-350, function filesEmptyName L351-352, function filesNameHint L353-369, function setPermExternalTitle L370-371, function setPermExternalBody L372-375, function setPassword L376-386, function filesExists L387-387, function filesDeleteFailed L388-388, function filesFolderFailed L389-391, function added L392-414, function netTimeout L415-415, function netUnreachable L416-421, function permSuggestingRules L422-431, function filesChangedCount L432-457, function modelsContext L458-458, function modelsSelected L459-463, function setMcpLabel L464-483, function partsThoughtFor L484-485, function partsThinkingLines L486-490, function composerWorking L491-492, function composerQueued L493-495, function sessionsCount L496-496, function sessionsCountOne L497-497 ...
 - Imported by (17): lib/api/client.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
 - If changed, affects 19 file(s): lib/api/client.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart ...
@@ -67,8 +67,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (2): lib/ui/home.dart, lib/ui/settings_page.dart
 - If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, lib/ui/settings_page.dart
 
-## lib/ui/diff_page.dart  (482 lines)
-- Defines (read with exact line ranges): class DiffPage L12+, function createState L16-18, class _DiffPageState L19+, function initState L29-33, function _load L34-80, function build L81-205, class _SessionDiffTile L206+, function _unifiedPreview L338-353, function _split L354-357, function _diffOps L358-403, function _toGitPatch L404-406, class _GitDiffView L407+
+## lib/ui/diff_page.dart  (484 lines)
+- Defines (read with exact line ranges): class DiffPage L12+, function createState L16-18, class _DiffPageState L19+, function initState L29-33, function _load L34-80, function build L81-205, class _SessionDiffTile L206+, function _unifiedPreview L340-355, function _split L356-359, function _diffOps L360-405, function _toGitPatch L406-408, class _GitDiffView L409+
 - Imports: lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/parts.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
@@ -133,14 +133,14 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
-## lib/ui/terminal_page.dart  (293 lines)
-- Defines (read with exact line ranges): class TerminalPage L9+, function createState L13-15, class TerminalPageState L16+, function clear L42-48, function newSession L49-56, function dispose L57-63, function _append L64-71, function _run L72-97, function build L98-289, function _terminalStyle L290-293
+## lib/ui/terminal_page.dart  (304 lines)
+- Defines (read with exact line ranges): class TerminalPage L9+, function createState L13-15, class TerminalPageState L16+, function clear L42-48, function newSession L49-56, function dispose L57-63, function _append L64-71, function _run L72-97, function build L98-300, function _terminalStyle L301-304
 - Imports: lib/l10n/strings.dart, lib/ui/app_scope.dart, lib/ui/primitives.dart, lib/ui/theme.dart
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
-## lib/ui/theme.dart  (1252 lines)
-- Defines (read with exact line ranges): class OCColors L17+, class OCTokens L236+, function of L376-379, function copyWith L380-448, function lerp L449-497, class OCShadow L498+, class OCGradient L541+, class OCTokensX L572+, class OCSpace L577+, class OCRadius L632+, class OCMotion L685+, class OCTypography L722+, function _wght L751-755, function _sans L756-779, function _serif L780-797, function _mono L798-898, function numeric L899-911, function mono L912-923, function monoSmall L924-926, function monoLarge L927-930, function code L931-934, function codeBlock L935-959, class _TextStyleExt L960+, function withColor L961-972, function buildAppTheme L973-974, function _buildTheme L975-1225, function _fieldBorder L1226-1231, function _textTheme L1232-1252
+## lib/ui/theme.dart  (1253 lines)
+- Defines (read with exact line ranges): class OCColors L17+, class OCTokens L237+, function of L377-380, function copyWith L381-449, function lerp L450-498, class OCShadow L499+, class OCGradient L542+, class OCTokensX L573+, class OCSpace L578+, class OCRadius L633+, class OCMotion L686+, class OCTypography L723+, function _wght L752-756, function _sans L757-780, function _serif L781-798, function _mono L799-899, function numeric L900-912, function mono L913-924, function monoSmall L925-927, function monoLarge L928-931, function code L932-935, function codeBlock L936-960, class _TextStyleExt L961+, function withColor L962-973, function buildAppTheme L974-975, function _buildTheme L976-1226, function _fieldBorder L1227-1232, function _textTheme L1233-1253
 - Imported by (18): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/primitives.dart ...
 - If changed, affects 18 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart ...
 
