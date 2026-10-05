@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Source+Serif+4:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100%; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "tertiary": "#ffffff", "error": "#ffb4ab", "surface-container-low": "#1c1b1a", "on-tertiary": "#00325a", "inverse-primary": "#5f5f59", "on-secondary-container": "#ffa082", "secondary": "#ffb59e", "tertiary-fixed": "#d2e4ff", "primary-fixed": "#e4e2db", "on-primary-fixed-variant": "#474741", "surface-variant": "#363433", "surface-container-lowest": "#0f0e0d", "tertiary-container": "#d2e4ff", "error-container": "#93000a", "surface-dim": "#141312", "on-primary-fixed": "#1b1c17", "outline-variant": "#474741", "primary-fixed-dim": "#c8c7bf", "on-primary-container": "#65655e", "surface": "#141312", "on-error": "#690005", "secondary-fixed-dim": "#ffb59e", "tertiary-fixed-dim": "#a0c9ff", "surface-container": "#201f1e", "on-error-container": "#ffdad6", "surface-bright": "#3a3938", "on-tertiary-fixed-variant": "#00497f", "on-secondary-fixed-variant": "#7a2f15", "surface-tint": "#c8c7bf", "inverse-surface": "#e6e2df", "primary-container": "#e4e2db", "on-tertiary-fixed": "#001c37", "primary": "#ffffff", "inverse-on-surface": "#31302f", "on-secondary": "#5c1902", "on-surface-variant": "#c8c7be", "on-secondary-fixed": "#390b00", "on-tertiary-container": "#2f67a0", "on-primary": "#30312c", "outline": "#919189", "secondary-fixed": "#ffdbd0", "surface-container-high": "#2b2a29", "on-surface": "#e6e2df", "secondary-container": "#7d3117", "surface-container-highest": "#363433", "on-background": "#e6e2df", "background": "#141312" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "1rem", "space-sm": "0.5rem", "space-lg": "1.25rem", "space-md": "0.875rem", "gutter": "1rem", "space-xl": "2rem", "space-xs": "0.25rem" }, fontFamily: { "headline-sm": ["\"Source Serif 4\""], "label-sm": ["Inter"], "code-inline": ["JetBrains Mono"], "code-block": ["JetBrains Mono"], "user-body": ["Inter"], "label-lg": ["Inter"], "assistant-body-bold": ["\"Source Serif 4\""], "headline-lg": ["\"Source Serif 4\""], "assistant-body": ["\"Source Serif 4\""], "label-md": ["Inter"], "headline-md": ["\"Source Serif 4\""], "body": ["Inter"] }, fontSize: { "headline-sm": ["20px", { lineHeight: "26px", fontWeight: "600" }], "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.02em", fontWeight: "500" }], "code-inline": ["12.5px", { lineHeight: "16px", fontWeight: "500" }], "code-block": ["13px", { lineHeight: "20px", fontWeight: "400" }], "user-body": ["15px", { lineHeight: "22px", fontWeight: "400" }], "label-lg": ["15px", { lineHeight: "20px", fontWeight: "600" }], "assistant-body-bold": ["16.5px", { lineHeight: "26px", fontWeight: "600" }], "headline-lg": ["32px", { lineHeight: "38px", fontWeight: "600" }], "assistant-body": ["16.5px", { lineHeight: "26px", fontWeight: "400" }], "label-md": ["13px", { lineHeight: "18px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "30px", fontWeight: "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_4px_20px_rgba(0,0,0,0.35)]"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Open drawer navigation" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">menu</span></button><div class="flex flex-col"><div class="flex items-center gap-space-xs"><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate max-w-[130px]">Active Chat</h1></div><div class="flex items-center gap-1.5 mt-0.5"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7BB07A] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[#7BB07A]"></span></span><span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-normal">termux-main</span></div></div></div><div class="flex items-center gap-space-xs"><button aria-label="New conversation" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">add_comment</span></button><button aria-label="Conversation actions overflow" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="relative w-full h-[1px] bg-outline-variant/30"><div class="absolute left-0 top-0 h-full w-1/3 bg-secondary transition-all duration-300"></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-32 bg-surface min-h-screen"><div class="flex flex-col w-full text-on-surface">
+<!-- Top Workspace Context Meta (Complementing App Shell) -->
+<div class="px-margin pt-space-xs pb-space-sm flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-primary">Workspace Files</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</div>
+<!-- Filter and Changed Counter Pills -->
+<div class="flex items-center gap-space-xs bg-surface-container-low p-1 rounded-full shadow-sm">
+<button class="px-3 py-1 rounded-full bg-surface-container-highest text-primary font-label-sm text-label-sm font-semibold transition-all" id="tab-all" onclick="toggleFilterMode('all')">
+        All
+      </button>
+<button class="px-3 py-1 rounded-full text-on-surface-variant hover:text-primary font-label-sm text-label-sm flex items-center gap-1.5 transition-all" id="tab-changed" onclick="toggleFilterMode('changed')">
+<span>Changed</span>
+<span class="px-1.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] leading-none font-bold">4</span>
+</button>
+</div>
+</div>
+<!-- Breadcrumb Navigation Bar -->
+<div class="w-full px-margin pb-space-sm overflow-x-auto no-scrollbar">
+<div class="flex items-center gap-1 py-1 w-max">
+<button class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-primary font-code-inline text-code-inline transition-colors">
+<span class="material-symbols-outlined text-[14px]">home_storage</span>
+<span>repo</span>
+</button>
+<span class="material-symbols-outlined text-outline-variant text-[14px]">chevron_right</span>
+<button class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-primary font-code-inline text-code-inline transition-colors">
+        src
+      </button>
+<span class="material-symbols-outlined text-outline-variant text-[14px]">chevron_right</span>
+<button class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-primary font-code-inline text-code-inline transition-colors">
+        server
+      </button>
+<span class="material-symbols-outlined text-outline-variant text-[14px]">chevron_right</span>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-highest text-primary font-code-inline text-code-inline font-medium shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[14px]">folder_open</span>
+<span>sse</span>
+</div>
+</div>
+</div>
+<!-- Search & View Toggle Strip -->
+<div class="px-margin pb-space-md flex flex-col gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full h-10 pl-9 pr-8 bg-surface-container-low text-primary placeholder:text-outline font-user-body text-user-body rounded-xl focus:outline-none focus:bg-surface-container transition-all" id="fileSearchInput" oninput="handleSearch(this.value)" placeholder="Filter files..." type="text"/>
+<button class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-surface-container-highest text-on-surface-variant items-center justify-center" id="clearSearchBtn" onclick="clearSearch()">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<!-- Compact Mode Toggle -->
+<button class="h-10 px-3 rounded-xl bg-surface-container-low text-on-surface hover:text-primary flex items-center gap-1.5 shadow-sm active:scale-95 transition-all" onclick="toggleViewStyle()">
+<span class="material-symbols-outlined text-[18px]" id="viewModeIcon">account_tree</span>
+<span class="font-label-sm text-label-sm hidden sm:inline" id="viewModeLabel">Tree view</span>
+</button>
+</div>
+</div>
+<!-- File System Container (Surface-1 Card) -->
+<div class="px-margin flex flex-col gap-space-xs">
+<!-- Directory Group Section: Folders -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden shadow-sm" id="foldersSection">
+<div class="px-space-md py-2 bg-surface-container-lowest/60 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-wider uppercase">Directories</span>
+<span class="font-code-inline text-[11px] text-outline">2 folders</span>
+</div>
+<!-- Folder 1: server/ -->
+<div class="folder-row flex items-center justify-between px-space-md py-3 bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors active:bg-surface-container-high" onclick="simulateFolderNav('server')">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary font-medium truncate">server/</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">8 items • updated 12m ago</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-inline text-[10px]">dir</span>
+<span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+</div>
+</div>
+<div class="h-[1px] w-full bg-surface-container"></div>
+<!-- Folder 2: client/ -->
+<div class="folder-row flex items-center justify-between px-space-md py-3 bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors active:bg-surface-container-high" onclick="simulateFolderNav('client')">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary font-medium truncate">client/</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">14 items • updated 1h ago</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-inline text-[10px]">dir</span>
+<span class="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Files Listing Section -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden shadow-sm mt-space-sm">
+<div class="px-space-md py-2 bg-surface-container-lowest/60 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-wider uppercase">Files</span>
+<button class="font-label-sm text-label-sm text-secondary hover:text-primary transition-colors" onclick="toggleSelectAll()">
+          Select All
+        </button>
+</div>
+<!-- File 1: sse-stream.ts -->
+<div class="file-item group flex items-center justify-between px-space-md py-2.5 bg-surface-container-low hover:bg-surface-container transition-colors" data-changed="true" data-filename="sse-stream.ts">
+<div class="flex items-center gap-space-sm min-w-0">
+<button class="file-checkbox w-5 h-5 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary transition-all" onclick="toggleFileCheckbox(this)">
+<span class="material-symbols-outlined text-[14px] opacity-0 checkmark">check</span>
+</button>
+<!-- TS Chip -->
+<div class="px-1.5 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-code-inline text-[11px] font-bold shrink-0">
+            TS
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary truncate">sse-stream.ts</span>
+<span class="font-label-sm text-label-sm text-outline">2.4 KB • TypeScript</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<!-- Modified badge -->
+<span class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-code-inline text-[10.5px] font-semibold flex items-center gap-1">
+<span>M</span>
+<span class="text-[9px] opacity-75">+18 -4</span>
+</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors" onclick="openFilePreview('sse-stream.ts')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+<div class="h-[1px] w-full bg-surface-container"></div>
+<!-- File 2: socket-handler.ts -->
+<div class="file-item group flex items-center justify-between px-space-md py-2.5 bg-surface-container-low hover:bg-surface-container transition-colors" data-changed="false" data-filename="socket-handler.ts">
+<div class="flex items-center gap-space-sm min-w-0">
+<button class="file-checkbox w-5 h-5 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary transition-all" onclick="toggleFileCheckbox(this)">
+<span class="material-symbols-outlined text-[14px] opacity-0 checkmark">check</span>
+</button>
+<!-- TS Chip -->
+<div class="px-1.5 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-code-inline text-[11px] font-bold shrink-0">
+            TS
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary truncate">socket-handler.ts</span>
+<span class="font-label-sm text-label-sm text-outline">4.1 KB • TypeScript</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="font-code-inline text-[11px] text-outline-variant pr-1">Clean</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors" onclick="openFilePreview('socket-handler.ts')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+<div class="h-[1px] w-full bg-surface-container"></div>
+<!-- File 3: router.py -->
+<div class="file-item group flex items-center justify-between px-space-md py-2.5 bg-surface-container-low hover:bg-surface-container transition-colors" data-changed="true" data-filename="router.py">
+<div class="flex items-center gap-space-sm min-w-0">
+<button class="file-checkbox w-5 h-5 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary transition-all" onclick="toggleFileCheckbox(this)">
+<span class="material-symbols-outlined text-[14px] opacity-0 checkmark">check</span>
+</button>
+<!-- PY Chip -->
+<div class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-code-inline text-[11px] font-bold shrink-0">
+            PY
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary truncate">router.py</span>
+<span class="font-label-sm text-label-sm text-outline">1.8 KB • Python</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<!-- Added badge -->
+<span class="px-1.5 py-0.5 rounded bg-[#1F2B20] text-[#7BB07A] font-code-inline text-[10.5px] font-semibold flex items-center gap-1">
+<span>A</span>
+<span class="text-[9px] opacity-75">+64</span>
+</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors" onclick="openFilePreview('router.py')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+<div class="h-[1px] w-full bg-surface-container"></div>
+<!-- File 4: schema.sql -->
+<div class="file-item group flex items-center justify-between px-space-md py-2.5 bg-surface-container-low hover:bg-surface-container transition-colors" data-changed="true" data-filename="schema.sql">
+<div class="flex items-center gap-space-sm min-w-0">
+<button class="file-checkbox w-5 h-5 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary transition-all" onclick="toggleFileCheckbox(this)">
+<span class="material-symbols-outlined text-[14px] opacity-0 checkmark">check</span>
+</button>
+<!-- SQL Chip -->
+<div class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-inline text-[11px] font-bold shrink-0">
+            SQL
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary truncate">schema.sql</span>
+<span class="font-label-sm text-label-sm text-outline">12.0 KB • Database</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<!-- Modified badge -->
+<span class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-code-inline text-[10.5px] font-semibold flex items-center gap-1">
+<span>M</span>
+<span class="text-[9px] opacity-75">+3 -1</span>
+</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors" onclick="openFilePreview('schema.sql')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+<div class="h-[1px] w-full bg-surface-container"></div>
+<!-- File 5: package.json -->
+<div class="file-item group flex items-center justify-between px-space-md py-2.5 bg-surface-container-low hover:bg-surface-container transition-colors" data-changed="true" data-filename="package.json">
+<div class="flex items-center gap-space-sm min-w-0">
+<button class="file-checkbox w-5 h-5 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary transition-all" onclick="toggleFileCheckbox(this)">
+<span class="material-symbols-outlined text-[14px] opacity-0 checkmark">check</span>
+</button>
+<!-- JSON Chip -->
+<div class="px-1.5 py-0.5 rounded bg-surface-variant text-on-surface-variant font-code-inline text-[11px] font-bold shrink-0">
+            JSON
+          </div>
+<div class="flex flex-col min-w-0">
+<span class="font-code-block text-code-block text-primary truncate">package.json</span>
+<span class="font-label-sm text-label-sm text-outline">1.1 KB • Config</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<!-- Modified badge -->
+<span class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-code-inline text-[10.5px] font-semibold flex items-center gap-1">
+<span>M</span>
+<span class="text-[9px] opacity-75">+2</span>
+</span>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors" onclick="openFilePreview('package.json')">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Repository Status Card -->
+<div class="mt-space-md p-space-md rounded-xl bg-surface-container-low shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">fork_right</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-primary">feat/sse-streaming</span>
+<span class="font-label-sm text-label-sm text-outline">Synced with origin/main • 4 uncommitted files</span>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm font-medium transition-colors">
+        Diff
+      </button>
+</div>
+</div>
+<!-- Bottom Floating Pill Strip (Context Selector Action Bar) -->
+<div class="fixed bottom-6 inset-x-margin z-30 pointer-events-none flex justify-center">
+<div class="pointer-events-auto w-full max-w-[420px] bg-surface-container-high rounded-full p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.65)] flex items-center justify-between gap-2">
+<!-- Status pill / selection feedback -->
+<div class="flex items-center gap-2 pl-3">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-md text-label-md text-on-surface select-none" id="selectedCountText">
+          Select files for context
+        </span>
+</div>
+<!-- Action Button -->
+<button class="h-10 px-4 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center gap-1.5 shadow-md active:scale-95 transition-all opacity-60 cursor-not-allowed" disabled="" id="addPromptBtn" onclick="addToChatPrompt()">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Add to prompt</span>
+</button>
+</div>
+</div>
+<!-- Micro-interaction / Toast Notification Container -->
+<div class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2 bg-primary text-on-primary px-4 py-2 rounded-full shadow-lg flex items-center gap-2" id="toastNotification">
+<span class="material-symbols-outlined text-[18px] text-secondary-container">task_alt</span>
+<span class="font-label-md text-label-md font-medium" id="toastMessage">Context updated</span>
+</div>
+</div>
+<script>
+  let selectedFiles = new Set();
+  let currentFilter = 'all';
+
+  function toggleFileCheckbox(btn) {
+    const fileRow = btn.closest('.file-item');
+    const filename = fileRow.getAttribute('data-filename');
+    const checkmark = btn.querySelector('.checkmark');
+
+    if (selectedFiles.has(filename)) {
+      selectedFiles.delete(filename);
+      btn.classList.remove('bg-secondary', 'text-on-secondary');
+      btn.classList.add('bg-surface-container-highest', 'text-primary');
+      checkmark.classList.add('opacity-0');
+      fileRow.classList.remove('bg-surface-container');
+    } else {
+      selectedFiles.add(filename);
+      btn.classList.remove('bg-surface-container-highest', 'text-primary');
+      btn.classList.add('bg-secondary', 'text-on-secondary');
+      checkmark.classList.remove('opacity-0');
+      fileRow.classList.add('bg-surface-container');
+    }
+    updateFloatingActionBar();
+  }
+
+  function toggleSelectAll() {
+    const visibleFiles = document.querySelectorAll('.file-item:not(.hidden)');
+    const allSelected = Array.from(visibleFiles).every(item => selectedFiles.has(item.getAttribute('data-filename')));
+
+    visibleFiles.forEach(fileRow => {
+      const filename = fileRow.getAttribute('data-filename');
+      const btn = fileRow.querySelector('.file-checkbox');
+      const checkmark = btn.querySelector('.checkmark');
+
+      if (allSelected) {
+        selectedFiles.delete(filename);
+        btn.classList.remove('bg-secondary', 'text-on-secondary');
+        btn.classList.add('bg-surface-container-highest', 'text-primary');
+        checkmark.classList.add('opacity-0');
+        fileRow.classList.remove('bg-surface-container');
+      } else {
+        selectedFiles.add(filename);
+        btn.classList.remove('bg-surface-container-highest', 'text-primary');
+        btn.classList.add('bg-secondary', 'text-on-secondary');
+        checkmark.classList.remove('opacity-0');
+        fileRow.classList.add('bg-surface-container');
+      }
+    });
+
+    updateFloatingActionBar();
+  }
+
+  function updateFloatingActionBar() {
+    const countText = document.getElementById('selectedCountText');
+    const actionBtn = document.getElementById('addPromptBtn');
+    const count = selectedFiles.size;
+
+    if (count > 0) {
+      countText.textContent = `${count} file${count > 1 ? 's' : ''} selected`;
+      actionBtn.removeAttribute('disabled');
+      actionBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+      actionBtn.classList.add('hover:bg-primary-fixed', 'cursor-pointer');
+    } else {
+      countText.textContent = 'Select files for context';
+      actionBtn.setAttribute('disabled', 'true');
+      actionBtn.classList.add('opacity-60', 'cursor-not-allowed');
+      actionBtn.classList.remove('hover:bg-primary-fixed', 'cursor-pointer');
+    }
+  }
+
+  function toggleFilterMode(mode) {
+    currentFilter = mode;
+    const tabAll = document.getElementById('tab-all');
+    const tabChanged = document.getElementById('tab-changed');
+    const foldersSection = document.getElementById('foldersSection');
+    const fileItems = document.querySelectorAll('.file-item');
+
+    if (mode === 'changed') {
+      tabChanged.classList.add('bg-surface-container-highest', 'text-primary');
+      tabChanged.classList.remove('text-on-surface-variant');
+      tabAll.classList.remove('bg-surface-container-highest', 'text-primary');
+      tabAll.classList.add('text-on-surface-variant');
+      
+      foldersSection.classList.add('hidden');
+      fileItems.forEach(item => {
+        if (item.getAttribute('data-changed') === 'true') {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    } else {
+      tabAll.classList.add('bg-surface-container-highest', 'text-primary');
+      tabAll.classList.remove('text-on-surface-variant');
+      tabChanged.classList.remove('bg-surface-container-highest', 'text-primary');
+      tabChanged.classList.add('text-on-surface-variant');
+      
+      foldersSection.classList.remove('hidden');
+      fileItems.forEach(item => item.classList.remove('hidden'));
+    }
+  }
+
+  function handleSearch(term) {
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const cleanTerm = term.trim().toLowerCase();
+    
+    if (cleanTerm.length > 0) {
+      clearBtn.classList.remove('hidden');
+      clearBtn.classList.add('flex');
+    } else {
+      clearBtn.classList.add('hidden');
+      clearBtn.classList.remove('flex');
+    }
+
+    const items = document.querySelectorAll('.file-item');
+    items.forEach(item => {
+      const filename = item.getAttribute('data-filename').toLowerCase();
+      const matches = filename.includes(cleanTerm);
+      if (matches && (currentFilter === 'all' || item.getAttribute('data-changed') === 'true')) {
+        item.classList.remove('hidden');
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+
+    const folderRows = document.querySelectorAll('.folder-row');
+    folderRows.forEach(row => {
+      const folderName = row.innerText.toLowerCase();
+      if (folderName.includes(cleanTerm) && currentFilter === 'all') {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+  }
+
+  function clearSearch() {
+    const input = document.getElementById('fileSearchInput');
+    input.value = '';
+    handleSearch('');
+  }
+
+  function toggleViewStyle() {
+    const icon = document.getElementById('viewModeIcon');
+    const label = document.getElementById('viewModeLabel');
+    if (icon.textContent === 'account_tree') {
+      icon.textContent = 'list';
+      label.textContent = 'Flat list';
+      showToast('Switched to flat list view');
+    } else {
+      icon.textContent = 'account_tree';
+      label.textContent = 'Tree view';
+      showToast('Switched to tree hierarchy');
+    }
+  }
+
+  function openFilePreview(filename) {
+    showToast(`Inspecting ${filename}`);
+  }
+
+  function simulateFolderNav(folderName) {
+    showToast(`Opening ${folderName}/`);
+  }
+
+  function addToChatPrompt() {
+    const count = selectedFiles.size;
+    if (count === 0) return;
+    showToast(`Added ${count} file${count > 1 ? 's' : ''} to chat context!`);
+    
+    // Slight tactile feedback: pulse button
+    const btn = document.getElementById('addPromptBtn');
+    btn.classList.add('scale-95');
+    setTimeout(() => btn.classList.remove('scale-95'), 150);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toastNotification');
+    const label = document.getElementById('toastMessage');
+    label.textContent = msg;
+    toast.classList.remove('opacity-0', '-translate-y-2');
+    toast.classList.add('opacity-100', 'translate-y-0');
+    
+    clearTimeout(window._toastTimeout);
+    window._toastTimeout = setTimeout(() => {
+      toast.classList.remove('opacity-100', 'translate-y-0');
+      toast.classList.add('opacity-0', '-translate-y-2');
+    }, 2200);
+  }
+</script></main><div class="fixed bottom-24 right-4 z-40 pb-safe"><button aria-label="Scroll to bottom" class="w-11 h-11 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-transform active:scale-95"><span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span></button></div></body></html>

@@ -28,3 +28,12 @@ flutter:
         - asset: assets/fonts/PlusJakartaSans-VariableFont_wght.ttf
         - asset: assets/fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf
           style: italic
+    - family: SourceSerif4
+      fonts:
+        - asset: assets/fonts/SourceSerif4.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono.ttf

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Source+Serif+4:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100%; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "tertiary": "#ffffff", "error": "#ffb4ab", "surface-container-low": "#1c1b1a", "on-tertiary": "#00325a", "inverse-primary": "#5f5f59", "on-secondary-container": "#ffa082", "secondary": "#ffb59e", "tertiary-fixed": "#d2e4ff", "primary-fixed": "#e4e2db", "on-primary-fixed-variant": "#474741", "surface-variant": "#363433", "surface-container-lowest": "#0f0e0d", "tertiary-container": "#d2e4ff", "error-container": "#93000a", "surface-dim": "#141312", "on-primary-fixed": "#1b1c17", "outline-variant": "#474741", "primary-fixed-dim": "#c8c7bf", "on-primary-container": "#65655e", "surface": "#141312", "on-error": "#690005", "secondary-fixed-dim": "#ffb59e", "tertiary-fixed-dim": "#a0c9ff", "surface-container": "#201f1e", "on-error-container": "#ffdad6", "surface-bright": "#3a3938", "on-tertiary-fixed-variant": "#00497f", "on-secondary-fixed-variant": "#7a2f15", "surface-tint": "#c8c7bf", "inverse-surface": "#e6e2df", "primary-container": "#e4e2db", "on-tertiary-fixed": "#001c37", "primary": "#ffffff", "inverse-on-surface": "#31302f", "on-secondary": "#5c1902", "on-surface-variant": "#c8c7be", "on-secondary-fixed": "#390b00", "on-tertiary-container": "#2f67a0", "on-primary": "#30312c", "outline": "#919189", "secondary-fixed": "#ffdbd0", "surface-container-high": "#2b2a29", "on-surface": "#e6e2df", "secondary-container": "#7d3117", "surface-container-highest": "#363433", "on-background": "#e6e2df", "background": "#141312" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "1rem", "space-sm": "0.5rem", "space-lg": "1.25rem", "space-md": "0.875rem", "gutter": "1rem", "space-xl": "2rem", "space-xs": "0.25rem" }, fontFamily: { "headline-sm": ["\"Source Serif 4\""], "label-sm": ["Inter"], "code-inline": ["JetBrains Mono"], "code-block": ["JetBrains Mono"], "user-body": ["Inter"], "label-lg": ["Inter"], "assistant-body-bold": ["\"Source Serif 4\""], "headline-lg": ["\"Source Serif 4\""], "assistant-body": ["\"Source Serif 4\""], "label-md": ["Inter"], "headline-md": ["\"Source Serif 4\""], "body": ["Inter"] }, fontSize: { "headline-sm": ["20px", { lineHeight: "26px", fontWeight: "600" }], "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.02em", fontWeight: "500" }], "code-inline": ["12.5px", { lineHeight: "16px", fontWeight: "500" }], "code-block": ["13px", { lineHeight: "20px", fontWeight: "400" }], "user-body": ["15px", { lineHeight: "22px", fontWeight: "400" }], "label-lg": ["15px", { lineHeight: "20px", fontWeight: "600" }], "assistant-body-bold": ["16.5px", { lineHeight: "26px", fontWeight: "600" }], "headline-lg": ["32px", { lineHeight: "38px", fontWeight: "600" }], "assistant-body": ["16.5px", { lineHeight: "26px", fontWeight: "400" }], "label-md": ["13px", { lineHeight: "18px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "30px", fontWeight: "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_4px_20px_rgba(0,0,0,0.35)]"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Open drawer navigation" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">menu</span></button><div class="flex flex-col"><div class="flex items-center gap-space-xs"><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate max-w-[130px]">Active Chat</h1></div><div class="flex items-center gap-1.5 mt-0.5"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7BB07A] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[#7BB07A]"></span></span><span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-normal">termux-main</span></div></div></div><div class="flex items-center gap-space-xs"><button aria-label="New conversation" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">add_comment</span></button><button aria-label="Conversation actions overflow" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="relative w-full h-[1px] bg-outline-variant/30"><div class="absolute left-0 top-0 h-full w-1/3 bg-secondary transition-all duration-300"></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-32 bg-surface min-h-screen"><div class="flex flex-col w-full px-margin pb-6 gap-space-md">
+<!-- Sub-header Bar: Session Metadata & Quick Toggles -->
+<div class="flex items-center justify-between bg-surface-container-low rounded-xl px-space-md py-space-sm shadow-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-on-surface">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-lg text-label-lg text-primary truncate">Remote Terminal</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full bg-secondary-container/40 text-[#7BB07A] font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#7BB07A] mr-1 inline-block animate-pulse"></span>
+            zsh (termux) • PID 18492
+          </span>
+</div>
+</div>
+</div>
+<!-- Quick Action Icons -->
+<div class="flex items-center gap-space-xs shrink-0">
+<button aria-label="Clear screen" class="w-9 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center transition-colors active:scale-95" id="clear-terminal-btn" title="Clear screen (Ctrl+L)">
+<span class="material-symbols-outlined text-[19px]">mop</span>
+</button>
+<button aria-label="Split terminal panel" class="w-9 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center transition-colors active:scale-95" title="Split pane">
+<span class="material-symbols-outlined text-[19px]">vertical_split</span>
+</button>
+</div>
+</div>
+<!-- Terminal Window Canvas -->
+<div class="flex flex-col w-full bg-surface-container-low rounded-xl overflow-hidden shadow-xl">
+<!-- Window Header -->
+<div class="flex items-center justify-between px-space-md py-2.5 bg-surface-container border-b-0">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-[#E07A6B]/80 inline-block"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#D4A373]/80 inline-block"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#7BB07A]/80 inline-block"></span>
+<span class="font-code-block text-code-block text-on-surface-variant ml-2 tracking-tight text-[11px]">ttyd - 80x24 • UTF-8</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container-highest font-code-inline text-code-inline text-on-surface-variant text-[10px]">
+          SSH-ED25519
+        </span>
+</div>
+</div>
+<!-- Terminal Screen Content -->
+<div class="p-4 overflow-x-auto select-text font-code-block text-code-block leading-relaxed text-on-surface min-h-[300px]" id="terminal-screen">
+<div class="text-on-surface-variant/70 text-[11px] mb-2 font-code-inline">Last login: Sun Mar 30 09:14:22 2025 on pts/2 from 192.168.1.104</div>
+<!-- Command 1 -->
+<div class="flex items-baseline flex-wrap gap-x-1.5 text-on-surface mb-0.5">
+<span class="text-[#7BB07A] font-semibold">opencode@termux</span><span class="text-on-surface-variant">:</span><span class="text-secondary font-medium">~/workspace/opencode-server</span><span class="text-on-surface">$</span>
+<span class="text-primary font-medium">pnpm test:integration</span>
+</div>
+<!-- Test output -->
+<div class="text-on-surface-variant text-[12px] mb-1">
+        &gt; opencode-server@0.9.4 test:integration
+      </div>
+<div class="flex items-center gap-2 my-1">
+<span class="bg-[#1F2B20] text-[#7BB07A] font-code-inline text-[11px] px-1.5 py-0.5 rounded font-bold">PASS</span>
+<span class="text-on-surface text-[12.5px]">test/sse-reconnect.spec.ts</span>
+<span class="text-on-surface-variant/70 text-[11px]">(4.12s)</span>
+</div>
+<div class="pl-3 space-y-0.5 text-[12px] text-on-surface-variant my-1.5">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="text-[#7BB07A] text-[13px]">✓</span>
+<span>establishes initial EventSource connection</span>
+<span class="text-on-surface-variant/60 text-[11px]">(12ms)</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="text-[#7BB07A] text-[13px]">✓</span>
+<span>handles socket abort with clean chunk boundary</span>
+<span class="text-on-surface-variant/60 text-[11px]">(88ms)</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="text-[#7BB07A] text-[13px]">✓</span>
+<span>applies exponential backoff with full jitter</span>
+<span class="text-on-surface-variant/60 text-[11px]">(1204ms)</span>
+</div>
+</div>
+<div class="text-[#7BB07A] font-medium text-[12px] my-1">
+        Tests: 14 passed, 14 total
+      </div>
+<!-- Command 2 -->
+<div class="flex items-baseline flex-wrap gap-x-1.5 text-on-surface mt-3 mb-0.5">
+<span class="text-[#7BB07A] font-semibold">opencode@termux</span><span class="text-on-surface-variant">:</span><span class="text-secondary font-medium">~/workspace/opencode-server</span><span class="text-on-surface">$</span>
+<span class="text-primary font-medium">git status -s</span>
+</div>
+<div class="text-[12.5px] font-code-block pl-1 space-y-0.5 my-1">
+<div class="flex items-center gap-2">
+<span class="text-[#D4A373] font-bold"> M</span>
+<span class="text-on-surface">src/server/sse-stream.ts</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[#E07A6B] font-bold">??</span>
+<span class="text-on-surface-variant">src/server/backoff-util.ts</span>
+</div>
+</div>
+<!-- Active Interactive Line -->
+<div class="flex items-baseline flex-wrap gap-x-1.5 text-on-surface mt-3" id="active-prompt-row">
+<span class="text-[#7BB07A] font-semibold">opencode@termux</span><span class="text-on-surface-variant">:</span><span class="text-secondary font-medium">~/workspace/opencode-server</span><span class="text-on-surface">$</span>
+<span class="text-primary font-medium" id="active-typed-text"></span><span class="inline-block w-2 h-4 bg-secondary ml-0.5 align-middle animate-pulse" id="terminal-cursor"></span>
+</div>
+</div>
+</div>
+<!-- Interactive Terminal Input Bar -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-sm gap-space-xs shadow-md">
+<form class="flex items-center gap-space-sm w-full" id="cmd-form" onsubmit="event.preventDefault();">
+<div class="flex items-center pl-3 pr-2 py-2 bg-surface-container-lowest rounded-lg flex-1 min-w-0">
+<span class="text-secondary font-code-inline text-code-inline font-bold mr-1.5 select-none">$</span>
+<input autocapitalize="off" autocomplete="off" class="w-full bg-transparent font-code-inline text-code-inline text-primary placeholder-on-surface-variant/40 focus:outline-none truncate" id="cmd-input" placeholder="Enter command..." spellcheck="false" type="text" value="git diff src/server/sse-stream.ts"/>
+<button aria-label="Clear input text" class="text-on-surface-variant hover:text-primary transition-colors p-1 rounded-full shrink-0" id="clear-input-btn" type="button">
+<span class="material-symbols-outlined text-[16px]">cancel</span>
+</button>
+</div>
+<button class="h-10 px-4 rounded-lg bg-primary hover:bg-primary-fixed-dim text-on-primary font-label-md text-label-md flex items-center justify-center gap-1.5 shrink-0 transition-transform active:scale-95 shadow-sm" id="run-cmd-btn" type="submit">
+<span>Run</span>
+<span class="material-symbols-outlined text-[18px]">keyboard_return</span>
+</button>
+</form>
+<!-- Mobile Virtual Terminal Accessory Bar -->
+<div class="flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 no-scrollbar">
+<button class="term-key-btn h-8 px-2.5 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline text-[12px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="Tab" type="button">
+        Tab
+      </button>
+<button class="term-key-btn h-8 px-2.5 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline text-[12px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="Ctrl" type="button">
+        Ctrl
+      </button>
+<button class="term-key-btn h-8 px-2.5 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline text-[12px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="Esc" type="button">
+        Esc
+      </button>
+<button aria-label="Arrow up" class="term-key-btn w-8 h-8 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="ArrowUp" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+</button>
+<button aria-label="Arrow down" class="term-key-btn w-8 h-8 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="ArrowDown" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</button>
+<button class="term-key-btn w-8 h-8 rounded bg-surface-container-high hover:bg-surface-bright text-secondary font-code-inline text-code-inline text-[13px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="|" type="button">
+        |
+      </button>
+<button class="term-key-btn w-8 h-8 rounded bg-surface-container-high hover:bg-surface-bright text-secondary font-code-inline text-code-inline text-[13px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="&amp;" type="button">
+        &amp;
+      </button>
+<button class="term-key-btn w-8 h-8 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline text-[13px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="~" type="button">
+        ~
+      </button>
+<button class="term-key-btn w-8 h-8 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-inline text-code-inline text-[13px] flex items-center justify-center shrink-0 active:scale-95 transition-colors" data-key="-" type="button">
+        -
+      </button>
+<button class="h-8 px-2.5 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-primary font-code-inline text-code-inline text-[11px] flex items-center gap-1 shrink-0 active:scale-95 transition-colors" id="wrap-toggle-btn" type="button">
+<span class="material-symbols-outlined text-[15px]">wrap_text</span>
+<span>Wrap</span>
+</button>
+</div>
+</div>
+<!-- Terminal Session Info Footer Card -->
+<div class="flex items-center justify-between px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-[#7BB07A]">wifi_tethering</span>
+<span>Latency: <strong class="text-on-surface font-code-inline">28ms</strong></span>
+</div>
+<div class="flex items-center gap-3">
+<span>Buffer: <strong class="text-on-surface font-code-inline">2.4MB / 10MB</strong></span>
+<span class="inline-block w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-secondary font-medium">Node 20.11</span>
+</div>
+</div>
+</div>
+<script>
+  (function initTerminal() {
+    const input = document.getElementById('cmd-input');
+    const form = document.getElementById('cmd-form');
+    const screen = document.getElementById('terminal-screen');
+    const activeTyped = document.getElementById('active-typed-text');
+    const clearInputBtn = document.getElementById('clear-input-btn');
+    const clearTerminalBtn = document.getElementById('clear-terminal-btn');
+    const wrapBtn = document.getElementById('wrap-toggle-btn');
+    const keyButtons = document.querySelectorAll('.term-key-btn');
+
+    // Sync input preview with live cursor line
+    function updateLivePreview() {
+      if (activeTyped) {
+        activeTyped.textContent = input ? input.value : '';
+      }
+    }
+
+    if (input) {
+      input.addEventListener('input', updateLivePreview);
+      updateLivePreview();
+    }
+
+    if (clearInputBtn && input) {
+      clearInputBtn.addEventListener('click', () => {
+        input.value = '';
+        updateLivePreview();
+        input.focus();
+      });
+    }
+
+    // Handle accessory bar keys
+    keyButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        if (!key || !input) return;
+
+        if (key === 'Tab') {
+          input.value += '  ';
+        } else if (key === 'Esc') {
+          input.value = '';
+        } else if (key === 'Ctrl') {
+          // Visual feedback for modifier
+          btn.classList.toggle('bg-secondary-container');
+          btn.classList.toggle('text-on-secondary-container');
+          return;
+        } else if (key === 'ArrowUp') {
+          input.value = 'git status -s';
+        } else if (key === 'ArrowDown') {
+          input.value = 'pnpm test:integration';
+        } else {
+          input.value += key;
+        }
+        updateLivePreview();
+        input.focus();
+      });
+    });
+
+    // Toggle text wrap on terminal screen
+    let isWrapped = true;
+    if (wrapBtn && screen) {
+      wrapBtn.addEventListener('click', () => {
+        isWrapped = !isWrapped;
+        if (isWrapped) {
+          screen.classList.remove('whitespace-pre');
+          screen.classList.add('overflow-x-auto');
+          wrapBtn.classList.remove('text-secondary');
+        } else {
+          screen.classList.add('whitespace-pre');
+          screen.classList.remove('overflow-x-auto');
+          wrapBtn.classList.add('text-secondary');
+        }
+      });
+    }
+
+    // Execute command simulation
+    if (form && input && screen) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const cmd = input.value.trim();
+        if (!cmd) return;
+
+        // Insert new executed block before the active prompt row
+        const activeRow = document.getElementById('active-prompt-row');
+        const cmdTurn = document.createElement('div');
+        cmdTurn.className = 'mt-3 mb-1';
+        
+        let responseHtml = '';
+        if (cmd.includes('diff')) {
+          responseHtml = `
+            <div class="mt-1 text-[12px] bg-surface-container/60 p-2.5 rounded-lg font-code-block">
+              <div class="text-on-surface-variant font-medium">diff --git a/src/server/sse-stream.ts b/src/server/sse-stream.ts</div>
+              <div class="text-[#E07A6B] bg-[#2D1F1D] px-1 py-0.5 rounded-sm my-0.5">- const keepAliveInterval = 15000;</div>
+              <div class="text-[#7BB07A] bg-[#1F2B20] px-1 py-0.5 rounded-sm my-0.5">+ const keepAliveInterval = 5000; // adaptive ping</div>
+              <div class="text-on-surface-variant/70 text-[11px] mt-1">1 file changed, 1 insertion(+), 1 deletion(-)</div>
+            </div>
+          `;
+        } else {
+          responseHtml = `<div class="text-on-surface-variant text-[12px] mt-1 pl-1">command executed (${cmd})</div>`;
+        }
+
+        cmdTurn.innerHTML = `
+          <div class="flex items-baseline flex-wrap gap-x-1.5 text-on-surface">
+            <span class="text-[#7BB07A] font-semibold">opencode@termux</span><span class="text-on-surface-variant">:</span><span class="text-secondary font-medium">~/workspace/opencode-server</span><span class="text-on-surface">$</span>
+            <span class="text-primary font-medium">${cmd}</span>
+          </div>
+          ${responseHtml}
+        `;
+
+        screen.insertBefore(cmdTurn, activeRow);
+        input.value = '';
+        updateLivePreview();
+        screen.scrollTop = screen.scrollHeight;
+      });
+    }
+
+    // Clear terminal screen
+    if (clearTerminalBtn && screen) {
+      clearTerminalBtn.addEventListener('click', () => {
+        const activeRow = document.getElementById('active-prompt-row');
+        // Clear all elements except the active prompt row
+        Array.from(screen.children).forEach(child => {
+          if (child !== activeRow) {
+            child.remove();
+          }
+        });
+      });
+    }
+  })();
+</script></main><div class="fixed bottom-24 right-4 z-40 pb-safe"><button aria-label="Scroll to bottom" class="w-11 h-11 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-transform active:scale-95"><span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span></button></div></body></html>

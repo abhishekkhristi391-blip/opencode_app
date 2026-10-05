@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Source+Serif+4:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; min-height: 100%; } body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "tertiary": "#ffffff", "error": "#ffb4ab", "surface-container-low": "#1c1b1a", "on-tertiary": "#00325a", "inverse-primary": "#5f5f59", "on-secondary-container": "#ffa082", "secondary": "#ffb59e", "tertiary-fixed": "#d2e4ff", "primary-fixed": "#e4e2db", "on-primary-fixed-variant": "#474741", "surface-variant": "#363433", "surface-container-lowest": "#0f0e0d", "tertiary-container": "#d2e4ff", "error-container": "#93000a", "surface-dim": "#141312", "on-primary-fixed": "#1b1c17", "outline-variant": "#474741", "primary-fixed-dim": "#c8c7bf", "on-primary-container": "#65655e", "surface": "#141312", "on-error": "#690005", "secondary-fixed-dim": "#ffb59e", "tertiary-fixed-dim": "#a0c9ff", "surface-container": "#201f1e", "on-error-container": "#ffdad6", "surface-bright": "#3a3938", "on-tertiary-fixed-variant": "#00497f", "on-secondary-fixed-variant": "#7a2f15", "surface-tint": "#c8c7bf", "inverse-surface": "#e6e2df", "primary-container": "#e4e2db", "on-tertiary-fixed": "#001c37", "primary": "#ffffff", "inverse-on-surface": "#31302f", "on-secondary": "#5c1902", "on-surface-variant": "#c8c7be", "on-secondary-fixed": "#390b00", "on-tertiary-container": "#2f67a0", "on-primary": "#30312c", "outline": "#919189", "secondary-fixed": "#ffdbd0", "surface-container-high": "#2b2a29", "on-surface": "#e6e2df", "secondary-container": "#7d3117", "surface-container-highest": "#363433", "on-background": "#e6e2df", "background": "#141312" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "margin": "1rem", "space-sm": "0.5rem", "space-lg": "1.25rem", "space-md": "0.875rem", "gutter": "1rem", "space-xl": "2rem", "space-xs": "0.25rem" }, fontFamily: { "headline-sm": ["\"Source Serif 4\""], "label-sm": ["Inter"], "code-inline": ["JetBrains Mono"], "code-block": ["JetBrains Mono"], "user-body": ["Inter"], "label-lg": ["Inter"], "assistant-body-bold": ["\"Source Serif 4\""], "headline-lg": ["\"Source Serif 4\""], "assistant-body": ["\"Source Serif 4\""], "label-md": ["Inter"], "headline-md": ["\"Source Serif 4\""], "body": ["Inter"] }, fontSize: { "headline-sm": ["20px", { lineHeight: "26px", fontWeight: "600" }], "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.02em", fontWeight: "500" }], "code-inline": ["12.5px", { lineHeight: "16px", fontWeight: "500" }], "code-block": ["13px", { lineHeight: "20px", fontWeight: "400" }], "user-body": ["15px", { lineHeight: "22px", fontWeight: "400" }], "label-lg": ["15px", { lineHeight: "20px", fontWeight: "600" }], "assistant-body-bold": ["16.5px", { lineHeight: "26px", fontWeight: "600" }], "headline-lg": ["32px", { lineHeight: "38px", fontWeight: "600" }], "assistant-body": ["16.5px", { lineHeight: "26px", fontWeight: "400" }], "label-md": ["13px", { lineHeight: "18px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "30px", fontWeight: "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen selection:bg-secondary-container selection:text-on-secondary-container"><header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_4px_20px_rgba(0,0,0,0.35)]"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Open drawer navigation" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">menu</span></button><div class="flex flex-col"><div class="flex items-center gap-space-xs"><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate max-w-[130px]">Active Chat</h1></div><div class="flex items-center gap-1.5 mt-0.5"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7BB07A] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[#7BB07A]"></span></span><span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-normal">termux-main</span></div></div></div><div class="flex items-center gap-space-xs"><button aria-label="New conversation" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">add_comment</span></button><button aria-label="Conversation actions overflow" class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[22px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="relative w-full h-[1px] bg-outline-variant/30"><div class="absolute left-0 top-0 h-full w-1/3 bg-secondary transition-all duration-300"></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-32 bg-surface min-h-screen"><div class="flex flex-col w-full text-on-surface">
+<!-- Document Sub-Header Bar (File Context & Actions) -->
+<div class="flex items-center justify-between px-margin py-space-sm bg-surface-container-low shadow-sm sticky top-0 z-30">
+<div class="flex items-center gap-space-sm min-w-0">
+<button aria-label="Go back to file tree" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:text-primary transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-secondary text-[16px]">description</span>
+<span class="font-code-block text-code-block font-medium text-on-surface truncate">sse-stream.ts</span>
+<span class="w-2 h-2 rounded-full bg-secondary shrink-0 shadow-[0_0_8px_rgba(255,181,158,0.6)]" id="unsaved-indicator" title="Unsaved changes"></span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs shrink-0">
+<button class="h-8 px-3 rounded-full bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform hover:bg-primary-fixed" id="save-btn">
+<span class="material-symbols-outlined text-[16px] text-on-primary">save</span>
+<span>Save</span>
+</button>
+<button aria-label="Editor settings and export" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Breadcrumbs & Document Stats Bar -->
+<div class="flex items-center justify-between px-margin py-1.5 bg-surface-container text-outline text-label-sm font-code-inline overflow-x-auto whitespace-nowrap">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="text-on-surface-variant">src</span>
+<span>/</span>
+<span class="text-on-surface-variant">server</span>
+<span>/</span>
+<span class="text-on-surface font-semibold">sse-stream.ts</span>
+</div>
+<div class="flex items-center gap-2 text-outline shrink-0 ml-3">
+<span>UTF-8</span>
+<span>•</span>
+<span>LF</span>
+<span>•</span>
+<span class="text-tertiary-fixed-dim bg-surface-container-high px-1.5 py-0.5 rounded text-[10px]">TypeScript</span>
+</div>
+</div>
+<!-- Editor Content Area with Linenumbers and Tokens -->
+<div class="relative bg-surface-container-low overflow-x-auto selection:bg-secondary-container selection:text-on-secondary-container pb-28 pt-2">
+<!-- Active Line Highlight Underlay (Line 14) -->
+<div class="absolute left-0 right-0 top-[284px] h-[22px] bg-surface-container-highest pointer-events-none"></div>
+<div class="font-code-block text-code-block flex min-w-max select-text">
+<!-- Line Numbers Column -->
+<div class="flex flex-col text-right select-none text-outline-variant pr-3 pl-margin bg-surface-container-low/60 shrink-0 font-code-inline leading-[22px] text-[12px]">
+<span>01</span>
+<span>02</span>
+<span>03</span>
+<span>04</span>
+<span>05</span>
+<span>06</span>
+<span>07</span>
+<span>08</span>
+<span>09</span>
+<span>10</span>
+<span>11</span>
+<span>12</span>
+<span>13</span>
+<span class="text-secondary font-bold">14</span>
+<span>15</span>
+<span>16</span>
+<span>17</span>
+<span>18</span>
+<span>19</span>
+<span>20</span>
+<span>21</span>
+<span>22</span>
+<span>23</span>
+<span>24</span>
+<span>25</span>
+</div>
+<!-- Code Column with Lexical Theming -->
+<div class="flex flex-col leading-[22px] pr-margin pl-2">
+<!-- 01 -->
+<p><span class="text-outline">/** Server-Sent Events broker engine **/</span></p>
+<!-- 02 -->
+<p><span class="text-secondary-fixed">import</span> <span class="text-on-surface">{</span> <span class="text-tertiary-fixed-dim">ReadableStream</span> <span class="text-on-surface">}</span> <span class="text-secondary-fixed">from</span> <span class="text-[#9CC48A]">'node:stream/web'</span><span class="text-outline">;</span></p>
+<!-- 03 -->
+<p><span class="text-secondary-fixed">import</span> <span class="text-secondary-fixed">type</span> <span class="text-on-surface">{</span> <span class="text-tertiary-fixed-dim">FastifyReply</span><span class="text-on-surface">,</span> <span class="text-tertiary-fixed-dim">FastifyRequest</span> <span class="text-on-surface">}</span> <span class="text-secondary-fixed">from</span> <span class="text-[#9CC48A]">'fastify'</span><span class="text-outline">;</span></p>
+<!-- 04 -->
+<p><span class="text-secondary-fixed">import</span> <span class="text-on-surface">{</span> <span class="text-tertiary-fixed-dim">createParser</span> <span class="text-on-surface">}</span> <span class="text-secondary-fixed">from</span> <span class="text-[#9CC48A]">'eventsource-parser'</span><span class="text-outline">;</span></p>
+<!-- 05 -->
+<p class="h-[22px]"></p>
+<!-- 06 -->
+<p><span class="text-secondary-fixed">export</span> <span class="text-secondary-fixed">interface</span> <span class="text-tertiary-fixed-dim">StreamEnvelope</span><span class="text-on-surface">&lt;</span><span class="text-tertiary-fixed">T</span> <span class="text-secondary-fixed">=</span> <span class="text-tertiary-fixed-dim">unknown</span><span class="text-on-surface">&gt;</span> <span class="text-on-surface">{</span></p>
+<!-- 07 -->
+<p class="pl-4"><span class="text-on-surface-variant">id</span><span class="text-outline">:</span> <span class="text-tertiary-fixed-dim">string</span><span class="text-outline">;</span></p>
+<!-- 08 -->
+<p class="pl-4"><span class="text-on-surface-variant">event</span><span class="text-outline">?:</span> <span class="text-tertiary-fixed-dim">string</span><span class="text-outline">;</span></p>
+<!-- 09 -->
+<p class="pl-4"><span class="text-on-surface-variant">payload</span><span class="text-outline">:</span> <span class="text-tertiary-fixed">T</span><span class="text-outline">;</span></p>
+<!-- 10 -->
+<p class="pl-4"><span class="text-on-surface-variant">timestamp</span><span class="text-outline">:</span> <span class="text-tertiary-fixed-dim">number</span><span class="text-outline">;</span></p>
+<!-- 11 -->
+<p><span class="text-on-surface">}</span></p>
+<!-- 12 -->
+<p class="h-[22px]"></p>
+<!-- 13 -->
+<p><span class="text-secondary-fixed">export</span> <span class="text-secondary-fixed">async</span> <span class="text-secondary-fixed">function</span> <span class="text-tertiary-fixed-dim">pipeSseStream</span><span class="text-on-surface">(</span><span class="text-on-primary-container">reply</span><span class="text-outline">:</span> <span class="text-tertiary-fixed-dim">FastifyReply</span><span class="text-on-surface">,</span> <span class="text-on-primary-container">source</span><span class="text-outline">:</span> <span class="text-tertiary-fixed-dim">ReadableStream</span><span class="text-on-surface">)</span> <span class="text-on-surface">{</span></p>
+<!-- 14: ACTIVE LINE WITH CURSOR -->
+<p class="pl-4 flex items-center">
+<span class="text-secondary-fixed">const</span> <span class="text-on-surface-variant">writer</span> <span class="text-secondary-fixed">=</span> <span class="text-on-primary-container">reply</span><span class="text-on-surface">.</span><span class="text-tertiary-fixed-dim">raw</span><span class="text-on-surface">;</span>
+<span class="inline-block w-0.5 h-4 bg-secondary ml-1 animate-pulse"></span>
+</p>
+<!-- 15 -->
+<p class="pl-4"><span class="text-on-primary-container">reply</span><span class="text-on-surface">.</span><span class="text-tertiary-fixed-dim">hijack</span><span class="text-on-surface">();</span></p>
+<!-- 16 -->
+<p class="pl-4"><span class="text-on-primary-container">writer</span><span class="text-on-surface">.</span><span class="text-tertiary-fixed-dim">writeHead</span><span class="text-on-surface">(</span><span class="text-[#E0A85A]">200</span><span class="text-on-surface">,</span> <span class="text-on-surface">{</span></p>
+<!-- 17 -->
+<p class="pl-8"><span class="text-[#9CC48A]">'Content-Type'</span><span class="text-outline">:</span> <span class="text-[#9CC48A]">'text/event-stream'</span><span class="text-on-surface">,</span></p>
+<!-- 18 -->
+<p class="pl-8"><span class="text-[#9CC48A]">'Cache-Control'</span><span class="text-outline">:</span> <span class="text-[#9CC48A]">'no-cache, no-transform'</span><span class="text-on-surface">,</span></p>
+<!-- 19 -->
+<p class="pl-8"><span class="text-[#9CC48A]">'Connection'</span><span class="text-outline">:</span> <span class="text-[#9CC48A]">'keep-alive'</span><span class="text-on-surface">,</span></p>
+<!-- 20 -->
+<p class="pl-8"><span class="text-[#9CC48A]">'X-Accel-Buffering'</span><span class="text-outline">:</span> <span class="text-[#9CC48A]">'no'</span><span class="text-on-surface">,</span></p>
+<!-- 21 -->
+<p class="pl-4"><span class="text-on-surface">});</span></p>
+<!-- 22 -->
+<p class="h-[22px]"></p>
+<!-- 23 -->
+<p class="pl-4"><span class="text-secondary-fixed">const</span> <span class="text-on-surface-variant">reader</span> <span class="text-secondary-fixed">=</span> <span class="text-on-primary-container">source</span><span class="text-on-surface">.</span><span class="text-tertiary-fixed-dim">getReader</span><span class="text-on-surface">();</span></p>
+<!-- 24 -->
+<p class="pl-4"><span class="text-secondary-fixed">const</span> <span class="text-on-surface-variant">decoder</span> <span class="text-secondary-fixed">=</span> <span class="text-secondary-fixed">new</span> <span class="text-tertiary-fixed-dim">TextDecoder</span><span class="text-on-surface">(</span><span class="text-[#9CC48A]">'utf-8'</span><span class="text-on-surface">);</span></p>
+<!-- 25 -->
+<p class="pl-4"><span class="text-secondary-fixed">let</span> <span class="text-on-surface-variant">buffer</span> <span class="text-secondary-fixed">=</span> <span class="text-[#9CC48A]">''</span><span class="text-outline">;</span></p>
+</div>
+</div>
+</div>
+<!-- Floating Mobile Code Accessory Keyboard Bar -->
+<div class="fixed bottom-0 inset-x-0 z-40 bg-surface-container-high/95 backdrop-blur-md pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+<!-- Quick Key Ribbon -->
+<div class="flex items-center gap-1.5 px-3 py-2.5 overflow-x-auto no-scrollbar scroll-smooth">
+<button class="h-8 min-w-[38px] px-2.5 rounded-lg bg-surface-container-highest text-on-surface hover:text-primary active:bg-secondary active:text-on-secondary font-code-inline text-[13px] flex items-center justify-center font-medium shadow-sm transition-colors" onclick="injectCode('\t')">
+        Tab
+      </button>
+<button class="h-8 min-w-[34px] px-2 rounded-lg bg-surface-container-highest text-on-surface hover:text-primary active:bg-secondary active:text-on-secondary font-code-inline text-[13px] flex items-center justify-center font-medium shadow-sm transition-colors" onclick="injectCode('{ }')">
+        { }
+      </button>
+<button class="h-8 min-w-[34px] px-2 rounded-lg bg-surface-container-highest text-on-surface hover:text-primary active:bg-secondary active:text-on-secondary font-code-inline text-[13px] flex items-center justify-center font-medium shadow-sm transition-colors" onclick="injectCode('[ ]')">
+        [ ]
+      </button>
+<button class="h-8 min-w-[34px] px-2 rounded-lg bg-surface-container-highest text-on-surface hover:text-primary active:bg-secondary active:text-on-secondary font-code-inline text-[13px] flex items-center justify-center font-medium shadow-sm transition-colors" onclick="injectCode('( )')">
+        ( )
+      </button>
+<button class="h-8 min-w-[36px] px-2 rounded-lg bg-surface-container-highest text-secondary-fixed font-code-inline text-[13px] flex items-center justify-center font-semibold shadow-sm transition-colors" onclick="injectCode('=&gt; ')">
+        =&gt;
+      </button>
+<button class="h-8 min-w-[28px] px-2 rounded-lg bg-surface-container-highest text-on-surface hover:text-primary active:bg-secondary active:text-on-secondary font-code-inline text-[13px] flex items-center justify-center font-medium shadow-sm transition-colors" onclick="injectCode(';')">
+        ;
+      </button>
+<button class="h-8 px-2.5 rounded-lg bg-surface-container-highest text-secondary-fixed font-code-inline text-[12px] flex items-center justify-center font-semibold shadow-sm transition-colors" onclick="injectCode('const ')">
+        const
+      </button>
+<button class="h-8 px-2.5 rounded-lg bg-surface-container-highest text-secondary-fixed font-code-inline text-[12px] flex items-center justify-center font-semibold shadow-sm transition-colors" onclick="injectCode('async ')">
+        async
+      </button>
+<button class="h-8 px-2.5 rounded-lg bg-surface-container-highest text-secondary-fixed font-code-inline text-[12px] flex items-center justify-center font-semibold shadow-sm transition-colors" onclick="injectCode('await ')">
+        await
+      </button>
+<!-- Utility action buttons -->
+<div class="h-5 w-[1px] bg-outline-variant/40 mx-0.5 shrink-0"></div>
+<button aria-label="Copy selection" class="h-8 w-8 rounded-lg bg-surface-container-highest text-on-surface-variant hover:text-primary active:bg-secondary active:text-on-secondary flex items-center justify-center shrink-0 transition-colors" id="quick-copy">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+<button aria-label="Undo edit" class="h-8 w-8 rounded-lg bg-surface-container-highest text-on-surface-variant hover:text-primary active:bg-secondary active:text-on-secondary flex items-center justify-center shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[16px]">undo</span>
+</button>
+<button aria-label="Redo edit" class="h-8 w-8 rounded-lg bg-surface-container-highest text-on-surface-variant hover:text-primary active:bg-secondary active:text-on-secondary flex items-center justify-center shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[16px]">redo</span>
+</button>
+</div>
+</div>
+<script>
+    function injectCode(token) {
+      const saveBtn = document.getElementById('save-btn');
+      const dot = document.getElementById('unsaved-indicator');
+      if (dot) {
+        dot.classList.remove('hidden');
+      }
+      if (saveBtn) {
+        saveBtn.classList.remove('bg-surface-container');
+        saveBtn.classList.add('bg-secondary-container', 'text-on-secondary-container');
+      }
+    }
+
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const dot = document.getElementById('unsaved-indicator');
+        if (dot) {
+          dot.classList.add('opacity-0');
+          setTimeout(() => {
+            dot.classList.remove('opacity-0');
+            dot.classList.add('bg-[#7BB07A]');
+          }, 300);
+        }
+      });
+    }
+  </script>
+</div></main><div class="fixed bottom-24 right-4 z-40 pb-safe"><button aria-label="Scroll to bottom" class="w-11 h-11 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-transform active:scale-95"><span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span></button></div></body></html>

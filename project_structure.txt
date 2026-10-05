@@ -1,0 +1,111 @@
+[opencode_chat]
+    ├── [assets]
+    │   └── [fonts]
+    │       ├── PlusJakartaSans-Italic-VariableFont_wght.ttf (178.89 KB)
+    │       └── PlusJakartaSans-VariableFont_wght.ttf (172.16 KB)
+    ├── [design]
+    │   ├── [opencode_chat_active_session]
+    │   │   ├── code.html (22.93 KB)
+    │   │   └── screen.png (233.25 KB)
+    │   ├── [opencode_chat_avatar_menu]
+    │   │   ├── code.html (17.68 KB)
+    │   │   └── screen.png (196.65 KB)
+    │   ├── [opencode_chat_commands_skills]
+    │   │   ├── code.html (23.00 KB)
+    │   │   └── screen.png (225.57 KB)
+    │   ├── [opencode_chat_connection_error]
+    │   │   ├── code.html (14.61 KB)
+    │   │   └── screen.png (233.30 KB)
+    │   ├── [opencode_chat_diff_viewer]
+    │   │   ├── code.html (19.90 KB)
+    │   │   └── screen.png (234.57 KB)
+    │   ├── [opencode_chat_empty_state]
+    │   │   ├── code.html (19.25 KB)
+    │   │   └── screen.png (214.04 KB)
+    │   ├── [opencode_chat_file_editor]
+    │   │   ├── code.html (21.50 KB)
+    │   │   └── screen.png (292.93 KB)
+    │   ├── [opencode_chat_files_browser]
+    │   │   ├── code.html (30.73 KB)
+    │   │   └── screen.png (242.86 KB)
+    │   ├── [opencode_chat_models_picker]
+    │   │   ├── code.html (21.22 KB)
+    │   │   └── screen.png (232.02 KB)
+    │   ├── [opencode_chat_permission_request]
+    │   │   ├── code.html (15.75 KB)
+    │   │   └── screen.png (196.48 KB)
+    │   ├── [opencode_chat_sessions_list]
+    │   │   ├── code.html (23.64 KB)
+    │   │   └── screen.png (254.83 KB)
+    │   ├── [opencode_chat_settings]
+    │   │   ├── code.html (20.45 KB)
+    │   │   └── screen.png (216.19 KB)
+    │   ├── [opencode_chat_side_drawer]
+    │   │   ├── code.html (17.16 KB)
+    │   │   └── screen.png (78.38 KB)
+    │   ├── [opencode_chat_terminal]
+    │   │   ├── code.html (23.08 KB)
+    │   │   └── screen.png (276.11 KB)
+    │   └── [opencode_chat_todos]
+    │       ├── code.html (19.28 KB)
+    │       └── screen.png (262.87 KB)
+    ├── [graphify]
+    │   ├── AGENT_GUIDE.md (2.02 KB)
+    │   ├── FILES.md (26.52 KB)
+    │   ├── graph.html (150.76 KB)
+    │   ├── graph.json (223.95 KB)
+    │   ├── graph.md (119.47 KB)
+    │   ├── GRAPH_REPORT.md (1.89 KB)
+    │   └── graphify_lite.py (60.27 KB)
+    ├── [lib]
+    │   ├── [api]
+    │   │   ├── client.dart (24.29 KB)
+    │   │   └── events.dart (14.45 KB)
+    │   ├── [db]
+    │   │   └── chat_db.dart (7.38 KB)
+    │   ├── [l10n]
+    │   │   └── strings.dart (42.95 KB)
+    │   ├── [models]
+    │   │   └── models.dart (20.42 KB)
+    │   ├── [state]
+    │   │   └── store.dart (71.97 KB)
+    │   ├── [ui]
+    │   │   ├── about_page.dart (3.71 KB)
+    │   │   ├── app_scope.dart (770.00 B)
+    │   │   ├── chat.dart (92.77 KB)
+    │   │   ├── commands_page.dart (7.28 KB)
+    │   │   ├── diff_page.dart (14.15 KB)
+    │   │   ├── files_page.dart (24.62 KB)
+    │   │   ├── home.dart (23.41 KB)
+    │   │   ├── line_icons.dart (15.03 KB)
+    │   │   ├── markdown.dart (17.62 KB)
+    │   │   ├── models_page.dart (14.30 KB)
+    │   │   ├── parts.dart (29.99 KB)
+    │   │   ├── primitives.dart (43.45 KB)
+    │   │   ├── prompts.dart (11.41 KB)
+    │   │   ├── sessions_page.dart (25.88 KB)
+    │   │   ├── settings_page.dart (22.68 KB)
+    │   │   ├── terminal_page.dart (9.71 KB)
+    │   │   ├── theme.dart (31.08 KB)
+    │   │   ├── todos_page.dart (4.84 KB)
+    │   │   └── widgets.dart (26.32 KB)
+    │   └── main.dart (2.23 KB)
+    ├── AGENTS.md (872.00 B)
+    ├── analysis_options.yaml (378.00 B)
+    ├── ARCHITECTURE.md (54.31 KB)
+    ├── CODEMAP.md (20.30 KB)
+    ├── config.json (101.00 B)
+    ├── deploy.py (3.00 KB)
+    ├── graphify_lite.py (60.27 KB)
+    ├── nohup.out (116.00 B)
+    ├── opencode.json (154.00 B)
+    ├── pubspec.yaml (657.00 B)
+    └── setup.sh (3.67 KB)
+
+============================================================
+--- SUMMARY ---
+Total Folders  : 26
+Total Files    : 76
+Archives Found : 0 (zip/apk/apks jo andar se khole gaye)
+Total Size     : 5.26 MB
+============================================================
