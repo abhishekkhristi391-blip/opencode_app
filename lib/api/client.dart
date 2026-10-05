@@ -733,10 +733,13 @@ class OcClient {
           .map((e) => NamedStatus.fromJson('', asMap(e)))
           .toList();
 
-  // ---------------- questions ----------------
+  // ---------------- questions / permissions ----------------
 
   Future<List<Map<String, dynamic>>> pendingQuestions() async =>
       asList(await get('/question')).map(asMap).toList();
+
+  Future<List<Map<String, dynamic>>> pendingPermissions() async =>
+      asList(await get('/permission')).map(asMap).toList();
 
   Future<bool> answerQuestion(
     String requestId,

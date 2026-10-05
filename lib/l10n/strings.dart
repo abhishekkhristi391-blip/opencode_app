@@ -335,10 +335,11 @@ class S {
       'No provider is connected. Add an API key in Settings.';
 
   // prompts (permissions / questions)
-  static const String permAllow = 'Allow';
-  static const String permAlways = 'Always';
-  static const String permDeny = 'Deny';
+  static const String permAllow = 'Allow once';
+  static const String permAlways = 'Allow always';
+  static const String permDeny = 'Reject';
   static const String permSend = 'Send';
+  static const String permAlwaysWarning = 'Allowing broad patterns can be risky. Review carefully.';
 
   // files
   static const String filesDeleteTitle = 'Delete?';
@@ -488,6 +489,8 @@ class S {
   static const String composerPlaceholderReply = 'Reply to the agent\u2026';
   static const String composerStopHint = 'Tap to stop';
   static const String composerWorkingSlow = 'Taking longer than usual';
+  static const String waitingApproval = 'Waiting for your approval';
+  static const String waitingAnswer = 'Waiting for your answer';
   static String composerWorking(String agent) =>
       agent.isEmpty ? 'Working\u2026' : '$agent is working\u2026';
   static String composerQueued(int n) =>
@@ -957,7 +960,7 @@ class S {
   static const todosEmptyNoChat = 'Start a chat first.';
   static const todosEmptyHint =
       'Tasks appear here as soon as the agent uses the todo tool.';
-  static const questionCustomHint = 'Type your answer';
+  static const questionCustomHint = 'Other / type your own answer';
   static const cmdArgsHint = 'Type the arguments';
   static const setInitAgents = 'Create AGENTS.md (/init)';
   static const setInitAgentsSub = "Generate the project's instruction file";

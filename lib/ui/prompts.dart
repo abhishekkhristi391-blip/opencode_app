@@ -64,7 +64,7 @@ class _PermissionCard extends StatelessWidget {
               const SizedBox(width: OCSpace.md),
               Expanded(
                 child: Text(
-                  S.permTitle,
+                  'Permission needed',
                   style: OCTypography.h2.copyWith(fontSize: 18),
                 ),
               ),
@@ -101,6 +101,49 @@ class _PermissionCard extends StatelessWidget {
             const SizedBox(height: OCSpace.md),
             Text(S.permSuggestingRules(p.always), style: OCTypography.micro),
           ],
+          if (p.patterns.isNotEmpty || p.command.isNotEmpty || p.tool.isNotEmpty) ...[
+            const SizedBox(height: OCSpace.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(OCSpace.md),
+              decoration: BoxDecoration(
+                color: OCColors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(OCRadius.inner),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (p.tool.isNotEmpty)
+                    SelectableText(
+                      'Tool: ${p.tool}',
+                      style: OCTypography.mono(size: 11),
+                    ),
+                  if (p.command.isNotEmpty) ...[
+                    const SizedBox(height: OCSpace.xs),
+                    SelectableText(
+                      'Command: ${p.command}',
+                      style: OCTypography.mono(size: 11),
+                    ),
+                  ],
+                  if (p.patterns.isNotEmpty) ...[
+                    const SizedBox(height: OCSpace.xs),
+                    SelectableText(
+                      'Patterns: ${p.patterns.join(', ')}',
+                      style: OCTypography.mono(size: 11),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+          if (p.patterns.any((e) => e.contains('/*') || e == '/*' || e.endsWith('/*')))
+            Padding(
+              padding: const EdgeInsets.only(top: OCSpace.sm),
+              child: Text(
+                S.permAlwaysWarning,
+                style: OCTypography.micro.copyWith(color: OCColors.warn),
+              ),
+            ),
           const SizedBox(height: OCSpace.lg),
           Row(
             children: [
@@ -130,12 +173,20 @@ class _PermissionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: OCSpace.sm),
+<<<<<<< HEAD
           Center(
             child: Text(
               S.permMorePending(store.permissions.length - 1),
               style: OCTypography.micro,
+=======
+          if (store.permissions.length > 1)
+            Center(
+              child: Text(
+                '${store.permissions.length - 1} request(s) pending',
+                style: OCTypography.micro,
+              ),
+>>>>>>> 0269bdd (fix(prompts): rebuild pending on connect/reconnect/resume, improve prompt UI)
             ),
-          ),
         ],
       ),
     );
@@ -200,7 +251,11 @@ class _QuestionCardState extends State<_QuestionCard> {
               const SizedBox(width: OCSpace.md),
               const Expanded(
                 child: Text(
+<<<<<<< HEAD
                   S.questionTitle,
+=======
+                  'Agent question',
+>>>>>>> 0269bdd (fix(prompts): rebuild pending on connect/reconnect/resume, improve prompt UI)
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -276,28 +331,68 @@ class _QuestionCardState extends State<_QuestionCard> {
           ),
         const SizedBox(height: OCSpace.sm),
         for (final o in item.options)
-          Container(
-            margin: const EdgeInsets.only(bottom: OCSpace.xs),
-            decoration: BoxDecoration(
-              color: (picks[qi] ?? const {}).contains(o.label)
-                  ? OCColors.orangeTint
-                  : OCColors.surfaceSubtle,
-              borderRadius: BorderRadius.circular(OCRadius.inner),
-            ),
-            child: CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              value: (picks[qi] ?? const {}).contains(o.label),
-              title: Text(
-                o.label,
-                style: OCTypography.caption.copyWith(
-                  color: OCColors.textPrimary,
+          InkWell(
+            onTap: () => _toggle(qi, o.label, item.multiple),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: OCSpace.xs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: OCSpace.sm,
+                vertical: OCSpace.sm,
+              ),
+              decoration: BoxDecoration(
+                color: (picks[qi] ?? const {}).contains(o.label)
+                    ? OCColors.orangeTint
+                    : OCColors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(OCRadius.inner),
+                border: Border.all(
+                  color: (picks[qi] ?? const {}).contains(o.label)
+                      ? OCColors.orange
+                      : Colors.transparent,
                 ),
               ),
-              subtitle: o.description.isEmpty
-                  ? null
-                  : Text(o.description, style: OCTypography.micro),
-              onChanged: (_) => _toggle(qi, o.label, item.multiple),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      item.multiple
+                          ? ((picks[qi] ?? const {}).contains(o.label)
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded)
+                          : ((picks[qi] ?? const {}).contains(o.label)
+                              ? Icons.radio_button_checked_rounded
+                              : Icons.radio_button_off_rounded),
+                      size: 20,
+                      color: (picks[qi] ?? const {}).contains(o.label)
+                          ? OCColors.orange
+                          : OCColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(width: OCSpace.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          o.label,
+                          style: OCTypography.caption.copyWith(
+                            color: OCColors.textPrimary,
+                          ),
+                        ),
+                        if (o.description.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: OCSpace.xxs),
+                            child: Text(
+                              o.description,
+                              style: OCTypography.micro,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         if (item.custom)

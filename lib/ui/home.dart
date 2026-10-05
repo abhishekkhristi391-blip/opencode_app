@@ -222,7 +222,9 @@ class HomeShellState extends State<HomeShell> {
   /// chat feed, and the footer identity plus connection line.
   Future<void> _showDrawer() async {
     final store = AppScope.read(context);
-    final pending = store.todos.where((t) => !t.done).length;
+    final pendingTodos = store.todos.where((t) => !t.done).length;
+    final pendingPrompts = store.permissions.length + store.questions.length;
+    final pending = pendingTodos + pendingPrompts;
     // The feed is the same list the History screen shows, so the drawer never
     // offers a session the page behind it does not.
     final recents = visibleSessions(context, true)
@@ -241,7 +243,7 @@ class HomeShellState extends State<HomeShell> {
         version: store.serverVersion,
         host: _hostLabel(store),
         index: index,
-        pending: pending,
+        pending: pendingTodos > 0 ? pendingTodos : (pendingPrompts > 0 ? pendingPrompts : 0),
         recents: visible,
         currentId: store.current?.id,
         state: ocLinkState(store),

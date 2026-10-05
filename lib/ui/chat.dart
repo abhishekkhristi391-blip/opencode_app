@@ -2753,6 +2753,65 @@ class _WorkingStrip extends StatefulWidget {
 }
 
 class _WorkingStripState extends State<_WorkingStrip> {
+  static const _slowAfter = Duration(seconds: 8);
+  Timer? _timer;
+  bool _slow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_slowAfter, () {
+      if (mounted) setState(() => _slow = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.of(context);
+    final t = context.oc;
+    final hasPrompt = store.permissions.isNotEmpty || store.questions.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(top: OCSpace.xs),
+      child: InkWell(
+        onTap: widget.onStop,
+        borderRadius: BorderRadius.circular(OCRadius.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: OCSpace.sm,
+            vertical: OCSpace.xs,
+          ),
+          child: Row(
+            children: [
+              OCProgressRing(value: 0.7, size: 12, stroke: 1.6, color: t.acc),
+              const SizedBox(width: OCSpace.sm),
+              Text(
+                S.composerWorking(widget.agent),
+                style: OCTypography.caption.copyWith(color: t.mute),
+              ),
+              const Spacer(),
+              Text(
+                hasPrompt
+                    ? (store.permissions.isNotEmpty
+                        ? S.waitingApproval
+                        : S.waitingAnswer)
+                    : (_slow ? S.composerWorkingSlow : S.composerStopHint),
+                style: OCTypography.caption.copyWith(
+                  color: hasPrompt ? t.warn : (_slow ? t.warn : t.mute),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
   /// Eight seconds: long enough that a normal tool run never trips it, short
   /// enough to still be useful information.
   static const _slowAfter = Duration(seconds: 8);
@@ -2796,9 +2855,13 @@ class _WorkingStripState extends State<_WorkingStrip> {
               ),
               const Spacer(),
               Text(
-                _slow ? S.composerWorkingSlow : S.composerStopHint,
+                (store.permissions.isNotEmpty || store.questions.isNotEmpty)
+                    ? (store.permissions.isNotEmpty ? S.waitingApproval : S.waitingAnswer)
+                    : (_slow ? S.composerWorkingSlow : S.composerStopHint),
                 style: OCTypography.caption.copyWith(
-                  color: _slow ? t.warn : t.mute,
+                  color: (store.permissions.isNotEmpty || store.questions.isNotEmpty)
+                      ? t.warn
+                      : (_slow ? t.warn : t.mute),
                 ),
               ),
             ],

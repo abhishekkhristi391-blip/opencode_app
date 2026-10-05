@@ -153,6 +153,14 @@ class OcStore extends ChangeNotifier {
   List<PermissionReq> permissions = [];
   List<QuestionReq> questions = [];
 
+  int get pendingPromptCount => permissions.length + questions.length;
+
+  dynamic get oldestPendingPrompt {
+    if (permissions.isNotEmpty) return permissions.first;
+    if (questions.isNotEmpty) return questions.first;
+    return null;
+  }
+
   // ---- extras ----
   List<CommandInfo> commands = [];
   List<SkillInfo> skills = [];
@@ -1684,14 +1692,24 @@ class OcStore extends ChangeNotifier {
   Future<void> loadPending() async {
     if (!online) return;
     try {
-      final list = await api.pendingQuestions();
-      questions = list
+      final qlist = await api.pendingQuestions();
+      questions = qlist
           .where((e) => asStr(e['id']).isNotEmpty)
           .map(QuestionReq.fromJson)
           .where((q) => q.id.isNotEmpty)
           .toList();
     } catch (e) {
       debugPrint('Failed to load pending questions: $e');
+    }
+    try {
+      final plist = await api.pendingPermissions();
+      permissions = plist
+          .where((e) => asStr(e['id']).isNotEmpty)
+          .map((e) => PermissionReq.fromJson(asMap(e)))
+          .where((p) => p.id.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('Failed to load pending permissions: $e');
     }
     notifyListeners();
   }

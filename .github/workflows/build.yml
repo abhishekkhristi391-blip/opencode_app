@@ -47,7 +47,7 @@ jobs:
           fi
           rm -rf test
 
-      - name: Manifest patches (internet + cleartext + label)
+      - name: Manifest patches (internet + cleartext + label + voice)
         run: |
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<manifest#<manifest#' $M
@@ -59,6 +59,71 @@ jobs:
           sed -i 's#android:label="[^"]*"#android:label="OpenCode"#' $M
           # Storage permissions
           sed -i '/<uses-permission android:name="android.permission.INTERNET"\/>/a\    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>\n    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>' $M
+          # ---- voice ----
+          # RECORD_AUDIO: speech_to_text. Without it, initialize() returns false
+          # and dictation is dead on a real device even though the app builds.
+          sed -i '/<uses-permission android:name="android.permission.INTERNET"\/>/a\    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' $M
+          # Package visibility (Android 11+). Without these two <queries> the
+          # SpeechRecognizer and the TTS engine are invisible to the app: TTS
+          # reports no engines and speech recognition reports "not available".
+          sed -i 's#<application#<queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n        <intent>\n            <action android:name="android.intent.action.TTS_SERVICE"/>\n        </intent>\n    </queries>\n    <application#' $M
+          echo "--- voice manifest verification ---"
+          for needle in \
+            'android.permission.RECORD_AUDIO' \
+            'android.permission.INTERNET' \
+            'android.speech.RecognitionService' \
+            'android.intent.action.TTS_SERVICE' \
+            '<queries>'; do
+            if ! grep -q -- "$needle" $M; then
+              echo "::error::AndroidManifest.xml is missing $needle"
+              exit 1
+            fi
+            echo "ok: $needle"
+          done
+
+      # flutter_tts 4.2.x declares minSdkVersion 24, so the app host cannot be
+      # lower: Gradle fails the merge with an obscure manifest-min-sdk error.
+      # The generated template pins `flutter.minSdkVersion`, whose value moves
+      # between Flutter releases, so it is set explicitly here instead.
+      - name: Android minSdk 24 (required by flutter_tts)
+        run: |
+          set -e
+          K=android/app/build.gradle.kts
+          G=android/app/build.gradle
+          if [ -f "$K" ]; then
+            python3 - "$K" <<'PY'
+          import re, sys
+          p = sys.argv[1]
+          s = open(p).read()
+          # Replace whatever the template put there (flutter.minSdkVersion, a
+          # literal, or nothing at all if the template ever stops emitting it).
+          s2, n = re.subn(r'(?m)^\s*minSdk\s*=.*$', '    minSdk = 24', s)
+          if n == 0:
+              s2, n = re.subn(r'(?m)^(\s*compileSdk\s*=.*)$', r'\1\n    minSdk = 24', s)
+          if n == 0:
+              sys.exit('could not place minSdk in %s' % p)
+          open(p, 'w').write(s2)
+          PY
+          elif [ -f "$G" ]; then
+            python3 - "$G" <<'PY'
+          import re, sys
+          p = sys.argv[1]
+          s = open(p).read()
+          s2, n = re.subn(r'(?m)^\s*minSdkVersion\s+.*$', '    minSdkVersion 24', s)
+          if n == 0:
+              sys.exit('could not place minSdkVersion in %s' % p)
+          open(p, 'w').write(s2)
+          PY
+          else
+            echo "::error::no android/app/build.gradle[.kts] after flutter create"
+            exit 1
+          fi
+          echo "--- minSdk verification ---"
+          grep -rn 'minSdk' android/app/ || true
+          if ! grep -rqE 'minSdk(Version)?\s*=?\s*24' android/app/; then
+            echo "::error::minSdk 24 was not applied to the Android host"
+            exit 1
+          fi
 
       # Speed: android/ only exists after `flutter create`, so the Gradle
       # cache and settings are set up here instead of in setup-java.
