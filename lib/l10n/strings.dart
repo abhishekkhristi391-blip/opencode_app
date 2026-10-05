@@ -969,6 +969,41 @@ class S {
       'you want to see. Command: $command';
 
   // ------------------------------------------------------------------
+  // settings groups + rows
+  //
+  // These used to be inline literals in settings_page.dart. Rule: nothing is
+  // spelled out inside a widget, so they live here with everything else.
+  // ------------------------------------------------------------------
+  static const setCurrentSession = 'Current session';
+  static const setChat = 'Chat';
+  static const setProviders = 'Providers';
+  static const setConfig = 'Config';
+  static const setLanguageServers = 'Language servers';
+  static const setFormatters = 'Formatters';
+  static const setAbout = 'About';
+  static const setStatus = 'Status';
+  static const setProject = 'Project';
+  static const setWorktree = 'Worktree';
+  static const setConfigDir = 'Config dir';
+  static const setGitBranch = 'Git branch';
+  static const setApp = 'App';
+  static const setServerApi = 'Server API';
+  static const setShowTokens = 'Show tokens in chat';
+  static const setShowTokensSub = 'Under each reply';
+  static const setConnectedWith = 'connected';
+  static const setDisconnected = 'disconnected';
+  static const setNotARepo = 'not a repo';
+  static const setAppVersion = 'OpenCode Client 1.0.0';
+  static const setServerVersionRange = 'opencode 1.18.x';
+  static const setDisconnect = 'Disconnect';
+  static const setRestart = 'Restart';
+  static const setUpgrade = 'Upgrade';
+  static const setUpgradeDone = 'Upgrade complete';
+
+  /// Group heading that carries a count, e.g. "MCP servers (3)".
+  static String setMcpServers(int count) => 'MCP servers ($count)';
+
+  // ------------------------------------------------------------------
   // helpers
   // ------------------------------------------------------------------
   static String label(String l, String value) => '$l: $value';

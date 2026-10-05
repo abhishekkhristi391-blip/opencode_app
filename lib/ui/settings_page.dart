@@ -42,293 +42,331 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           // ---------------- server ----------------
           const SectionTitle(S.setServerLabel),
-          InfoRow(S.setUrlLabel, store.baseUrl, mono: true),
-          InfoRow(
-            'Status',
-            store.online
-                ? 'connected (${store.serverVersion})'
-                : 'disconnected',
-          ),
-          InfoRow('Project', store.paths?.directory ?? '-', mono: true),
-          InfoRow('Worktree', store.paths?.worktree ?? '-', mono: true),
-          InfoRow('Config dir', store.paths?.config ?? '-', mono: true),
-          InfoRow(
-            'Git branch',
-            store.vcs?.branch.isNotEmpty == true
-                ? store.vcs!.branch
-                : 'not a repo',
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              OCSpace.screenX,
-              OCSpace.sm,
-              OCSpace.screenX,
-              0,
+          _Group(
+            children: [
+            InfoRow(S.setUrlLabel, store.baseUrl, mono: true),
+            InfoRow(
+              S.setStatus,
+              store.online
+                  ? S.setConnectedWith +
+                        (store.serverVersion.isEmpty ? '' : ' (${store.serverVersion})')
+                  : S.setDisconnected,
             ),
-            child: Wrap(
-              spacing: OCSpace.sm,
-              children: [
-                OCButton(
-                  onPressed: () => _editServer(context, store),
-                  icon: Icons.edit,
-                  label: S.setChangeServer,
-                  variant: OCButtonVariant.secondaryPill,
-                  expand: false,
-                ),
-                OCButton(
-                  onPressed: store.connect,
-                  icon: Icons.refresh,
-                  label: S.setReconnect,
-                  variant: OCButtonVariant.secondaryPill,
-                  expand: false,
-                ),
-              ],
+            InfoRow(S.setProject, store.paths?.directory ?? '-', mono: true),
+            InfoRow(S.setWorktree, store.paths?.worktree ?? '-', mono: true),
+            InfoRow(S.setConfigDir, store.paths?.config ?? '-', mono: true),
+            InfoRow(
+              S.setGitBranch,
+              store.vcs?.branch.isNotEmpty == true
+                  ? store.vcs!.branch
+                  : S.setNotARepo,
             ),
-          ),
-          const Divider(height: OCSpace.xxl),
-
-          // ---------------- session actions ----------------
-          const SectionTitle('Current session'),
-          _ActionTile(
-            icon: Icons.auto_awesome,
-            title: S.setInitAgents,
-            subtitle: S.setInitAgentsSub,
-            onTap: store.initAgents,
-          ),
-          _ActionTile(
-            icon: Icons.compress,
-            title: S.setSummarize,
-            subtitle: S.setSummarizeSub,
-            onTap: store.summarize,
-          ),
-          _ActionTile(
-            icon: Icons.undo,
-            title: S.setRevertLast,
-            subtitle: S.setRevertLastBody,
-            onTap: () async {
-              final id = store.current?.id;
-              if (id == null || store.messages.isEmpty) {
-                showSnack(context, S.noMessagesYet);
-                return;
-              }
-              await store.revert(store.messages.last.info.id);
-            },
-          ),
-          _ActionTile(
-            icon: Icons.redo,
-            title: S.setUnrevert,
-            subtitle: S.setRevertAllBodyShort,
-            onTap: store.unrevert,
-          ),
-          _ActionTile(
-            icon: Icons.refresh,
-            title: S.setInstanceRestart,
-            subtitle: S.setUpgradeBody,
-            danger: true,
-            onTap: () async {
-              final ok = await confirmDialog(
-                context,
-                title: S.setInstanceRestartTitle,
-                message: S.setUpgradeConfirmBody,
-                confirm: 'Restart',
-              );
-              if (!ok) return;
-              try {
-                await store.api.disposeInstance();
-                await store.connect();
-                if (context.mounted) showSnack(context, S.instanceRestarted);
-              } catch (e) {
-                if (context.mounted) showSnack(context, '$e', error: true);
-              }
-            },
-          ),
-          _ActionTile(
-            icon: Icons.system_update,
-            title: S.setUpgradeCmd,
-            subtitle: S.setUpgradeSub,
-            danger: true,
-            onTap: () async {
-              final ok = await confirmDialog(
-                context,
-                title: S.setUpgradeTitle,
-                message: S.setUpgradeBody2,
-                confirm: 'Upgrade',
-              );
-              if (!ok) return;
-              try {
-                await store.api.upgrade();
-                await store.connect();
-                if (context.mounted) showSnack(context, 'Upgrade complete');
-              } catch (e) {
-                if (context.mounted) showSnack(context, '$e', error: true);
-              }
-            },
-          ),
-          _ActionTile(
-            icon: Icons.folder_open,
-            title: S.setExternalFolder,
-            subtitle: S.setExternalFolderSub,
-            onTap: () async {
-              final ok = await confirmDialog(
-                context,
-                title: S.setPermExternalTitle(store.paths?.directory ?? ''),
-                message: S.setPermExternalNote,
-                confirm: S.permAllow,
-              );
-              if (!ok) return;
-              try {
-                await store.api.patchConfig({
-                  'permission': {
-                    'edit': 'allow',
-                    'bash': 'allow',
-                    'external_directory': 'allow',
-                  },
-                });
-                await store.refreshConfig();
-                if (context.mounted) showSnack(context, S.externalPermGranted);
-              } catch (e) {
-                if (context.mounted) showSnack(context, '$e', error: true);
-              }
-            },
-          ),
-          const Divider(height: OCSpace.xxl),
-
-          // ---------------- chat display ----------------
-          const SectionTitle('Chat'),
-          SwitchListTile(
-            dense: true,
-            title: Text('Show tokens in chat', style: OCTypography.caption),
-            subtitle: Text('Under each reply', style: OCTypography.micro),
-            value: store.showTokensInChat,
-            activeTrackColor: context.oc.acc,
-            onChanged: store.setShowTokensInChat,
-          ),
-          const Divider(height: OCSpace.xxl),
-
-          // ---------------- providers ----------------
-          const SectionTitle('Providers'),
-          _Providers(),
-          const Divider(height: 26),
-
-          // ---------------- config ----------------
-          const SectionTitle('Config'),
-          _ConfigEditor(config: store.config),
-          const Divider(height: 26),
-
-          // ---------------- mcp ----------------
-          SectionTitle('MCP servers (${store.mcp.length})'),
-          if (store.mcp.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 OCSpace.screenX,
-                0,
-                OCSpace.screenX,
                 OCSpace.sm,
+                OCSpace.screenX,
+                0,
               ),
-              child: Text(S.noMcpServers, style: OCTypography.caption),
-            ),
-          for (final e in store.mcp.entries)
-            ListTile(
-              dense: true,
-              leading: OCIconTile(
-                icon: e.value.healthy
-                    ? Icons.check_circle
-                    : Icons.error_outline,
-                accent: e.value.healthy ? OCAccent.green : OCAccent.red,
-                size: 30,
-                iconSize: 16,
-              ),
-              title: Text(e.key, style: OCTypography.caption),
-              subtitle: Text(
-                [
-                  e.value.status,
-                  if (e.value.message.isNotEmpty) e.value.message,
-                  if (e.value.detail.isNotEmpty) e.value.detail,
-                ].where((x) => x.isNotEmpty).join(' · '),
-                style: OCTypography.micro,
-              ),
-              trailing: PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_vert,
-                  size: 18,
-                  color: OCColors.textSecondary,
-                ),
-                onSelected: (v) async {
-                  if (v == 'connect') {
-                    await store.api.mcpConnect(e.key);
-                    store.refreshConfig();
-                  } else if (v == 'disconnect') {
-                    await store.api.mcpDisconnect(e.key);
-                    store.refreshConfig();
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'connect', child: Text(S.setConnect)),
-                  PopupMenuItem(value: 'disconnect', child: Text('Disconnect')),
+              child: Wrap(
+                spacing: OCSpace.sm,
+                children: [
+                  OCButton(
+                    onPressed: () => _editServer(context, store),
+                    icon: Icons.edit,
+                    label: S.setChangeServer,
+                    variant: OCButtonVariant.secondaryPill,
+                    expand: false,
+                  ),
+                  OCButton(
+                    onPressed: store.connect,
+                    icon: Icons.refresh,
+                    label: S.setReconnect,
+                    variant: OCButtonVariant.secondaryPill,
+                    expand: false,
+                  ),
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              OCSpace.screenX,
-              OCSpace.sm,
-              OCSpace.screenX,
-              0,
-            ),
-            child: OCButton(
-              onPressed: () => _addMcp(context),
-              icon: Icons.add,
-              label: S.setAddMcp,
-              variant: OCButtonVariant.secondaryPill,
-              expand: false,
-            ),
+              _GroupDivider(),
+            ],
           ),
-          const Divider(height: OCSpace.xxl),
+
+          // ---------------- session actions ----------------
+          const SectionTitle(S.setCurrentSession),
+          _Group(
+            children: [
+            _ActionTile(
+              icon: Icons.auto_awesome,
+              title: S.setInitAgents,
+              subtitle: S.setInitAgentsSub,
+              onTap: store.initAgents,
+            ),
+            _ActionTile(
+              icon: Icons.compress,
+              title: S.setSummarize,
+              subtitle: S.setSummarizeSub,
+              onTap: store.summarize,
+            ),
+            _ActionTile(
+              icon: Icons.undo,
+              title: S.setRevertLast,
+              subtitle: S.setRevertLastBody,
+              onTap: () async {
+                final id = store.current?.id;
+                if (id == null || store.messages.isEmpty) {
+                  showSnack(context, S.noMessagesYet);
+                  return;
+                }
+                await store.revert(store.messages.last.info.id);
+              },
+            ),
+            _ActionTile(
+              icon: Icons.redo,
+              title: S.setUnrevert,
+              subtitle: S.setRevertAllBodyShort,
+              onTap: store.unrevert,
+            ),
+            _ActionTile(
+              icon: Icons.refresh,
+              title: S.setInstanceRestart,
+              subtitle: S.setUpgradeBody,
+              danger: true,
+              onTap: () async {
+                final ok = await confirmDialog(
+                  context,
+                  title: S.setInstanceRestartTitle,
+                  message: S.setUpgradeConfirmBody,
+                  confirm: S.setRestart,
+                );
+                if (!ok) return;
+                try {
+                  await store.api.disposeInstance();
+                  await store.connect();
+                  if (context.mounted) showSnack(context, S.instanceRestarted);
+                } catch (e) {
+                  if (context.mounted) showSnack(context, '$e', error: true);
+                }
+              },
+            ),
+            _ActionTile(
+              icon: Icons.system_update,
+              title: S.setUpgradeCmd,
+              subtitle: S.setUpgradeSub,
+              danger: true,
+              onTap: () async {
+                final ok = await confirmDialog(
+                  context,
+                  title: S.setUpgradeTitle,
+                  message: S.setUpgradeBody2,
+                  confirm: S.setUpgrade,
+                );
+                if (!ok) return;
+                try {
+                  await store.api.upgrade();
+                  await store.connect();
+                  if (context.mounted) showSnack(context, S.setUpgradeDone);
+                } catch (e) {
+                  if (context.mounted) showSnack(context, '$e', error: true);
+                }
+              },
+            ),
+            _ActionTile(
+              icon: Icons.folder_open,
+              title: S.setExternalFolder,
+              subtitle: S.setExternalFolderSub,
+              onTap: () async {
+                final ok = await confirmDialog(
+                  context,
+                  title: S.setPermExternalTitle(store.paths?.directory ?? ''),
+                  message: S.setPermExternalNote,
+                  confirm: S.permAllow,
+                );
+                if (!ok) return;
+                try {
+                  await store.api.patchConfig({
+                    'permission': {
+                      'edit': 'allow',
+                      'bash': 'allow',
+                      'external_directory': 'allow',
+                    },
+                  });
+                  await store.refreshConfig();
+                  if (context.mounted) showSnack(context, S.externalPermGranted);
+                } catch (e) {
+                  if (context.mounted) showSnack(context, '$e', error: true);
+                }
+              },
+            ),
+              _GroupDivider(),
+            ],
+          ),
+
+          // ---------------- chat display ----------------
+          const SectionTitle(S.setChat),
+          _Group(
+            children: [
+            SwitchListTile(
+              dense: true,
+              title: Text(S.setShowTokens, style: OCTypography.caption),
+              subtitle: Text(S.setShowTokensSub, style: OCTypography.micro),
+              value: store.showTokensInChat,
+              activeTrackColor: context.oc.acc,
+              onChanged: store.setShowTokensInChat,
+            ),
+              _GroupDivider(),
+            ],
+          ),
+
+          // ---------------- providers ----------------
+          const SectionTitle(S.setProviders),
+          _Group(
+            children: [
+            _Providers(),
+              _GroupDivider(),
+            ],
+          ),
+
+          // ---------------- config ----------------
+          const SectionTitle(S.setConfig),
+          _Group(
+            children: [
+            _ConfigEditor(config: store.config),
+              _GroupDivider(),
+            ],
+          ),
+
+          // ---------------- mcp ----------------
+          SectionTitle(S.setMcpServers(store.mcp.length)),
+          _Group(
+            children: [
+            if (store.mcp.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  OCSpace.screenX,
+                  0,
+                  OCSpace.screenX,
+                  OCSpace.sm,
+                ),
+                child: Text(S.noMcpServers, style: OCTypography.caption),
+              ),
+            for (final e in store.mcp.entries)
+              ListTile(
+                dense: true,
+                leading: OCIconTile(
+                  icon: e.value.healthy
+                      ? Icons.check_circle
+                      : Icons.error_outline,
+                  accent: e.value.healthy ? OCAccent.green : OCAccent.red,
+                  size: 30,
+                  iconSize: 16,
+                ),
+                title: Text(e.key, style: OCTypography.caption),
+                subtitle: Text(
+                  [
+                    e.value.status,
+                    if (e.value.message.isNotEmpty) e.value.message,
+                    if (e.value.detail.isNotEmpty) e.value.detail,
+                  ].where((x) => x.isNotEmpty).join(' · '),
+                  style: OCTypography.micro,
+                ),
+                trailing: PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    size: 18,
+                    color: OCColors.textSecondary,
+                  ),
+                  onSelected: (v) async {
+                    if (v == 'connect') {
+                      await store.api.mcpConnect(e.key);
+                      store.refreshConfig();
+                    } else if (v == 'disconnect') {
+                      await store.api.mcpDisconnect(e.key);
+                      store.refreshConfig();
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'connect', child: Text(S.setConnect)),
+                    PopupMenuItem(value: 'disconnect', child: Text(S.setDisconnect)),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                OCSpace.sm,
+                OCSpace.screenX,
+                0,
+              ),
+              child: OCButton(
+                onPressed: () => _addMcp(context),
+                icon: Icons.add,
+                label: S.setAddMcp,
+                variant: OCButtonVariant.secondaryPill,
+                expand: false,
+              ),
+            ),
+              _GroupDivider(),
+            ],
+          ),
 
           // ---------------- lsp / formatter ----------------
-          const SectionTitle('Language servers'),
-          if (store.lsp.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                OCSpace.screenX,
-                0,
-                OCSpace.screenX,
-                OCSpace.sm,
+          const SectionTitle(S.setLanguageServers),
+          _Group(
+            children: [
+            if (store.lsp.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  OCSpace.screenX,
+                  0,
+                  OCSpace.screenX,
+                  OCSpace.sm,
+                ),
+                child: Text(S.noLspActive, style: OCTypography.caption),
               ),
-              child: Text(S.noLspActive, style: OCTypography.caption),
-            ),
-          for (final l in store.lsp) _StatusRow(l),
-          const SectionTitle('Formatters'),
-          if (store.formatters.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                OCSpace.screenX,
-                0,
-                OCSpace.screenX,
-                OCSpace.sm,
+            for (final l in store.lsp) _StatusRow(l),
+            const SectionTitle(S.setFormatters),
+            if (store.formatters.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  OCSpace.screenX,
+                  0,
+                  OCSpace.screenX,
+                  OCSpace.sm,
+                ),
+                child: Text(S.noFormatters, style: OCTypography.caption),
               ),
-              child: Text(S.noFormatters, style: OCTypography.caption),
-            ),
-          for (final f in store.formatters) _StatusRow(f),
-          const Divider(height: OCSpace.xxl),
+            for (final f in store.formatters) _StatusRow(f),
+              _GroupDivider(),
+            ],
+          ),
 
           // ---------------- skills ----------------
-          const SkillsSection(),
-          const Divider(height: OCSpace.xxl),
-          const SectionTitle('About'),
-          const InfoRow('App', 'OpenCode Client 1.0.0'),
-          const InfoRow('Server API', 'opencode 1.18.x'),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              OCSpace.screenX,
-              OCSpace.md,
-              OCSpace.screenX,
-              0,
+          _Group(
+            children: [
+            const SkillsSection(),
+            ],
+          ),
+
+          // ---------------- about ----------------
+          const SectionTitle(S.setAbout),
+          _Group(
+            children: [
+            const InfoRow(S.setApp, S.setAppVersion),
+            const InfoRow(S.setServerApi, S.setServerVersionRange),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                OCSpace.screenX,
+                OCSpace.md,
+                OCSpace.screenX,
+                0,
+              ),
+              child: Text(
+                S.termuxSetupNote(S.serverSetupCommand),
+                style: OCTypography.micro.copyWith(height: 1.5),
+              ),
             ),
-            child: Text(
-              S.termuxSetupNote(S.serverSetupCommand),
-              style: OCTypography.micro.copyWith(height: 1.5),
-            ),
+            ],
           ),
         ],
       ),
@@ -458,6 +496,62 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+}
+
+/// One settings group: the reference's `bg-surface-container-low rounded-xl`
+/// card holding a run of rows.
+///
+/// The page used to be one flat run of rows separated by full-width dividers,
+/// which on a dark canvas gave no sense of which rows belonged together. The
+/// card does that job with shape, and the dividers become inset row rules.
+///
+/// Rows keep their own 16dp gutter, so a row's label sits 16dp inside the card
+/// edge. The reference's rows sit closer to theirs; the difference is a few dp
+/// and it is left alone rather than editing the padding of `InfoRow` and
+/// `ListTile`, which every other page shares.
+class _Group extends StatelessWidget {
+  final List<Widget> children;
+  const _Group({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: OCSpace.screenX),
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.oc.card,
+          // `rounded-xl`: one step tighter than a standard card so a column of
+          // groups reads as stacked panels instead of one continuous wall.
+          borderRadius: BorderRadius.circular(12),
+          // The reference's `shadow-sm`.
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x2E000000),
+              offset: Offset(0, 2),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        // Clipped so a row rule at the top or bottom stops at the card's radius.
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+/// Row rule inside a [_Group], inset so it stops short of the row labels.
+class _GroupDivider extends StatelessWidget {
+  const _GroupDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(height: 1, indent: OCSpace.screenX);
   }
 }
 

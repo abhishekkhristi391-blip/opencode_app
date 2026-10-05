@@ -145,7 +145,7 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::diffAddedRemoved [EXTR
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::diffAppliesTo [EXTRACTED] lib/l10n/strings.dart:328
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerConnectedTo [EXTRACTED] lib/l10n/strings.dart:845
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerPending [EXTRACTED] lib/l10n/strings.dart:842
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::errorText [EXTRACTED] lib/l10n/strings.dart:976
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::errorText [EXTRACTED] lib/l10n/strings.dart:1011
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::fileStats [EXTRACTED] lib/l10n/strings.dart:530
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesChangedCount [EXTRACTED] lib/l10n/strings.dart:432
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesCount [EXTRACTED] lib/l10n/strings.dart:251
@@ -163,7 +163,7 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::formatContext [EXTRACT
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyDeleteBody [EXTRACTED] lib/l10n/strings.dart:893
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyFiles [EXTRACTED] lib/l10n/strings.dart:300
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::jumpUnread [EXTRACTED] lib/l10n/strings.dart:865
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::label [EXTRACTED] lib/l10n/strings.dart:974
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::label [EXTRACTED] lib/l10n/strings.dart:1009
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::mcpCount [EXTRACTED] lib/l10n/strings.dart:685
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::menuServerVersion [EXTRACTED] lib/l10n/strings.dart:855
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::messageCount [EXTRACTED] lib/l10n/strings.dart:252
@@ -182,12 +182,13 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsCount [EXTRACT
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsCountOne [EXTRACTED] lib/l10n/strings.dart:497
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsDeleteBody [EXTRACTED] lib/l10n/strings.dart:281
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setMcpLabel [EXTRACTED] lib/l10n/strings.dart:464
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setMcpServers [EXTRACTED] lib/l10n/strings.dart:1004
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPassword [EXTRACTED] lib/l10n/strings.dart:376
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPermExternalBody [EXTRACTED] lib/l10n/strings.dart:372
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPermExternalTitle [EXTRACTED] lib/l10n/strings.dart:370
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::settingsConnectedVersion [EXTRACTED] lib/l10n/strings.dart:688
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::skillsCount [EXTRACTED] lib/l10n/strings.dart:686
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::slashCommand [EXTRACTED] lib/l10n/strings.dart:975
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::slashCommand [EXTRACTED] lib/l10n/strings.dart:1010
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::statusCached [EXTRACTED] lib/l10n/strings.dart:782
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tasksProgress [EXTRACTED] lib/l10n/strings.dart:564
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tasksProgressSemantics [EXTRACTED] lib/l10n/strings.dart:565
@@ -1075,6 +1076,7 @@ lib/ui/settings_page.dart --calls--> lib/api/client.dart::setApiKey [INFERRED 0.
 lib/ui/settings_page.dart --calls--> lib/api/client.dart::upgrade [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/settings_page.dart:7
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setMcpLabel [INFERRED 0.6] lib/ui/settings_page.dart:0
+lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setMcpServers [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setPassword [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setPermExternalTitle [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::termuxSetupNote [INFERRED 0.6] lib/ui/settings_page.dart:0
@@ -1098,20 +1100,22 @@ lib/ui/settings_page.dart --calls--> lib/ui/primitives.dart::OCButton [INFERRED 
 lib/ui/settings_page.dart --calls--> lib/ui/primitives.dart::OCIconTile [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/ui/primitives.dart::OCSegment [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::SettingsPage [EXTRACTED] lib/ui/settings_page.dart:16
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_ActionTile [EXTRACTED] lib/ui/settings_page.dart:687
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_ConfigEditor [EXTRACTED] lib/ui/settings_page.dart:575
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_ConfigEditorState [EXTRACTED] lib/ui/settings_page.dart:583
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_Providers [EXTRACTED] lib/ui/settings_page.dart:464
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_ActionTile [EXTRACTED] lib/ui/settings_page.dart:781
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_ConfigEditor [EXTRACTED] lib/ui/settings_page.dart:669
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_ConfigEditorState [EXTRACTED] lib/ui/settings_page.dart:677
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_Group [EXTRACTED] lib/ui/settings_page.dart:513
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_GroupDivider [EXTRACTED] lib/ui/settings_page.dart:549
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_Providers [EXTRACTED] lib/ui/settings_page.dart:558
 lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_SettingsPageState [EXTRACTED] lib/ui/settings_page.dart:23
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_StatusRow [EXTRACTED] lib/ui/settings_page.dart:664
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_addKey [EXTRACTED] lib/ui/settings_page.dart:536
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_addMcp [EXTRACTED] lib/ui/settings_page.dart:401
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_editServer [EXTRACTED] lib/ui/settings_page.dart:338
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_pretty [EXTRACTED] lib/ui/settings_page.dart:588
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_StatusRow [EXTRACTED] lib/ui/settings_page.dart:758
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_addKey [EXTRACTED] lib/ui/settings_page.dart:630
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_addMcp [EXTRACTED] lib/ui/settings_page.dart:439
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_editServer [EXTRACTED] lib/ui/settings_page.dart:376
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::_pretty [EXTRACTED] lib/ui/settings_page.dart:682
 lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::build [EXTRACTED] lib/ui/settings_page.dart:31
 lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::createState [EXTRACTED] lib/ui/settings_page.dart:20
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::didUpdateWidget [EXTRACTED] lib/ui/settings_page.dart:598
-lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::dispose [EXTRACTED] lib/ui/settings_page.dart:604
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::didUpdateWidget [EXTRACTED] lib/ui/settings_page.dart:692
+lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::dispose [EXTRACTED] lib/ui/settings_page.dart:698
 lib/ui/settings_page.dart --defines--> lib/ui/settings_page.dart::initState [EXTRACTED] lib/ui/settings_page.dart:25
 lib/ui/settings_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/settings_page.dart:13
 lib/ui/settings_page.dart --calls--> lib/ui/theme.dart::mono [INFERRED 0.6] lib/ui/settings_page.dart:0
