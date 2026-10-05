@@ -165,6 +165,12 @@ enum LI {
 
   /// `difference`: the diff viewer.
   diff,
+
+  /// `mic`: dictation in the composer, and the voice settings row.
+  mic,
+
+  /// `volume_up`: read aloud under a reply, and while it is playing.
+  volume,
 }
 
 class LIcon extends StatelessWidget {
@@ -1133,6 +1139,65 @@ class LLinePainter extends CustomPainter {
           ),
           stroke,
         );
+        break;
+      case LI.mic:
+        // Capsule plus the cradle under it, which is what makes a 1.5px mic
+        // read as a mic rather than a pill.
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(9, 2.5, 6, 11),
+            const Radius.circular(3),
+          ),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.addArc(
+              Rect.fromCircle(center: const Offset(12, 11), radius: 6.5),
+              0,
+              math.pi,
+            );
+          }),
+          stroke,
+        );
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(12, 17.5);
+            p.lineTo(12, 21);
+          }),
+          stroke,
+        );
+
+        break;
+      case LI.volume:
+        // Speaker cone on its own side, then two arcs for the waves. The arcs
+        // are open, not closed circles: a full ring at this weight reads as a
+        // record next to a speaker.
+        canvas.drawPath(
+          _path((p) {
+            p.moveTo(4, 9.5);
+            p.lineTo(7.5, 9.5);
+            p.lineTo(12, 5.5);
+            p.lineTo(12, 18.5);
+            p.lineTo(7.5, 14.5);
+            p.lineTo(4, 14.5);
+            p.close();
+          }),
+          stroke,
+        );
+        for (final radius in const [5.0, 9.0]) {
+          canvas.drawPath(
+            _path((p) {
+              p.addArc(
+                Rect.fromCircle(center: const Offset(12, 12), radius: radius),
+                -0.85,
+                1.7,
+              );
+            }),
+            stroke,
+          );
+        }
+
         break;
     }
   }

@@ -840,8 +840,6 @@ class S {
   static const composerQueuedTooltip = 'This message is queued';
   static const composerSendTooltip = 'Send';
   static const composerStopTooltip = 'Stop the current turn';
-  static const composerMicTooltip = 'Voice input';
-  static const composerMicBody = 'Voice input is not available yet.';
 
   // --- fix 6: options sheet ------------------------------------------
   static const sheetGroupSession = 'Session';
@@ -1042,6 +1040,80 @@ class S {
 
   /// Group heading that carries a count, e.g. "MCP servers (3)".
   static String setMcpServers(int count) => 'MCP servers ($count)';
+
+  // ------------------------------------------------------------------
+  // voice
+  // ------------------------------------------------------------------
+  static const setVoice = 'Voice';
+
+  static const voiceMicTooltip = 'Dictate';
+  static const voiceStopListeningTooltip = 'Stop listening';
+  static const voiceConversationTooltip = 'Hands-free conversation';
+  static const voiceStopConversationTooltip = 'Stop conversation';
+  static const voiceListening = 'Listening';
+  static const voiceStarting = 'Starting the microphone';
+  static const voiceProcessing = 'Working on it';
+  static const voiceSpeaking = 'Reading aloud';
+  static const voiceWaiting = 'Thinking';
+  static const voiceReadAloudTooltip = 'Read aloud';
+  static const voiceStopReadingTooltip = 'Stop reading';
+  static const voiceSpeakSheetTitle = 'Read aloud';
+  static const voiceNothingToRead = 'Nothing to read here';
+
+  /// Settings rows.
+  static const voiceLanguage = 'Language';
+  static const voiceLanguageSystem = 'System default';
+  static const voiceLanguageSub = 'Speech recognition';
+  static const voiceLanguageUnavailable = 'No language is available';
+  static const voiceRate = 'Speech rate';
+  static const voiceRateSlow = 'Slow';
+  static const voiceRateNormal = 'Normal';
+  static const voiceRateFast = 'Fast';
+  static const voiceReadAloud = 'Read replies aloud';
+  static const voiceReadAloudSub = 'Every finished reply';
+  static const voiceAutoSend = 'Send what I say';
+  static const voiceAutoSendSub = 'Required for hands-free';
+  static const voiceTest = 'Test voice';
+  static const voiceTestLine =
+      'This is how replies will sound. OpenCode is ready when you are.';
+  static const voiceMicPermission = 'Microphone';
+  static const voiceMicGranted = 'Allowed';
+  static const voiceMicDenied = 'Not allowed';
+  static const voiceMicUnknown = 'Not checked yet';
+  static const voiceEngine = 'Speech output';
+  static const voiceEngineReady = 'Ready';
+  static const voiceEngineMissing = 'Not available';
+  static const voiceOpenSettings = 'Open settings';
+  static const voiceSettingsUnopened = 'Could not open settings';
+
+  /// Shown once, the first time hands-free is switched on.
+  static const voiceConversationIntro =
+      'Hands-free sends what you say and reads each reply back. Say stop, or '
+      'tap the mic, to leave the loop.';
+
+  /// Confirm label on the one-time hands-free explanation.
+  static const voiceStart = 'Start listening';
+
+  /// One calm line per voice failure. Raw platform error codes never reach the
+  /// user.
+  static const voiceFailedPermission =
+      'Microphone access is off. Open settings to allow it.';
+  static const voiceFailedRecognizer =
+      'This device has no speech recognition available.';
+  static const voiceFailedNoSpeech = 'Heard nothing, so hands-free stopped.';
+  static const voiceFailedNetwork =
+      'The connection dropped, so voice stopped.';
+  static const voiceFailedBusy =
+      'Something else is using the microphone.';
+  static const voiceFailedLanguage = 'That language is not available here.';
+  static const voiceFailedNoModel = 'Pick a model before using hands-free.';
+  static const voiceFailedPlayback = 'Text to speech is not available here.';
+  static const voiceFailedAutoSendOff =
+      'Hands-free needs "Send what I say" turned on.';
+  static const voiceFailedUnknown = 'Voice stopped. Tap the mic to try again.';
+
+  /// Detail line under the phase name, e.g. "2 of 7".
+  static String voiceUtterance(int index, int total) => '$index of $total';
 
   // ------------------------------------------------------------------
   // prompts, commands, share

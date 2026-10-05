@@ -19,6 +19,8 @@ import 'primitives.dart';
 import 'prompts.dart';
 import 'theme.dart';
 import 'widgets.dart';
+import '../voice/voice_scope.dart';
+import '../voice/voice_service.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -78,6 +80,11 @@ class _ChatPageState extends State<ChatPage> {
   /// dependOnInheritedWidgetOfExactType assert and leaks the listener.
   OcStore? _store;
 
+  /// The voice service is app-wide, so this only holds the subscription to its
+  /// utterance stream. Held in a field, like [_store], because a stream
+  /// subscription has to be cancelled somewhere safe.
+  StreamSubscription<String>? _utterances;
+
   @override
   void initState() {
     super.initState();
@@ -91,6 +98,11 @@ class _ChatPageState extends State<ChatPage> {
         // store, so follow-mode has to hear from both or auto-scroll would stop
         // tracking the tail mid-run.
         _store!.messageList.addListener(_onStoreChange);
+        // Dictated text arrives here and nowhere else: the service holds the
+        // microphone, the page owns the caret.
+        _utterances = VoiceScope.read(context).utterances.listen(
+              _insertUtterance,
+            );
       }
     });
   }
@@ -105,7 +117,29 @@ class _ChatPageState extends State<ChatPage> {
     _store?.removeListener(_onStoreChange);
     _store?.messageList.removeListener(_onStoreChange);
     _store = null;
+    unawaited(_utterances?.cancel());
+    _utterances = null;
     super.dispose();
+  }
+
+  /// Put dictated text at the caret.
+  ///
+  /// Not at the end: somebody editing the second line of a prompt would have
+  /// the text jump out from under their cursor mid-sentence. Not in a new field
+  /// either - dictation is a keyboard, so it types.
+  void _insertUtterance(String text) {
+    if (!mounted) return;
+    final current = input.text;
+    final selection = input.selection;
+    // An unselected field has offset -1, which would throw on replaceRange.
+    final at = selection.isValid ? selection.start : current.length;
+    final next = current.replaceRange(at, at, '$text ');
+    input.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: at + text.length + 1),
+    );
+    focus.requestFocus();
+    setState(() {});
   }
 
   void _onStoreChange() {
@@ -311,7 +345,11 @@ class _ChatPageState extends State<ChatPage> {
             onPickSuggestion: _sendSuggestion,
           ),
         ),
-        _ComposerWidget(controller: input, focus: focus, onSend: _send),
+        _ComposerWidget(
+          controller: input,
+          focus: focus,
+          onSend: _send,
+        ),
       ],
     );
   }
@@ -1391,12 +1429,59 @@ class _ReplyActions extends StatelessWidget {
               copyToClipboard(context, text);
             },
           ),
+          // Read aloud is the one reply action that has to repaint while it
+          // runs, so it subscribes to the service on its own. The tile's cached
+          // markdown subtree is not rebuilt by this: the builder is scoped to
+          // the button, below the cached boundary.
+          _ReadAloudAction(msg: msg),
           _ActionBtn(
             icon: LI.undo,
             label: S.messageUndo,
             onTap: () => store.revert(msg.info.id),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Reads one reply aloud, or stops whatever is being read.
+///
+/// Scoped to the button so a listening state change repaints 32dp instead of
+/// the reply above it.
+class _ReadAloudAction extends StatelessWidget {
+  final ChatMessage msg;
+
+  const _ReadAloudAction({required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
+    // read(), not of(): this sits inside a cached message tile. Subscribing with
+    // `of` would invalidate that tile's markdown cache on every voice change,
+    // which is exactly the streaming repaint this file is careful to avoid.
+    final voice = VoiceScope.read(context);
+    return ListenableBuilder(
+      listenable: voice,
+      builder: (context, _) => _ActionBtn(
+        // The stop square is what is being read right now, so the button turns
+        // into the way out of it.
+        icon: voice.isSpeaking ? LI.stop : LI.volume,
+        label: voice.isSpeaking ? S.voiceStopReadingTooltip : S.voiceReadAloudTooltip,
+        onTap: () {
+          if (voice.isSpeaking) {
+            voice.stopSpeaking();
+            return;
+          }
+          final text = msg.parts
+              .where((p) => p.type == 'text')
+              .map((p) => p.text)
+              .join('\n');
+          if (text.trim().isEmpty) {
+            showSnack(context, S.voiceNothingToRead);
+            return;
+          }
+          voice.speak(text);
+        },
       ),
     );
   }
@@ -1491,7 +1576,24 @@ Future<void> showMessageMenu(BuildContext context, ChatMessage msg) async {
               }
             },
           ),
-          if (!msg.info.isUser)
+          if (!msg.info.isUser) ...[
+            _SheetRow(
+              icon: LI.volume,
+              label: S.voiceSpeakSheetTitle,
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                final voice = VoiceScope.read(context);
+                final text = msg.parts
+                    .where((p) => p.type == 'text')
+                    .map((p) => p.text)
+                    .join('\n');
+                if (text.trim().isEmpty) {
+                  showSnack(context, S.voiceNothingToRead);
+                  return;
+                }
+                voice.speak(text);
+              },
+            ),
             _SheetRow(
               icon: LI.undo,
               label: S.messageUndo,
@@ -1500,6 +1602,7 @@ Future<void> showMessageMenu(BuildContext context, ChatMessage msg) async {
                 store.revert(msg.info.id);
               },
             ),
+          ],
           _SheetRow(
             icon: LI.trash,
             label: S.delete,
@@ -1785,7 +1888,13 @@ class _Composer extends StatelessWidget {
             ),
             if (store.busy) _WorkingStrip(agent: store.agent, onStop: onStop),
             if (store.hasQueued) _QueuedStrip(store: store),
-            const SizedBox(height: 2),
+            // Voice sits between the field and the tools row, the same slot the
+            // working strip uses. A strip is used instead of a button tint
+            // because "the microphone is open" has to be readable at a glance
+            // from across a desk, not inferred from a coloured circle. The strip
+            // returns `SizedBox.shrink()` when nothing is live, so the gap below
+            // the field is unchanged for a user who never touches voice.
+            const _VoiceStrip(),
             Row(
               children: [
                 _CircleButton(
@@ -1802,6 +1911,8 @@ class _Composer extends StatelessWidget {
                 ),
                 const SizedBox(width: 2),
                 _ModelPill(store: store),
+                const SizedBox(width: 2),
+                const _HandsFreeButton(),
                 const Spacer(),
                 _SendButton(
                   store: store,
@@ -2301,42 +2412,76 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
-      builder: (context, value, _) {
-        if (store.busy) {
-          // Stop replaces Send in the same slot, so it keeps the same terracotta
-          // container instead of flipping to a high-contrast disc mid-turn.
+    // read(), not of(): the 36dp slot subscribes below. Depending on
+    // VoiceScope here would rebuild the whole send slot on every level update,
+    // and `of` on a parent would drag the composer with it.
+    final voice = VoiceScope.read(context);
+    return ListenableBuilder(
+      listenable: voice,
+      builder: (context, _) => ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) {
+          if (store.busy) {
+            // Stop replaces Send in the same slot, so it keeps the same terracotta
+            // container instead of flipping to a high-contrast disc mid-turn.
+            return _CircleButton(
+              icon: LI.stop,
+              bg: OCColors.secondary,
+              fg: OCColors.onSecondary,
+              semanticLabel: S.chatStopTooltip,
+              onTap: onStop,
+              diameter: 36,
+              glyph: 20,
+            );
+          }
+          final canSend =
+              value.text.trim().isNotEmpty || store.attachments.isNotEmpty;
+          if (canSend) {
+            return _CircleButton(
+              // The reference's `bg-secondary-container text-on-secondary-container`.
+              icon: LI.send,
+              bg: OCColors.secondary,
+              fg: OCColors.onSecondary,
+              semanticLabel: S.chatSendTooltip,
+              onTap: onSend,
+              diameter: 36,
+              glyph: 20,
+            );
+          }
+          // The reference puts a dictation button in this slot, and it is the
+          // right place for it: it is where the send button would be, so it is
+          // the one control a thumb already knows to reach for when it is empty.
+          // While the microphone is open it turns into the stop for that session
+          // rather than disappearing, so the way out is always in the same spot.
+          if (voice.micActive) {
+            return _CircleButton(
+              icon: LI.mic,
+              bg: OCColors.secondary,
+              fg: OCColors.onSecondary,
+              semanticLabel: S.voiceStopListeningTooltip,
+              onTap: voice.stopDictation,
+              diameter: 36,
+              glyph: 20,
+            );
+          }
+          if (voice.recognizerMissing) {
+            // No speech engine on the device. A dead button is worse than none,
+            // and Settings > Voice is where this gets explained.
+            return const SizedBox.shrink();
+          }
           return _CircleButton(
-            icon: LI.stop,
-            bg: OCColors.secondary,
-            fg: OCColors.onSecondary,
-            semanticLabel: S.chatStopTooltip,
-            onTap: onStop,
+            icon: LI.mic,
+            // Bare glyph, not a disc: the slot is empty most of the time and a
+            // filled circle there would compete with Send.
+            bg: t.bg,
+            fg: t.mute,
+            semanticLabel: S.voiceMicTooltip,
+            onTap: voice.toggleDictation,
             diameter: 36,
             glyph: 20,
           );
-        }
-        final canSend =
-            value.text.trim().isNotEmpty || store.attachments.isNotEmpty;
-        if (canSend) {
-          return _CircleButton(
-            // The reference's `bg-secondary-container text-on-secondary-container`.
-            icon: LI.send,
-            bg: OCColors.secondary,
-            fg: OCColors.onSecondary,
-            semanticLabel: S.chatSendTooltip,
-            onTap: onSend,
-            diameter: 36,
-            glyph: 20,
-          );
-        }
-        // The reference puts a dictation button here. This client has no speech
-        // recognition, and the old placeholder just raised a snackbar saying so,
-        // so the slot stays empty until dictation is real. The attach and model
-        // chips carry the row on their own.
-        return const SizedBox.shrink();
-      },
+        },
+      ),
     );
   }
 }
@@ -2392,6 +2537,282 @@ class _CircleButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The one sentence for a voice failure.
+///
+/// Shared by the composer strip and Settings > Voice so the two never word the
+/// same stop differently. Raw platform codes never reach the user: the service
+/// classifies them and this only picks the sentence.
+String voiceFailureText(VoiceFailure failure) => switch (failure) {
+      VoiceFailure.permission => S.voiceFailedPermission,
+      VoiceFailure.recognizer => S.voiceFailedRecognizer,
+      VoiceFailure.noSpeech => S.voiceFailedNoSpeech,
+      VoiceFailure.network => S.voiceFailedNetwork,
+      VoiceFailure.busy => S.voiceFailedBusy,
+      VoiceFailure.language => S.voiceFailedLanguage,
+      VoiceFailure.noModel => S.voiceFailedNoModel,
+      VoiceFailure.playback => S.voiceFailedPlayback,
+      VoiceFailure.autoSendOff => S.voiceFailedAutoSendOff,
+      VoiceFailure.unknown => S.voiceFailedUnknown,
+    };
+
+/// The voice line under the field: what is happening, what was heard, how to stop.
+///
+/// Dictation and hands-free share it because they are the same microphone, and
+/// two indicators would be two truths to reconcile.
+///
+/// It lives in the composer, below the transcript, and subscribes to the service
+/// on its own. Nothing above it rebuilds when the microphone opens: the partial
+/// text changes at a few frames a second during dictation, and routing that
+/// through the composer would repaint every cached message tile with it.
+class _VoiceStrip extends StatefulWidget {
+  const _VoiceStrip();
+
+  @override
+  State<_VoiceStrip> createState() => _VoiceStripState();
+}
+
+class _VoiceStripState extends State<_VoiceStrip> {
+  /// What has already been said out loud, so one failure is one message.
+  VoiceFailure? _shownFailure;
+  VoiceFailure? _shownNotice;
+
+  /// Why hands-free or dictation stopped gets one snackbar, not a banner that
+  /// has to be dismissed. Hands-free can end three different ways in a minute
+  /// and a persistent bar would fight the composer for the same row.
+  void _reportOnce(BuildContext context, VoiceService voice) {
+    final failure = voice.failure;
+    final notice = voice.notice;
+    if (failure == _shownFailure && notice == _shownNotice) return;
+    if (failure == null && notice == null) {
+      // Cleared, not reported: forget it so the *next* identical failure is
+      // still worth a message. Two mic failures in a row both have to be said.
+      _shownFailure = null;
+      _shownNotice = null;
+      return;
+    }
+    _shownFailure = failure;
+    _shownNotice = notice;
+    final reason = notice ?? failure!;
+    // After the frame: a snackbar raised during build throws.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showSnack(context, voiceFailureText(reason));
+      voice.clearNotice();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    // read(), not of(): the subscription is the ListenableBuilder directly
+    // below. `of` would additionally make this widget's parent rebuild on every
+    // level update during dictation.
+    final voice = VoiceScope.read(context);
+    return ListenableBuilder(
+      listenable: voice,
+      builder: (context, _) {
+        _reportOnce(context, voice);
+        if (!voice.micActive && !voice.isBusy) {
+          return const SizedBox.shrink();
+        }
+        final listening = voice.isListening;
+        final label = switch (voice.phase) {
+          VoicePhase.requestingPermission => S.voiceStarting,
+          VoicePhase.listening => S.voiceListening,
+          VoicePhase.processing => S.voiceProcessing,
+          VoicePhase.speaking => S.voiceSpeaking,
+          VoicePhase.waiting => S.voiceWaiting,
+          _ => S.voiceListening,
+        };
+        // The live partial lives here, not in the field: dictation only commits
+        // the final sentence, and a field that rewrites itself mid-sentence
+        // fights the caret.
+        final text = listening && voice.partial.isNotEmpty
+            ? voice.partial
+            : label;
+        return Padding(
+          padding: const EdgeInsets.only(top: OCSpace.xs),
+          child: Row(
+            children: [
+              _LevelDot(active: listening, level: voice.level),
+              const SizedBox(width: OCSpace.sm),
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: OCTypography.caption.copyWith(
+                    color: listening ? t.ink : t.mute,
+                  ),
+                ),
+              ),
+              if (voice.isSpeaking && voice.spokenTotal > 1) ...[
+                Text(
+                  S.voiceUtterance(voice.spokenIndex, voice.spokenTotal),
+                  style: OCTypography.caption.copyWith(color: t.mute),
+                ),
+                const SizedBox(width: OCSpace.sm),
+              ],
+              _ActionBtn(
+                icon: LI.stop,
+                label: voice.isSpeaking
+                    ? S.voiceStopReadingTooltip
+                    : S.voiceStopListeningTooltip,
+                // Reading and listening are different ways out, and during a
+                // hands-free turn this ends the whole loop.
+                onTap: voice.isSpeaking
+                    ? voice.stopSpeaking
+                    : voice.stopDictation,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The 6dp dot that breathes while the microphone is open.
+class _LevelDot extends StatefulWidget {
+  final bool active;
+  final double level;
+
+  const _LevelDot({required this.active, required this.level});
+
+  @override
+  State<_LevelDot> createState() => _LevelDotState();
+}
+
+class _LevelDotState extends State<_LevelDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: OCMotion.pulse,
+  )..repeat();
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final dot = (double alpha) => Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: t.acc.withValues(alpha: alpha),
+            shape: BoxShape.circle,
+          ),
+        );
+    if (!widget.active) return dot(0.35);
+    // A blinking light is a flashing element. With animations off it is simply
+    // on, which still says the microphone is open.
+    if (ocReduceMotion(context)) return dot(1);
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, _) => dot(0.4 + 0.6 * _pulse.value),
+    );
+  }
+}
+
+/// The hands-free toggle.
+///
+/// A pill with a label rather than another bare glyph: switching it on starts
+/// sending messages with no tap at all, which is a mode and should look like
+/// one. It sits next to the model pill, never inside the send slot.
+///
+/// Owns its own subscription so the level feed from a listening session repaints
+/// this pill and nothing else.
+class _HandsFreeButton extends StatelessWidget {
+  const _HandsFreeButton();
+
+  @override
+  Widget build(BuildContext context) {
+    // read(), not of(): the pill rebuilds from its own ListenableBuilder below,
+    // and the composer must not inherit the voice change on its behalf.
+    final voice = VoiceScope.read(context);
+    return ListenableBuilder(
+      listenable: voice,
+      builder: (context, _) => _pill(context, voice),
+    );
+  }
+
+  Widget _pill(
+    BuildContext context,
+    VoiceService voice,
+  ) {
+    final t = context.oc;
+    final on = voice.conversation;
+    final label = on
+        ? S.voiceStopConversationTooltip
+        : S.voiceConversationTooltip;
+    return Semantics(
+      button: true,
+      toggled: on,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: on ? t.acc : Colors.transparent,
+        borderRadius: BorderRadius.circular(OCRadius.full),
+        child: InkWell(
+          onTap: () => _toggle(context, voice),
+          borderRadius: BorderRadius.circular(OCRadius.full),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(OCRadius.full),
+              border: Border.all(color: on ? t.acc : t.line),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LIcon(
+                  LI.mic,
+                  size: 14,
+                  color: on ? t.bg : t.mute,
+                  strokeWidth: 1.9,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: OCTypography.meta.copyWith(
+                    color: on ? t.bg : t.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Turning hands-free on sends messages without a tap, so the first time it is
+  /// explained and confirmed rather than discovered afterwards.
+  Future<void> _toggle(BuildContext context, VoiceService voice) async {
+    if (voice.conversation) {
+      await voice.toggleConversation();
+      return;
+    }
+    if (voice.needsIntro) {
+      final ok = await confirmDialog(
+        context,
+        title: S.voiceConversationTooltip,
+        message: S.voiceConversationIntro,
+        confirm: S.voiceStart,
+      );
+      if (!ok) return;
+      voice.ackIntro();
+    }
+    await voice.toggleConversation();
   }
 }
 
