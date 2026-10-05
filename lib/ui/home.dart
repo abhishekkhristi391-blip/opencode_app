@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
@@ -313,10 +315,6 @@ class HomeShellState extends State<HomeShell> {
         pending: store.pendingPromptCount,
         onClose: () => Navigator.pop(ctx),
         onOpen: (page, title) => _pushAndClose(page, title),
-        onReviewPrompt: () {
-          Navigator.pop(ctx);
-          showPendingPrompt(context);
-        },
         onServer: () => _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
         // Dismissing the menu only closes the menu. The prompt is still
         // pending, so it is still on the server and the badge is still up —

@@ -22,9 +22,10 @@ class PromptOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scope = context.getInheritedWidgetOfExactType<AppScope>();
-    if (scope == null) return const SizedBox.shrink();
-    final store = scope.notifier!;
+    // Must *subscribe*, not just look up: this layer lives outside any screen,
+    // so nothing above it rebuilds when a request arrives and a non-subscribing
+    // read would leave the overlay frozen on its first (empty) frame.
+    final store = AppScope.of(context);
     if (store.promptSheetDismissed) return const SizedBox.shrink();
     // Oldest first: permissions before questions, which is the order both
     // lists are appended in, so nothing queues behind nothing.
@@ -505,7 +506,7 @@ class _SessionLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: OCSpace.xs),
       child: Row(
         children: [
-          Icon(
+          LIcon(
             foreign ? LI.chat : LI.history,
             size: 13,
             color: OCColors.textTertiary,
@@ -524,9 +525,12 @@ class _SessionLine extends StatelessWidget {
           TextButton(
             onPressed: store.dismissPromptSheet,
             style: TextButton.styleFrom(
+              // 48dp tall: same rule as the option cards — a sheet you have to
+              // aim at is a sheet people miss.
               minimumSize: const Size(48, 48),
               padding: const EdgeInsets.symmetric(horizontal: OCSpace.sm),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              foregroundColor: OCColors.textSecondary,
+              shape: const CircleBorder(),
             ),
             child: Text(S.promptLater, style: OCTypography.micro),
           ),

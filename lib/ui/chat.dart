@@ -2765,23 +2765,31 @@ class _WorkingStripState extends State<_WorkingStrip> {
   Timer? _timer;
   bool _slow = false;
 
+  /// Which prompt the strip was last showing, so clearing a block restarts the
+  /// slow timer exactly once. The run genuinely begins again the moment the
+  /// block clears, and the old countdown belonged to the wait, not the work.
+  String? _blockedOn;
+
+  /// Guards against queueing several post-frame callbacks if the store notifies
+  /// repeatedly before the frame ends.
+  bool _resyncScheduled = false;
+
   @override
   void initState() {
     super.initState();
     _armSlowTimer();
   }
 
-  void _armSlowTimer() {
+  /// Restart the eight-second countdown. Passing `blocked` cancels it outright:
+  /// while a request is out there is no thinking to report on.
+  void _armSlowTimer({bool blocked = false}) {
     _timer?.cancel();
+    _timer = null;
+    if (blocked) return;
     _timer = Timer(_slowAfter, () {
       if (mounted) setState(() => _slow = true);
     });
   }
-
-  /// Whether the last build was in the blocked state. Answering the prompt has
-  /// to restart the slow timer, because the run genuinely begins again from
-  /// that moment and its old countdown belongs to the wait, not the work.
-  bool _wasBlocked = false;
 
   @override
   void dispose() {
@@ -2797,18 +2805,30 @@ class _WorkingStripState extends State<_WorkingStrip> {
     final perm = store.oldestPendingPermission;
     final blocked = n > 0;
 
-    // The slow warning is only ever about *thinking*. While a prompt is out it
-    // would be a lie: the run is not slow, it is stopped.
-    if (_slow && !blocked) {
-      _slow = false;
-      _armSlowTimer();
+    // Transition detection, not state mutation: the slow warning is only ever
+    // about *thinking*, and while a prompt is out the run is not slow, it is
+    // stopped. Going blocked, or clearing a block, restarts the countdown so
+    // the eight seconds measure the work rather than the wait.
+    final blockId = blocked
+        ? '${perm?.id ?? ''}/${store.oldestPendingQuestion?.id ?? ''}'
+        : null;
+    if (_blockedOn != blockId && !_resyncScheduled) {
+      _resyncScheduled = true;
+      // Derived state, so it is committed after the frame rather than during
+      // it: build must stay free of timer side effects.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _resyncScheduled = false;
+        if (!mounted || _blockedOn == blockId) return;
+        setState(() {
+          _blockedOn = blockId;
+          _slow = false;
+        });
+        _armSlowTimer(blocked: blocked);
+      });
     }
-    if (_wasBlocked && !blocked) {
-      // Just answered: the eight seconds start counting again.
-      _slow = false;
-      _armSlowTimer();
-    }
-    _wasBlocked = blocked;
+    // One stale frame of “still slow” right after a block clears is
+    // preferable to a rebuild loop; the callback above clears it immediately.
+    final showSlow = _slow && !blocked;
 
     final String headline = blocked
         ? (perm != null ? S.waitingApproval : S.waitingAnswer)
@@ -2816,7 +2836,7 @@ class _WorkingStripState extends State<_WorkingStrip> {
 
     final String status = blocked
         ? (n > 1 ? S.waitingYou(n) : S.promptTapToReview)
-        : (_slow ? S.composerWorkingSlow : S.composerStopHint);
+        : (showSlow ? S.composerWorkingSlow : S.composerStopHint);
 
     // Tool or path, so the tap target says what is actually being approved
     // rather than just "something".
@@ -2879,7 +2899,9 @@ class _WorkingStripState extends State<_WorkingStrip> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: OCTypography.micro.copyWith(
-                              color: blocked ? t.acc : (_slow ? t.warn : t.mute),
+                              color: blocked
+                                  ? t.acc
+                                  : (showSlow ? t.warn : t.mute),
                             ),
                           ),
                         ],
@@ -2925,7 +2947,10 @@ class _PromptChip extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(OCRadius.pill),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 32),
+            // 48dp tall, not 32: the whole point of the chip is that it is the
+            // obvious thing to press, and a 32dp target is not pressable by
+            // anyone with a normal thumb.
+            constraints: const BoxConstraints(minHeight: 48),
             padding: const EdgeInsets.symmetric(horizontal: OCSpace.md),
             alignment: Alignment.center,
             child: Text(

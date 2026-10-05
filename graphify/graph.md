@@ -495,9 +495,9 @@ lib/ui/chat.dart --defines--> lib/ui/chat.dart::OutlinedChip [EXTRACTED] lib/ui/
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::SlashTextField [EXTRACTED] lib/ui/chat.dart:2399
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::SuggestionCard [EXTRACTED] lib/ui/chat.dart:1031
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ActionBtn [EXTRACTED] lib/ui/chat.dart:1405
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ActionDot [EXTRACTED] lib/ui/chat.dart:3119
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ActionDot [EXTRACTED] lib/ui/chat.dart:3144
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_AttachmentStrip [EXTRACTED] lib/ui/chat.dart:1982
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BarPainter [EXTRACTED] lib/ui/chat.dart:3057
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BarPainter [EXTRACTED] lib/ui/chat.dart:3082
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BusyBar [EXTRACTED] lib/ui/chat.dart:672
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_BusyBarWidget [EXTRACTED] lib/ui/chat.dart:391
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ChatMessages [EXTRACTED] lib/ui/chat.dart:413
@@ -510,22 +510,22 @@ lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ErrorBarWidget [EXTRACTED] lib/
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_FilePickerSheet [EXTRACTED] lib/ui/chat.dart:2614
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_FilePickerSheetState [EXTRACTED] lib/ui/chat.dart:2621
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IncomingFileChip [EXTRACTED] lib/ui/chat.dart:1571
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IndeterminateBar [EXTRACTED] lib/ui/chat.dart:3020
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IndeterminateBarState [EXTRACTED] lib/ui/chat.dart:3028
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IndeterminateBar [EXTRACTED] lib/ui/chat.dart:3045
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_IndeterminateBarState [EXTRACTED] lib/ui/chat.dart:3053
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_InlineError [EXTRACTED] lib/ui/chat.dart:1602
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_JumpToLatest [EXTRACTED] lib/ui/chat.dart:540
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_LoadOlderButton [EXTRACTED] lib/ui/chat.dart:608
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageActions [EXTRACTED] lib/ui/chat.dart:3085
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageActions [EXTRACTED] lib/ui/chat.dart:3110
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageTile [EXTRACTED] lib/ui/chat.dart:1132
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_MessageTileState [EXTRACTED] lib/ui/chat.dart:1147
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ModelModeChips [EXTRACTED] lib/ui/chat.dart:785
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ModelPill [EXTRACTED] lib/ui/chat.dart:2035
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ProjectBar [EXTRACTED] lib/ui/chat.dart:910
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_PromptChip [EXTRACTED] lib/ui/chat.dart:2909
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_QueuedStrip [EXTRACTED] lib/ui/chat.dart:2946
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_PromptChip [EXTRACTED] lib/ui/chat.dart:2931
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_QueuedStrip [EXTRACTED] lib/ui/chat.dart:2971
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ReplyActions [EXTRACTED] lib/ui/chat.dart:1370
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_ReplyMeta [EXTRACTED] lib/ui/chat.dart:1344
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_RunProgressLine [EXTRACTED] lib/ui/chat.dart:2993
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_RunProgressLine [EXTRACTED] lib/ui/chat.dart:3018
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SendButton [EXTRACTED] lib/ui/chat.dart:2289
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SheetOption [EXTRACTED] lib/ui/chat.dart:2147
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_SheetRow [EXTRACTED] lib/ui/chat.dart:1534
@@ -537,7 +537,7 @@ lib/ui/chat.dart --defines--> lib/ui/chat.dart::_Welcome [EXTRACTED] lib/ui/chat
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_WorkingStrip [EXTRACTED] lib/ui/chat.dart:2754
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_WorkingStripState [EXTRACTED] lib/ui/chat.dart:2763
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_apply [EXTRACTED] lib/ui/chat.dart:2502
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::_armSlowTimer [EXTRACTED] lib/ui/chat.dart:2774
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::_armSlowTimer [EXTRACTED] lib/ui/chat.dart:2785
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_assistantBlock [EXTRACTED] lib/ui/chat.dart:1300
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_buildContent [EXTRACTED] lib/ui/chat.dart:1185
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::_buildList [EXTRACTED] lib/ui/chat.dart:446
@@ -576,9 +576,9 @@ lib/ui/chat.dart --defines--> lib/ui/chat.dart::createState [EXTRACTED] lib/ui/c
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::didChangeDependencies [EXTRACTED] lib/ui/chat.dart:1154
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::dispose [EXTRACTED] lib/ui/chat.dart:99
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::initState [EXTRACTED] lib/ui/chat.dart:82
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::isFreeModel [EXTRACTED] lib/ui/chat.dart:2979
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::paint [EXTRACTED] lib/ui/chat.dart:3063
-lib/ui/chat.dart --defines--> lib/ui/chat.dart::shouldRepaint [EXTRACTED] lib/ui/chat.dart:3077
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::isFreeModel [EXTRACTED] lib/ui/chat.dart:3004
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::paint [EXTRACTED] lib/ui/chat.dart:3088
+lib/ui/chat.dart --defines--> lib/ui/chat.dart::shouldRepaint [EXTRACTED] lib/ui/chat.dart:3102
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::showAgentSheet [EXTRACTED] lib/ui/chat.dart:2053
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::showMessageMenu [EXTRACTED] lib/ui/chat.dart:1458
 lib/ui/chat.dart --defines--> lib/ui/chat.dart::showModelSheet [EXTRACTED] lib/ui/chat.dart:2103
@@ -743,7 +743,7 @@ lib/ui/files_page.dart --calls--> lib/ui/widgets.dart::showSnack [INFERRED 0.6] 
 lib/ui/home.dart --calls--> lib/api/client.dart::renameSession [INFERRED 0.35] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/api/client.dart::toolIds [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/api/events.dart::stop [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/home.dart:3
+lib/ui/home.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/home.dart:5
 lib/ui/home.dart --calls--> lib/l10n/strings.dart::drawerConnectedTo [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/l10n/strings.dart::drawerPending [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/l10n/strings.dart::label [INFERRED 0.6] lib/ui/home.dart:0
@@ -751,97 +751,97 @@ lib/ui/home.dart --calls--> lib/l10n/strings.dart::menuServerVersion [INFERRED 0
 lib/ui/home.dart --calls--> lib/l10n/strings.dart::menuWaitingForYou [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/l10n/strings.dart::moreToolsCount [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/l10n/strings.dart::promptSemantics [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/home.dart:4
+lib/ui/home.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/home.dart:6
 lib/ui/home.dart --calls--> lib/models/models.dart::baseName [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/models/models.dart::fmtAge [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/state/store.dart [EXTRACTED] lib/ui/home.dart:5
+lib/ui/home.dart --imports--> lib/state/store.dart [EXTRACTED] lib/ui/home.dart:7
 lib/ui/home.dart --calls--> lib/state/store.dart::newSession [INFERRED 0.35] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/state/store.dart::openSession [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/state/store.dart::renameSession [INFERRED 0.35] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/state/store.dart::setAgent [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/state/store.dart::toggleTool [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/about_page.dart [EXTRACTED] lib/ui/home.dart:7
+lib/ui/home.dart --imports--> lib/ui/about_page.dart [EXTRACTED] lib/ui/home.dart:9
 lib/ui/home.dart --calls--> lib/ui/about_page.dart::AboutPage [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/home.dart:6
+lib/ui/home.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/home.dart:8
 lib/ui/home.dart --calls--> lib/ui/app_scope.dart::read [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/chat.dart [EXTRACTED] lib/ui/home.dart:8
+lib/ui/home.dart --imports--> lib/ui/chat.dart [EXTRACTED] lib/ui/home.dart:10
 lib/ui/home.dart --calls--> lib/ui/chat.dart::ChatPage [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/chat.dart::_SheetOption [INFERRED 0.35] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/commands_page.dart [EXTRACTED] lib/ui/home.dart:9
+lib/ui/home.dart --imports--> lib/ui/commands_page.dart [EXTRACTED] lib/ui/home.dart:11
 lib/ui/home.dart --calls--> lib/ui/commands_page.dart::CommandsPage [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/diff_page.dart [EXTRACTED] lib/ui/home.dart:10
+lib/ui/home.dart --imports--> lib/ui/diff_page.dart [EXTRACTED] lib/ui/home.dart:12
 lib/ui/home.dart --calls--> lib/ui/diff_page.dart::DiffPage [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/files_page.dart [EXTRACTED] lib/ui/home.dart:11
+lib/ui/home.dart --imports--> lib/ui/files_page.dart [EXTRACTED] lib/ui/home.dart:13
 lib/ui/home.dart --calls--> lib/ui/files_page.dart::FilesPage [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/files_page.dart::promptCreate [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/files_page.dart::reload [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --defines--> lib/ui/home.dart::HomeShell [EXTRACTED] lib/ui/home.dart:37
-lib/ui/home.dart --defines--> lib/ui/home.dart::HomeShellState [EXTRACTED] lib/ui/home.dart:44
-lib/ui/home.dart --defines--> lib/ui/home.dart::_AvatarButton [EXTRACTED] lib/ui/home.dart:634
-lib/ui/home.dart --defines--> lib/ui/home.dart::_AvatarButtonState [EXTRACTED] lib/ui/home.dart:647
-lib/ui/home.dart --defines--> lib/ui/home.dart::_Drawer [EXTRACTED] lib/ui/home.dart:842
-lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerBadge [EXTRACTED] lib/ui/home.dart:807
-lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerFooter [EXTRACTED] lib/ui/home.dart:1208
-lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerIconButton [EXTRACTED] lib/ui/home.dart:1358
-lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerNavRow [EXTRACTED] lib/ui/home.dart:1043
-lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerRecentRow [EXTRACTED] lib/ui/home.dart:1121
-lib/ui/home.dart --defines--> lib/ui/home.dart::_MenuRow [EXTRACTED] lib/ui/home.dart:1637
-lib/ui/home.dart --defines--> lib/ui/home.dart::_PromptCountBadge [EXTRACTED] lib/ui/home.dart:757
-lib/ui/home.dart --defines--> lib/ui/home.dart::_ServerMenu [EXTRACTED] lib/ui/home.dart:1411
-lib/ui/home.dart --defines--> lib/ui/home.dart::_ServerMenuHeader [EXTRACTED] lib/ui/home.dart:1525
-lib/ui/home.dart --defines--> lib/ui/home.dart::_SheetGroup [EXTRACTED] lib/ui/home.dart:1793
-lib/ui/home.dart --defines--> lib/ui/home.dart::_SheetOption [EXTRACTED] lib/ui/home.dart:1732
-lib/ui/home.dart --defines--> lib/ui/home.dart::_Tab [EXTRACTED] lib/ui/home.dart:24
-lib/ui/home.dart --defines--> lib/ui/home.dart::_body [EXTRACTED] lib/ui/home.dart:342
-lib/ui/home.dart --defines--> lib/ui/home.dart::_clearTerminal [EXTRACTED] lib/ui/home.dart:237
-lib/ui/home.dart --defines--> lib/ui/home.dart::_createFileOrFolder [EXTRACTED] lib/ui/home.dart:234
-lib/ui/home.dart --defines--> lib/ui/home.dart::_focusHistorySearch [EXTRACTED] lib/ui/home.dart:229
-lib/ui/home.dart --defines--> lib/ui/home.dart::_headerActions [EXTRACTED] lib/ui/home.dart:151
-lib/ui/home.dart --defines--> lib/ui/home.dart::_hostLabel [EXTRACTED] lib/ui/home.dart:334
-lib/ui/home.dart --defines--> lib/ui/home.dart::_navigate [EXTRACTED] lib/ui/home.dart:71
-lib/ui/home.dart --defines--> lib/ui/home.dart::_newTerminalSession [EXTRACTED] lib/ui/home.dart:240
-lib/ui/home.dart --defines--> lib/ui/home.dart::_openSessionScreen [EXTRACTED] lib/ui/home.dart:591
-lib/ui/home.dart --defines--> lib/ui/home.dart::_pickAgent [EXTRACTED] lib/ui/home.dart:483
-lib/ui/home.dart --defines--> lib/ui/home.dart::_pickTools [EXTRACTED] lib/ui/home.dart:527
-lib/ui/home.dart --defines--> lib/ui/home.dart::_pushAndClose [EXTRACTED] lib/ui/home.dart:76
-lib/ui/home.dart --defines--> lib/ui/home.dart::_reloadFiles [EXTRACTED] lib/ui/home.dart:232
-lib/ui/home.dart --defines--> lib/ui/home.dart::_renameSession [EXTRACTED] lib/ui/home.dart:616
-lib/ui/home.dart --defines--> lib/ui/home.dart::_showAvatarMenu [EXTRACTED] lib/ui/home.dart:299
-lib/ui/home.dart --defines--> lib/ui/home.dart::_showDrawer [EXTRACTED] lib/ui/home.dart:245
-lib/ui/home.dart --defines--> lib/ui/home.dart::_showMoreSheet [EXTRACTED] lib/ui/home.dart:366
-lib/ui/home.dart --defines--> lib/ui/home.dart::_startPulse [EXTRACTED] lib/ui/home.dart:664
-lib/ui/home.dart --defines--> lib/ui/home.dart::_worktree [EXTRACTED] lib/ui/home.dart:82
-lib/ui/home.dart --defines--> lib/ui/home.dart::build [EXTRACTED] lib/ui/home.dart:88
-lib/ui/home.dart --defines--> lib/ui/home.dart::createState [EXTRACTED] lib/ui/home.dart:41
-lib/ui/home.dart --defines--> lib/ui/home.dart::didUpdateWidget [EXTRACTED] lib/ui/home.dart:673
-lib/ui/home.dart --defines--> lib/ui/home.dart::dispose [EXTRACTED] lib/ui/home.dart:685
-lib/ui/home.dart --defines--> lib/ui/home.dart::goTo [EXTRACTED] lib/ui/home.dart:67
-lib/ui/home.dart --defines--> lib/ui/home.dart::initState [EXTRACTED] lib/ui/home.dart:657
-lib/ui/home.dart --imports--> lib/ui/line_icons.dart [EXTRACTED] lib/ui/home.dart:12
+lib/ui/home.dart --defines--> lib/ui/home.dart::HomeShell [EXTRACTED] lib/ui/home.dart:39
+lib/ui/home.dart --defines--> lib/ui/home.dart::HomeShellState [EXTRACTED] lib/ui/home.dart:46
+lib/ui/home.dart --defines--> lib/ui/home.dart::_AvatarButton [EXTRACTED] lib/ui/home.dart:632
+lib/ui/home.dart --defines--> lib/ui/home.dart::_AvatarButtonState [EXTRACTED] lib/ui/home.dart:645
+lib/ui/home.dart --defines--> lib/ui/home.dart::_Drawer [EXTRACTED] lib/ui/home.dart:840
+lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerBadge [EXTRACTED] lib/ui/home.dart:805
+lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerFooter [EXTRACTED] lib/ui/home.dart:1206
+lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerIconButton [EXTRACTED] lib/ui/home.dart:1356
+lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerNavRow [EXTRACTED] lib/ui/home.dart:1041
+lib/ui/home.dart --defines--> lib/ui/home.dart::_DrawerRecentRow [EXTRACTED] lib/ui/home.dart:1119
+lib/ui/home.dart --defines--> lib/ui/home.dart::_MenuRow [EXTRACTED] lib/ui/home.dart:1635
+lib/ui/home.dart --defines--> lib/ui/home.dart::_PromptCountBadge [EXTRACTED] lib/ui/home.dart:755
+lib/ui/home.dart --defines--> lib/ui/home.dart::_ServerMenu [EXTRACTED] lib/ui/home.dart:1409
+lib/ui/home.dart --defines--> lib/ui/home.dart::_ServerMenuHeader [EXTRACTED] lib/ui/home.dart:1523
+lib/ui/home.dart --defines--> lib/ui/home.dart::_SheetGroup [EXTRACTED] lib/ui/home.dart:1791
+lib/ui/home.dart --defines--> lib/ui/home.dart::_SheetOption [EXTRACTED] lib/ui/home.dart:1730
+lib/ui/home.dart --defines--> lib/ui/home.dart::_Tab [EXTRACTED] lib/ui/home.dart:26
+lib/ui/home.dart --defines--> lib/ui/home.dart::_body [EXTRACTED] lib/ui/home.dart:340
+lib/ui/home.dart --defines--> lib/ui/home.dart::_clearTerminal [EXTRACTED] lib/ui/home.dart:239
+lib/ui/home.dart --defines--> lib/ui/home.dart::_createFileOrFolder [EXTRACTED] lib/ui/home.dart:236
+lib/ui/home.dart --defines--> lib/ui/home.dart::_focusHistorySearch [EXTRACTED] lib/ui/home.dart:231
+lib/ui/home.dart --defines--> lib/ui/home.dart::_headerActions [EXTRACTED] lib/ui/home.dart:153
+lib/ui/home.dart --defines--> lib/ui/home.dart::_hostLabel [EXTRACTED] lib/ui/home.dart:332
+lib/ui/home.dart --defines--> lib/ui/home.dart::_navigate [EXTRACTED] lib/ui/home.dart:73
+lib/ui/home.dart --defines--> lib/ui/home.dart::_newTerminalSession [EXTRACTED] lib/ui/home.dart:242
+lib/ui/home.dart --defines--> lib/ui/home.dart::_openSessionScreen [EXTRACTED] lib/ui/home.dart:589
+lib/ui/home.dart --defines--> lib/ui/home.dart::_pickAgent [EXTRACTED] lib/ui/home.dart:481
+lib/ui/home.dart --defines--> lib/ui/home.dart::_pickTools [EXTRACTED] lib/ui/home.dart:525
+lib/ui/home.dart --defines--> lib/ui/home.dart::_pushAndClose [EXTRACTED] lib/ui/home.dart:78
+lib/ui/home.dart --defines--> lib/ui/home.dart::_reloadFiles [EXTRACTED] lib/ui/home.dart:234
+lib/ui/home.dart --defines--> lib/ui/home.dart::_renameSession [EXTRACTED] lib/ui/home.dart:614
+lib/ui/home.dart --defines--> lib/ui/home.dart::_showAvatarMenu [EXTRACTED] lib/ui/home.dart:301
+lib/ui/home.dart --defines--> lib/ui/home.dart::_showDrawer [EXTRACTED] lib/ui/home.dart:247
+lib/ui/home.dart --defines--> lib/ui/home.dart::_showMoreSheet [EXTRACTED] lib/ui/home.dart:364
+lib/ui/home.dart --defines--> lib/ui/home.dart::_startPulse [EXTRACTED] lib/ui/home.dart:662
+lib/ui/home.dart --defines--> lib/ui/home.dart::_worktree [EXTRACTED] lib/ui/home.dart:84
+lib/ui/home.dart --defines--> lib/ui/home.dart::build [EXTRACTED] lib/ui/home.dart:90
+lib/ui/home.dart --defines--> lib/ui/home.dart::createState [EXTRACTED] lib/ui/home.dart:43
+lib/ui/home.dart --defines--> lib/ui/home.dart::didUpdateWidget [EXTRACTED] lib/ui/home.dart:671
+lib/ui/home.dart --defines--> lib/ui/home.dart::dispose [EXTRACTED] lib/ui/home.dart:683
+lib/ui/home.dart --defines--> lib/ui/home.dart::goTo [EXTRACTED] lib/ui/home.dart:69
+lib/ui/home.dart --defines--> lib/ui/home.dart::initState [EXTRACTED] lib/ui/home.dart:655
+lib/ui/home.dart --imports--> lib/ui/line_icons.dart [EXTRACTED] lib/ui/home.dart:14
 lib/ui/home.dart --calls--> lib/ui/line_icons.dart::LIcon [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/line_icons.dart::LIconButton [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/models_page.dart [EXTRACTED] lib/ui/home.dart:13
+lib/ui/home.dart --imports--> lib/ui/models_page.dart [EXTRACTED] lib/ui/home.dart:15
 lib/ui/home.dart --calls--> lib/ui/models_page.dart::ModelsPage [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/home.dart:14
+lib/ui/home.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/home.dart:16
 lib/ui/home.dart --calls--> lib/ui/primitives.dart::OCAvatar [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/primitives.dart::OCButton [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/prompts.dart [EXTRACTED] lib/ui/home.dart:15
+lib/ui/home.dart --imports--> lib/ui/prompts.dart [EXTRACTED] lib/ui/home.dart:17
 lib/ui/home.dart --calls--> lib/ui/prompts.dart::showPendingPrompt [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/sessions_page.dart [EXTRACTED] lib/ui/home.dart:16
+lib/ui/home.dart --imports--> lib/ui/sessions_page.dart [EXTRACTED] lib/ui/home.dart:18
 lib/ui/home.dart --calls--> lib/ui/sessions_page.dart::SessionsPage [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/sessions_page.dart::focusSearch [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/sessions_page.dart::visibleSessions [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/settings_page.dart [EXTRACTED] lib/ui/home.dart:17
+lib/ui/home.dart --imports--> lib/ui/settings_page.dart [EXTRACTED] lib/ui/home.dart:19
 lib/ui/home.dart --calls--> lib/ui/settings_page.dart::SettingsPage [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/terminal_page.dart [EXTRACTED] lib/ui/home.dart:18
+lib/ui/home.dart --imports--> lib/ui/terminal_page.dart [EXTRACTED] lib/ui/home.dart:20
 lib/ui/home.dart --calls--> lib/ui/terminal_page.dart::TerminalPage [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/terminal_page.dart::clear [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/terminal_page.dart::newSession [INFERRED 0.35] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/home.dart:19
+lib/ui/home.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/home.dart:21
 lib/ui/home.dart --calls--> lib/ui/theme.dart::mono [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/todos_page.dart [EXTRACTED] lib/ui/home.dart:20
+lib/ui/home.dart --imports--> lib/ui/todos_page.dart [EXTRACTED] lib/ui/home.dart:22
 lib/ui/home.dart --calls--> lib/ui/todos_page.dart::TodosPage [INFERRED 0.6] lib/ui/home.dart:0
-lib/ui/home.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/home.dart:21
+lib/ui/home.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/home.dart:23
 lib/ui/home.dart --calls--> lib/ui/widgets.dart::AppHeader [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/widgets.dart::ConnectionErrorView [INFERRED 0.6] lib/ui/home.dart:0
 lib/ui/home.dart --calls--> lib/ui/widgets.dart::EmptyHint [INFERRED 0.6] lib/ui/home.dart:0
@@ -1020,23 +1020,24 @@ lib/ui/prompts.dart --calls--> lib/state/store.dart::rejectQuestion [INFERRED 0.
 lib/ui/prompts.dart --calls--> lib/state/store.dart::sessionLabel [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/prompts.dart:6
 lib/ui/prompts.dart --imports--> lib/ui/line_icons.dart [EXTRACTED] lib/ui/prompts.dart:7
+lib/ui/prompts.dart --calls--> lib/ui/line_icons.dart::LIcon [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/prompts.dart:8
 lib/ui/prompts.dart --calls--> lib/ui/primitives.dart::OCButton [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --calls--> lib/ui/primitives.dart::OCCard [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --calls--> lib/ui/primitives.dart::OCIconTile [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::PromptOverlay [EXTRACTED] lib/ui/prompts.dart:20
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::ShareCard [EXTRACTED] lib/ui/prompts.dart:540
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_PermissionCard [EXTRACTED] lib/ui/prompts.dart:156
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_PermissionFacts [EXTRACTED] lib/ui/prompts.dart:78
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCard [EXTRACTED] lib/ui/prompts.dart:240
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCardState [EXTRACTED] lib/ui/prompts.dart:248
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_SessionLine [EXTRACTED] lib/ui/prompts.dart:494
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_question [EXTRACTED] lib/ui/prompts.dart:362
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_toggle [EXTRACTED] lib/ui/prompts.dart:262
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::ShareCard [EXTRACTED] lib/ui/prompts.dart:544
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_PermissionCard [EXTRACTED] lib/ui/prompts.dart:157
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_PermissionFacts [EXTRACTED] lib/ui/prompts.dart:79
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCard [EXTRACTED] lib/ui/prompts.dart:241
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCardState [EXTRACTED] lib/ui/prompts.dart:249
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_SessionLine [EXTRACTED] lib/ui/prompts.dart:495
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_question [EXTRACTED] lib/ui/prompts.dart:363
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_toggle [EXTRACTED] lib/ui/prompts.dart:263
 lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::build [EXTRACTED] lib/ui/prompts.dart:24
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::createState [EXTRACTED] lib/ui/prompts.dart:245
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::dispose [EXTRACTED] lib/ui/prompts.dart:255
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::showPendingPrompt [EXTRACTED] lib/ui/prompts.dart:66
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::createState [EXTRACTED] lib/ui/prompts.dart:246
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::dispose [EXTRACTED] lib/ui/prompts.dart:256
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::showPendingPrompt [EXTRACTED] lib/ui/prompts.dart:67
 lib/ui/prompts.dart --calls--> lib/ui/terminal_page.dart::clear [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/prompts.dart:9
 lib/ui/prompts.dart --calls--> lib/ui/theme.dart::mono [INFERRED 0.6] lib/ui/prompts.dart:0
