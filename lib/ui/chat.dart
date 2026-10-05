@@ -328,7 +328,10 @@ class _ChatPageState extends State<ChatPage> {
     // the rebuild path entirely.
     return Column(
       children: [
-        const _ErrorBarWidget(),
+        // No session error bar here on purpose: the failing turn already carries
+        // [_InlineError] directly above the composer, and a second copy of the
+        // same sentence pinned to the top of the screen was the duplicate the
+        // user kept seeing.
         // 2dp accent hairline pinned under the header. The old busy bar was a
         // full-width strip with text, which pushed the transcript down and
         // scrolled out of view during exactly the runs that needed watching.
@@ -402,26 +405,6 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) showSnack(context, '$e', error: true);
     }
     if (mounted) setState(() {});
-  }
-}
-
-/// Rebuilds only when sessionError changes
-class _ErrorBarWidget extends StatelessWidget {
-  const _ErrorBarWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: AppScope.of(context),
-      builder: (context, _) {
-        final store = AppScope.of(context);
-        if (store.sessionError == null) return const SizedBox.shrink();
-        return _ErrorBar(
-          store.sessionError!,
-          () => store.openSession(store.current!.id),
-        );
-      },
-    );
   }
 }
 
@@ -668,44 +651,6 @@ class _LoadOlderButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------
-
-class _ErrorBar extends StatelessWidget {
-  final String msg;
-  final VoidCallback onRetry;
-  const _ErrorBar(this.msg, this.onRetry);
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.oc;
-    return Container(
-      width: double.infinity,
-      color: t.errSoft,
-      padding: const EdgeInsets.fromLTRB(18, 8, 4, 8),
-      child: Row(
-        children: [
-          LIcon(LI.warning, size: 17, color: t.err),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              msg,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: OCTypography.caption.copyWith(color: t.err),
-            ),
-          ),
-          LIconButton(
-            icon: LI.close,
-            size: 17,
-            color: t.err,
-            padding: const EdgeInsets.all(6),
-            semanticLabel: S.delete,
-            onTap: onRetry,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _BusyBar extends StatelessWidget {
   final String status;
@@ -1188,6 +1133,12 @@ class _MessageTileState extends State<_MessageTile> {
   Widget? _cache;
   int _sig = 0;
 
+  /// The error text the user closed on this turn. Held here rather than in the
+  /// store because clearing is a view decision — the message is still failed,
+  /// the user just does not want to read about it again. Part of [_signature]
+  /// so closing actually repaints the cached tile.
+  String? _dismissedError;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -1203,6 +1154,7 @@ class _MessageTileState extends State<_MessageTile> {
       m.errorText,
       widget.isLastReply,
       widget.showTokens,
+      _dismissedError,
     );
   }
 
@@ -1267,7 +1219,12 @@ class _MessageTileState extends State<_MessageTile> {
                 ? _userBubble(context, t, text, files, hasContent)
                 : _assistantBlock(context, t, text, others, m, hasContent),
           ),
-          if (hasContent)
+          // Only the user's own bubble gets this row. The assistant's actions
+          // live inside [_assistantBlock], one row per reply; rendering this one
+          // for an assistant message too is what put a copy + ⋮ row directly
+          // under the copy / read-aloud / undo row and made the two rows look
+          // like they belonged to different messages.
+          if (user && hasContent)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: _MessageActions(msg: m, text: text),
@@ -1366,12 +1323,24 @@ class _MessageTileState extends State<_MessageTile> {
             ),
           ),
         if (m.streaming && !hasContent) const _TypingDots(),
-        if (m.displayError != null) _InlineError(m.displayError!),
+        // Only the newest reply can carry an error, and that is what clears it
+        // for free: the moment the user sends again this stops being the newest
+        // reply, so a stale failure does not sit in the transcript for the rest
+        // of the session. Closed by hand otherwise.
+        if (m.displayError != null &&
+            widget.isLastReply &&
+            _dismissedError != m.displayError)
+          _InlineError(
+            m.displayError!,
+            onDismiss: () => setState(() => _dismissedError = m.displayError),
+          ),
         if (m.displayError == null && !m.streaming && m.info.tokens.total > 0)
           _ReplyMeta(msg: m, visible: widget.showTokens),
-        // Only the newest reply carries the inline actions; older ones reach
-        // the same operations through the long-press menu.
-        if (widget.isLastReply && m.displayError == null) _ReplyActions(msg: m),
+        // Every finished reply gets the same row. The row used to belong to the
+        // newest reply only, which meant scrolling up found a reply with no way
+        // to copy or undo it without a long press nobody discovers.
+        if (!m.streaming && m.displayError == null && hasContent)
+          _ReplyActions(msg: m),
       ],
     );
   }
@@ -1404,7 +1373,13 @@ class _ReplyMeta extends StatelessWidget {
   }
 }
 
-/// Copy + Undo, shown only under the final AI reply (reference `.actions`).
+/// Copy, read aloud, revert, and the overflow menu — one row, under every
+/// finished reply.
+///
+/// The overflow used to be a second row of its own under the newest reply only,
+/// so the same message carried two action rows while older replies carried
+/// none. It stays in the row rather than moving to a long press: the long press
+/// still opens this same menu, it is just no longer the only way in.
 class _ReplyActions extends StatelessWidget {
   final ChatMessage msg;
   const _ReplyActions({required this.msg});
@@ -1413,6 +1388,7 @@ class _ReplyActions extends StatelessWidget {
   Widget build(BuildContext context) {
     // read(), not of(): these buttons don't need to rebuild on every update.
     final store = AppScope.read(context);
+    final t = context.oc;
 
     return Padding(
       padding: const EdgeInsets.only(left: -8, top: 2),
@@ -1438,6 +1414,13 @@ class _ReplyActions extends StatelessWidget {
             icon: LI.undo,
             label: S.messageUndo,
             onTap: () => store.revert(msg.info.id),
+          ),
+          const SizedBox(width: OCSpace.xxs),
+          _ActionDot(
+            tooltip: S.moreActions,
+            icon: LI.more,
+            color: t.faint,
+            onTap: () => showMessageMenu(context, msg),
           ),
         ],
       ),
@@ -1702,35 +1685,66 @@ class _IncomingFileChip extends StatelessWidget {
   }
 }
 
+/// The one error surface in the transcript: a dismissible card on the failing
+/// turn, which sits directly above the composer.
+///
+/// Red is reserved for a failure the user did not ask for. A stop the user
+/// pressed is not a fault, so it is drawn in the muted line colour instead of
+/// the error pair — the sentence is the same, the blame is not.
 class _InlineError extends StatelessWidget {
   final String text;
-  const _InlineError(this.text);
+  final VoidCallback onDismiss;
+  const _InlineError(this.text, {required this.onDismiss});
+
+  /// A cancellation the user asked for. The only way to stop a turn in this app
+  /// is the composer's stop button, so the server's abort wording means "you
+  /// did this", not "this went wrong".
+  static bool _isCancellation(String text) {
+    final lower = text.toLowerCase();
+    return lower.contains('abort') || lower.contains('cancel');
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.oc;
+    final cancelled = _isCancellation(text);
+    final fg = cancelled ? t.mute : t.err;
+    final bg = cancelled ? t.card : t.errSoft;
     return Container(
       margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
       decoration: BoxDecoration(
-        color: t.errSoft,
+        color: bg,
         borderRadius: BorderRadius.circular(12),
+        border: cancelled ? Border.all(color: t.line) : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: LIcon(LI.warning, size: 15, color: t.err),
+            padding: const EdgeInsets.only(top: 2),
+            child: LIcon(cancelled ? LI.info : LI.warning, size: 15, color: fg),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: OCTypography.caption.copyWith(color: t.err),
+              style: OCTypography.caption.copyWith(color: fg),
               maxLines: 6,
               overflow: TextOverflow.ellipsis,
             ),
+          ),
+          const SizedBox(width: 4),
+          // × , not a retry: retrying is a decision the user makes from the
+          // message's own action row, and a close that silently re-ran the turn
+          // would be a surprising thing to tap while clearing a message.
+          LIconButton(
+            icon: LI.close,
+            size: 15,
+            color: fg,
+            padding: const EdgeInsets.all(8),
+            semanticLabel: S.close,
+            onTap: onDismiss,
           ),
         ],
       ),
@@ -1793,6 +1807,29 @@ class _TypingDotsState extends State<_TypingDots>
 // ---------------------------------------------------------------------
 // composer
 // ---------------------------------------------------------------------
+
+/// Gap between the composer's pinned controls.
+const double _tapGap = OCSpace.xs;
+
+/// Narrowest the model pill may get before its label stops being readable: the
+/// icon, the chevron and about 50dp of truncated model name.
+const double _pillMin = 96;
+
+/// What the row needs with only the pinned controls: attach + gap + pill + gap
+/// + send. 48 + 4 + 96 + 4 + 48 = 200.
+const double _rowPinned = OCSpace.tapTarget * 2 + _pillMin + _tapGap * 2;
+
+/// The same plus the hands-free button and its gap: 252.
+///
+/// This is the breakpoint that decides where hands-free lives. A 320dp phone
+/// leaves the row 260dp after the screen gutter and the composer's own padding,
+/// so it keeps the button; a narrow split-screen pane does not, and gets it in
+/// the attach sheet instead. Derived, not guessed per screen.
+const double _rowHandsFree = _rowPinned + OCSpace.tapTarget + _tapGap;
+
+/// Width the optional dictation action adds beside the primary one: a tap
+/// target and the gap that separates it.
+const double _micSlot = OCSpace.tapTarget + _tapGap;
 
 /// Rebuilds only when attachments/busy/modelId/agent/toolsEnabled changes
 class _ComposerWidget extends StatelessWidget {
@@ -1895,32 +1932,59 @@ class _Composer extends StatelessWidget {
             // returns `SizedBox.shrink()` when nothing is live, so the gap below
             // the field is unchanged for a user who never touches voice.
             const _VoiceStrip(),
-            Row(
-              children: [
-                _CircleButton(
-                  // The reference draws `add` on a `container-highest` disc,
-                  // not a bare paperclip: the glyph is "add", the sheet that
-                  // opens is the attachments picker.
-                  icon: LI.plus,
-                  bg: OCColors.surfaceHighest,
-                  fg: t.ink,
-                  semanticLabel: S.composerAttachTooltip,
-                  onTap: () => _showAttachSheet(context),
-                  diameter: 32,
-                  glyph: 18,
-                ),
-                const SizedBox(width: 2),
-                _ModelPill(store: store),
-                const SizedBox(width: 2),
-                const _HandsFreeButton(),
-                const Spacer(),
-                _SendButton(
-                  store: store,
-                  controller: controller,
-                  onSend: onSend,
-                  onStop: onStop,
-                ),
-              ],
+            // One row: attach, model pill, hands-free, send.
+            //
+            // The pill is the only Flexible child, so the width goes to the text
+            // that can ellipsize and never to the controls, which are pinned at
+            // the 48dp tap target. [Flexible] alone still let the pill take 220dp
+            // and push Send off the edge, because nothing bounded it; the widths
+            // below are derived once from the width this row actually gets, so a
+            // narrow phone loses a control instead of overflowing.
+            LayoutBuilder(
+              builder: (context, row) {
+                final showHandsFree = row.maxWidth >= _rowHandsFree;
+                // The optional second action (dictate while the text stays) only
+                // appears if the pinned controls plus one more tap target and its
+                // gap still fit, so it can never be the thing that overflows.
+                final micFits =
+                    row.maxWidth >=
+                    (showHandsFree ? _rowHandsFree : _rowPinned) + _micSlot;
+                return Row(
+                  children: [
+                    _CircleButton(
+                      // The reference draws `add` on a `container-highest` disc,
+                      // not a bare paperclip: the glyph is "add", the sheet that
+                      // opens is the attachments picker.
+                      icon: LI.plus,
+                      bg: OCColors.surfaceHighest,
+                      fg: t.ink,
+                      semanticLabel: S.composerAttachTooltip,
+                      // When the row is too narrow for hands-free, it moves into
+                      // this sheet instead of being dropped.
+                      onTap: () => _showAttachSheet(
+                        context,
+                        withHandsFree: !showHandsFree,
+                      ),
+                      diameter: OCSpace.tapTarget,
+                      glyph: 22,
+                    ),
+                    const SizedBox(width: _tapGap),
+                    Flexible(child: _ModelPill(store: store)),
+                    if (showHandsFree) ...[
+                      const SizedBox(width: _tapGap),
+                      const _HandsFreeButton(),
+                    ],
+                    const SizedBox(width: _tapGap),
+                    _SendButton(
+                      store: store,
+                      controller: controller,
+                      onSend: onSend,
+                      onStop: onStop,
+                      micSlot: micFits,
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -1928,7 +1992,13 @@ class _Composer extends StatelessWidget {
     );
   }
 
-  Future<void> _showAttachSheet(BuildContext context) async {
+  /// [withHandsFree] adds the hands-free row. It is passed in rather than
+  /// measured here because the sheet is opened by the attach button, which is
+  /// the only place that knows how much width the row had.
+  Future<void> _showAttachSheet(
+    BuildContext context, {
+    bool withHandsFree = false,
+  }) async {
     await showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -1936,7 +2006,7 @@ class _Composer extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Titled, so the three bare rows below are not read as page content.
+            // Titled, so the bare rows below are not read as page content.
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 OCSpace.screenGutter,
@@ -1970,6 +2040,7 @@ class _Composer extends StatelessWidget {
                 _pickProjectFile(context);
               },
             ),
+            if (withHandsFree) const _HandsFreeSheetRow(),
             _SheetRow(
               icon: LI.terminal,
               label: S.attachSlash,
@@ -2402,19 +2473,24 @@ class _SendButton extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final VoidCallback onStop;
+
+  /// Whether the row has room for the optional dictation action beside the
+  /// primary one. Width only — never text — so the row cannot change shape
+  /// while a reply is streaming and shove the controls around.
+  final bool micSlot;
   const _SendButton({
     required this.store,
     required this.controller,
     required this.onSend,
     required this.onStop,
+    this.micSlot = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final t = context.oc;
-    // read(), not of(): the 36dp slot subscribes below. Depending on
-    // VoiceScope here would rebuild the whole send slot on every level update,
-    // and `of` on a parent would drag the composer with it.
+    // read(), not of(): the send slot subscribes below. Depending on
+    // VoiceScope here would rebuild the whole slot on every level update, and
+    // `of` on a parent would drag the composer with it.
     final voice = VoiceScope.read(context);
     return ListenableBuilder(
       listenable: voice,
@@ -2430,22 +2506,35 @@ class _SendButton extends StatelessWidget {
               fg: OCColors.onSecondary,
               semanticLabel: S.chatStopTooltip,
               onTap: onStop,
-              diameter: 36,
-              glyph: 20,
+              diameter: OCSpace.tapTarget,
+              glyph: 22,
             );
           }
           final canSend =
               value.text.trim().isNotEmpty || store.attachments.isNotEmpty;
           if (canSend) {
-            return _CircleButton(
+            final send = _CircleButton(
               // The reference's `bg-secondary-container text-on-secondary-container`.
               icon: LI.send,
               bg: OCColors.secondary,
               fg: OCColors.onSecondary,
               semanticLabel: S.chatSendTooltip,
               onTap: onSend,
-              diameter: 36,
-              glyph: 20,
+              diameter: OCSpace.tapTarget,
+              glyph: 22,
+            );
+            // With text in the field the primary action is Send, so dictation has
+            // nowhere to be except beside it. This is the optional second action:
+            // it only exists when the row measured that it fits, and it never
+            // replaces Send.
+            if (!micSlot) return send;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _dictation(context, voice),
+                const SizedBox(width: _tapGap),
+                send,
+              ],
             );
           }
           // The reference puts a dictation button in this slot, and it is the
@@ -2460,8 +2549,8 @@ class _SendButton extends StatelessWidget {
               fg: OCColors.onSecondary,
               semanticLabel: S.voiceStopListeningTooltip,
               onTap: voice.stopDictation,
-              diameter: 36,
-              glyph: 20,
+              diameter: OCSpace.tapTarget,
+              glyph: 22,
             );
           }
           if (voice.recognizerMissing) {
@@ -2469,21 +2558,26 @@ class _SendButton extends StatelessWidget {
             // and Settings > Voice is where this gets explained.
             return const SizedBox.shrink();
           }
-          return _CircleButton(
-            icon: LI.mic,
-            // Bare glyph, not a disc: the slot is empty most of the time and a
-            // filled circle there would compete with Send.
-            bg: t.bg,
-            fg: t.mute,
-            semanticLabel: S.voiceMicTooltip,
-            onTap: voice.toggleDictation,
-            diameter: 36,
-            glyph: 20,
-          );
+          return _dictation(context, voice);
         },
       ),
     );
   }
+
+  /// The mic control: stop while dictation is live, otherwise open it. Bare
+  /// glyph, not a disc, because it shares the row with Send and a filled circle
+  /// there would compete with it.
+  Widget _dictation(BuildContext context, VoiceService voice) => _CircleButton(
+    icon: LI.mic,
+    bg: Colors.transparent,
+    fg: voice.micActive ? OCColors.secondary : context.oc.mute,
+    semanticLabel: voice.micActive
+        ? S.voiceStopListeningTooltip
+        : S.voiceMicTooltip,
+    onTap: voice.micActive ? voice.stopDictation : voice.toggleDictation,
+    diameter: OCSpace.tapTarget,
+    glyph: 22,
+  );
 }
 
 class _CircleButton extends StatelessWidget {
@@ -2729,24 +2823,28 @@ class _LevelDotState extends State<_LevelDot>
 ///
 /// Owns its own subscription so the level feed from a listening session repaints
 /// this pill and nothing else.
+/// Hands-free conversation, as a glyph.
+///
+/// It was a pill with the word "Hands-free" next to the mic, and that word is
+/// what made the row overflow: a fixed-width label competing with the model pill
+/// for the same space on a 320dp phone. The glyph carries the state through
+/// colour and the tooltip and semantics label carry the meaning, so the label
+/// can be long without costing layout. No text in any orientation.
 class _HandsFreeButton extends StatelessWidget {
   const _HandsFreeButton();
 
   @override
   Widget build(BuildContext context) {
-    // read(), not of(): the pill rebuilds from its own ListenableBuilder below,
+    // read(), not of(): the button rebuilds from its own ListenableBuilder below,
     // and the composer must not inherit the voice change on its behalf.
     final voice = VoiceScope.read(context);
     return ListenableBuilder(
       listenable: voice,
-      builder: (context, _) => _pill(context, voice),
+      builder: (context, _) => _button(context, voice),
     );
   }
 
-  Widget _pill(
-    BuildContext context,
-    VoiceService voice,
-  ) {
+  Widget _button(BuildContext context, VoiceService voice) {
     final t = context.oc;
     final on = voice.conversation;
     final label = on
@@ -2757,62 +2855,77 @@ class _HandsFreeButton extends StatelessWidget {
       toggled: on,
       label: label,
       excludeSemantics: true,
-      child: Material(
-        color: on ? t.acc : Colors.transparent,
-        borderRadius: BorderRadius.circular(OCRadius.full),
-        child: InkWell(
-          onTap: () => _toggle(context, voice),
-          borderRadius: BorderRadius.circular(OCRadius.full),
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(OCRadius.full),
-              border: Border.all(color: on ? t.acc : t.line),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LIcon(
+      child: Tooltip(
+        message: label,
+        child: SizedBox(
+          width: OCSpace.tapTarget,
+          height: OCSpace.tapTarget,
+          child: Material(
+            // Terracotta fill only while the microphone is actually open, so the
+            // one always-red control in the row means one thing.
+            color: on ? t.acc : Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: () => toggleHandsFree(context, voice),
+              customBorder: const CircleBorder(),
+              child: Center(
+                child: LIcon(
                   LI.mic,
-                  size: 14,
+                  size: 22,
+                  strokeWidth: on ? 2.2 : 1.7,
                   color: on ? t.bg : t.mute,
-                  strokeWidth: 1.9,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: OCTypography.meta.copyWith(
-                    color: on ? t.bg : t.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  /// Turning hands-free on sends messages without a tap, so the first time it is
-  /// explained and confirmed rather than discovered afterwards.
-  Future<void> _toggle(BuildContext context, VoiceService voice) async {
-    if (voice.conversation) {
-      await voice.toggleConversation();
-      return;
-    }
-    if (voice.needsIntro) {
-      final ok = await confirmDialog(
-        context,
-        title: S.voiceConversationTooltip,
-        message: S.voiceConversationIntro,
-        confirm: S.voiceStart,
-      );
-      if (!ok) return;
-      voice.ackIntro();
-    }
+/// Turning hands-free on sends messages without a tap, so the first time it is
+/// explained and confirmed rather than discovered afterwards.
+///
+/// Shared by the composer button and the sheet row, so both confirm identically.
+Future<void> toggleHandsFree(BuildContext context, VoiceService voice) async {
+  if (voice.conversation) {
     await voice.toggleConversation();
+    return;
+  }
+  if (voice.needsIntro) {
+    final ok = await confirmDialog(
+      context,
+      title: S.voiceConversationTooltip,
+      message: S.voiceConversationIntro,
+      confirm: S.voiceStart,
+    );
+    if (!ok) return;
+    voice.ackIntro();
+  }
+  await voice.toggleConversation();
+}
+
+/// The same control as a sheet row, for the narrow layouts where the composer
+/// row has no room for the glyph.
+class _HandsFreeSheetRow extends StatelessWidget {
+  const _HandsFreeSheetRow();
+
+  @override
+  Widget build(BuildContext context) {
+    // `of`, not `read`: a sheet row is built once when the sheet opens, so it
+    // has to reflect the live state rather than the state at build time.
+    final voice = VoiceScope.of(context);
+    final on = voice.conversation;
+    return _SheetRow(
+      icon: LI.mic,
+      label: on ? S.voiceStopConversationTooltip : S.voiceConversationTooltip,
+      onTap: () async {
+        final nav = Navigator.of(context);
+        await toggleHandsFree(context, voice);
+        nav.pop();
+      },
+    );
   }
 }
 
