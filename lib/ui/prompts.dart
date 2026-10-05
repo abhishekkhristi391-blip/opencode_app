@@ -27,11 +27,12 @@ class PromptOverlay extends StatelessWidget {
     // read would leave the overlay frozen on its first (empty) frame.
     final store = AppScope.of(context);
     if (store.promptSheetDismissed) return const SizedBox.shrink();
-    // Oldest first: permissions before questions, which is the order both
-    // lists are appended in, so nothing queues behind nothing.
-    final p = store.oldestPendingPermission;
-    final q = store.oldestPendingQuestion;
-    if (p == null && q == null) return const SizedBox.shrink();
+    // One queue, oldest arrival first, whichever kind it is: a question asked
+    // before a burst of tool permissions must not sit behind them.
+    final next = store.oldestPendingPrompt;
+    if (next == null) return const SizedBox.shrink();
+    final p = next.permission;
+    final q = next.question;
     return IgnorePointer(
       ignoring: false,
       child: Container(

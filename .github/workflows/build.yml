@@ -95,11 +95,17 @@ jobs:
           import re, sys
           p = sys.argv[1]
           s = open(p).read()
-          # Replace whatever the template put there (flutter.minSdkVersion, a
-          # literal, or nothing at all if the template ever stops emitting it).
-          s2, n = re.subn(r'(?m)^\s*minSdk\s*=.*$', '    minSdk = 24', s)
+          # Replace whatever the template put there (flutter.minSdkVersion or a
+          # literal), keeping that line's own indentation.
+          s2, n = re.subn(r'(?m)^([ \t]*)minSdk\s*=.*$', r'\1minSdk = 24', s)
           if n == 0:
-              s2, n = re.subn(r'(?m)^(\s*compileSdk\s*=.*)$', r'\1\n    minSdk = 24', s)
+              # A template that dropped the line entirely: add it inside
+              # defaultConfig, which is the only block AGP reads it from.
+              s2, n = re.subn(
+                  r'(?m)^([ \t]*)defaultConfig\s*\{[ \t]*$',
+                  lambda m: m.group(0) + '\n' + m.group(1) + '    minSdk = 24',
+                  s,
+              )
           if n == 0:
               sys.exit('could not place minSdk in %s' % p)
           open(p, 'w').write(s2)
@@ -109,7 +115,13 @@ jobs:
           import re, sys
           p = sys.argv[1]
           s = open(p).read()
-          s2, n = re.subn(r'(?m)^\s*minSdkVersion\s+.*$', '    minSdkVersion 24', s)
+          s2, n = re.subn(r'(?m)^([ \t]*)minSdkVersion\s+.*$', r'\1minSdkVersion 24', s)
+          if n == 0:
+              s2, n = re.subn(
+                  r'(?m)^([ \t]*)defaultConfig\s*\{[ \t]*$',
+                  lambda m: m.group(0) + '\n' + m.group(1) + '    minSdkVersion 24',
+                  s,
+              )
           if n == 0:
               sys.exit('could not place minSdkVersion in %s' % p)
           open(p, 'w').write(s2)

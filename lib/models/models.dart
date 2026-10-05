@@ -60,6 +60,35 @@ class SessionSummary {
   static final zero = SessionSummary(0, 0, 0);
 }
 
+// ---------- pending prompt queue ----------
+
+/// One entry in the pending-prompt queue.
+///
+/// Permissions and questions are fetched from two different endpoints and
+/// arrive on two different lists, but a human only ever answers them one at a
+/// time, in the order they were asked. Keeping them in a single ordered queue
+/// is what stops a steady stream of tool permissions from starving a question
+/// that was asked first: the overlay shows whichever request has been waiting
+/// longest, not whichever kind happens to sit in the first list.
+class PendingPrompt {
+  /// Monotonic arrival stamp. Assigned by the store the first time a request id
+  /// is seen and deliberately *not* reassigned on resync, so a reconnect cannot
+  /// reshuffle a queue the user is part-way through.
+  final int seq;
+
+  /// Exactly one of these is non-null.
+  final PermissionReq? permission;
+  final QuestionReq? question;
+
+  const PendingPrompt._(this.seq, this.permission, this.question);
+
+  String get id => permission?.id ?? question?.id ?? '';
+
+  bool get isPermission => permission != null;
+
+  bool get isQuestion => question != null;
+}
+
 // ---------- session ----------
 
 class Session {
@@ -611,8 +640,17 @@ class PermissionReq {
   }
 
   /// Newer servers emit permission.v2.asked with `action` + `resources`.
+  ///
+  /// Verified against opencode 1.18.27's `EventPermissionV2Asked`: the request
+  /// fields sit directly in the event's `properties`, i.e. they *are* the map
+  /// the store already holds. Unwrapping `properties` again (as this used to)
+  /// yielded an empty map, so every v2 request parsed to an empty id and was
+  /// then dropped by the store's `id.isNotEmpty` guard — a silently invisible
+  /// approval. Both shapes are therefore accepted: unwrapped, or nested.
   factory PermissionReq.fromV2(Map<String, dynamic> j) {
-    final p = asMap(j['properties']);
+    final nested = asMap(j['properties']);
+    final p = nested.isEmpty ? j : nested;
+    final src = asMap(p['source']);
     return PermissionReq(
       id: asStr(p['id']),
       sessionId: asStr(p['sessionID']),
@@ -620,8 +658,8 @@ class PermissionReq {
       patterns: asList(p['resources']).map((e) => e.toString()).toList(),
       always: asList(p['save']).map((e) => e.toString()).toList(),
       metadata: asMap(p['metadata']),
-      messageId: '',
-      callId: '',
+      messageId: asStr(src['messageID']),
+      callId: asStr(src['callID']),
       raw: j,
     );
   }
@@ -736,13 +774,18 @@ class QuestionReq {
     required this.raw,
   });
 
+  /// Accepts the same two shapes as [PermissionReq.fromV2]: the request fields
+  /// directly (the event's `properties`, which is what 1.18.27 sends), or the
+  /// whole envelope with the payload nested one level deeper.
   factory QuestionReq.fromJson(Map<String, dynamic> j) {
-    final p = asMap(j['properties']);
-    final list = p.isEmpty ? asList(j['questions']) : asList(p['questions']);
+    final nested = asMap(j['properties']);
+    final p = nested.isEmpty ? j : nested;
     return QuestionReq(
       id: asStr(p['id'], asStr(j['id'])),
       sessionId: asStr(p['sessionID'], asStr(j['sessionID'])),
-      questions: list.map((e) => QuestionItem.fromJson(asMap(e))).toList(),
+      questions: asList(p['questions'])
+          .map((e) => QuestionItem.fromJson(asMap(e)))
+          .toList(),
       raw: j,
     );
   }

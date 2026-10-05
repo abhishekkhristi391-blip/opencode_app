@@ -156,19 +156,54 @@ class OcStore extends ChangeNotifier {
   /// Single source of truth for "is the agent blocked on a human". Every prompt
   /// surface — the header badge, the working strip, the overlay — reads this,
   /// so they cannot disagree about how many requests are waiting.
-  ///
-  /// Permissions first, then questions, both already oldest-first: a request
-  /// queued behind another is only reachable after the one before it clears.
   int get pendingPromptCount => permissions.length + questions.length;
 
-  /// The oldest unanswered permission, or null. Read by the Review chip, the
-  /// avatar menu row and PromptOverlay so they all open the same request.
-  PermissionReq? get oldestPendingPermission =>
-      permissions.isEmpty ? null : permissions.first;
+  /// Arrival order, permissions and questions interleaved.
+  ///
+  /// The two lists above are per-endpoint and would each be "oldest first" on
+  /// their own; sorting them together by arrival is what makes the queue fair.
+  /// `_arrival` is stamped once per id and preserved across resyncs, so this
+  /// ordering cannot be reset by a reconnect.
+  List<PendingPrompt> get pendingPrompts {
+    // Stamped here rather than only at the mutation sites: a request that
+    // reached the list by any other path still gets a queue slot. The invariant
+    // that matters is that the badge count and the number of answerable
+    // requests can never disagree — a prompt counted but not queued is a
+    // prompt the user is told about and then cannot reach.
+    final out = <PendingPrompt>[
+      for (final x in permissions)
+        PendingPrompt._(_arrival.putIfAbsent(x.id, () => ++_promptSeq), x, null),
+      for (final x in questions)
+        PendingPrompt._(_arrival.putIfAbsent(x.id, () => ++_promptSeq), null, x),
+    ]..sort((a, b) => a.seq.compareTo(b.seq));
+    return out;
+  }
 
-  /// The oldest unanswered question, or null.
-  QuestionReq? get oldestPendingQuestion =>
-      questions.isEmpty ? null : questions.first;
+  /// The request that has been waiting longest, whatever its kind. This is what
+  /// the overlay shows, the working strip describes and every Review/Answer
+  /// button opens, so all four always agree on which request is next.
+  PendingPrompt? get oldestPendingPrompt {
+    final q = pendingPrompts;
+    return q.isEmpty ? null : q.first;
+  }
+
+  /// Stamp a newly seen request id. Ids already known keep their original
+  /// position, which is what makes a resync non-destructive to queue order.
+  void _stampArrival(Iterable<String> ids) {
+    for (final id in ids) {
+      if (id.isEmpty) continue;
+      _arrival.putIfAbsent(id, () => ++_promptSeq);
+    }
+  }
+
+  void _forgetArrival(Iterable<String> ids) {
+    for (final id in ids) {
+      _arrival.remove(id);
+    }
+  }
+
+  final Map<String, int> _arrival = {};
+  int _promptSeq = 0;
 
   /// True when the session can make no progress until the user replies.
   bool get awaitingPrompt => pendingPromptCount > 0;
@@ -1781,6 +1816,16 @@ class OcStore extends ChangeNotifier {
     } catch (e) {
       debugPrint('Failed to load pending permissions: $e');
     }
+    // Stamp before publishing, so the very first frame already has a queue
+    // order. `putIfAbsent` keeps an id's original position across reconnects,
+    // and dropping the stamps of ids the server no longer lists keeps the
+    // counter from creeping upward across a long session.
+    _stampArrival([
+      for (final q in questions) q.id,
+      for (final p in permissions) p.id,
+    ]);
+    final live = {for (final q in questions) q.id, for (final p in permissions) p.id};
+    _arrival.removeWhere((id, _) => !live.contains(id));
     notifyListeners();
   }
 
@@ -1788,6 +1833,37 @@ class OcStore extends ChangeNotifier {
   /// and on resume, because an event asked while the socket was down is gone
   /// for good and the server's own list is the only authority left.
   Future<void> resyncPrompts() async {
+    // Single-flight. Connect, the reachability fallback, the stream-up edge and
+    // a failed event parse can all land here within the same few hundred
+    // milliseconds; running four overlapping fetches would interleave their
+    // list assignments and let a slower, staler response overwrite a fresher
+    // one. A caller that arrives mid-flight sets the flag instead of starting
+    // a second run, and gets exactly one more pass when the first finishes.
+    if (_resyncing) {
+      _resyncAgain = true;
+      return;
+    }
+    _resyncing = true;
+    try {
+      await _resyncPromptsOnce();
+    } finally {
+      _resyncing = false;
+      if (_resyncAgain && !_disposed) {
+        _resyncAgain = false;
+        // Not awaited: this is the tail of the previous run and the caller is
+        // already gone. Looping here guarantees a request that arrived during
+        // the in-flight pass is still picked up.
+        unawaited(resyncPrompts());
+      } else {
+        _resyncAgain = false;
+      }
+    }
+  }
+
+  bool _resyncing = false;
+  bool _resyncAgain = false;
+
+  Future<void> _resyncPromptsOnce() async {
     // Snapshot the ids we already knew: a request that is merely still pending
     // must not undo a dismissal, but a genuinely new one has to be shown.
     final known = <String>{
@@ -1813,6 +1889,7 @@ class OcStore extends ChangeNotifier {
 
   Future<void> answerPermission(PermissionReq p, String response) async {
     permissions.removeWhere((e) => e.id == p.id);
+    _forgetArrival([p.id]);
     _onPromptRemoved();
     notifyListeners();
     try {
@@ -1823,28 +1900,37 @@ class OcStore extends ChangeNotifier {
       }
     } on ApiException catch (e) {
       _toast(e.message);
+      // The removal above was optimistic. If the reply never reached the server
+      // the request is *still* pending, and leaving it deleted would hide a
+      // prompt the agent is genuinely blocked on until something else happened
+      // to trigger a resync. Re-read the server's list straight away.
+      unawaited(resyncPrompts());
     }
   }
 
   Future<void> answerQuestion(QuestionReq q, List<List<String>> answers) async {
     questions.removeWhere((e) => e.id == q.id);
+    _forgetArrival([q.id]);
     _onPromptRemoved();
     notifyListeners();
     try {
       await api.answerQuestion(q.id, answers);
     } on ApiException catch (e) {
       _toast(e.message);
+      unawaited(resyncPrompts());
     }
   }
 
   Future<void> rejectQuestion(QuestionReq q) async {
     questions.removeWhere((e) => e.id == q.id);
+    _forgetArrival([q.id]);
     _onPromptRemoved();
     notifyListeners();
     try {
       await api.rejectQuestion(q.id);
     } on ApiException catch (e) {
       _toast(e.message);
+      unawaited(resyncPrompts());
     }
   }
 
@@ -1860,6 +1946,30 @@ class OcStore extends ChangeNotifier {
     } catch (err, st) {
       if (kDebugMode) debugPrint('handleEvent(${e.type}) failed: $err\n$st');
     }
+  }
+
+  /// The request id a reply/reject event refers to.
+  ///
+  /// opencode 1.18.27 sends `requestID` for permission and question events in
+  /// both v1 and v2. Older builds used `permissionID`/`questionID`, so all
+  /// three are tried; an event id (`evt_`) is never accepted as a fallback,
+  /// because it can never match a request and silently matching nothing is
+  /// exactly the failure that leaves a stale prompt on screen.
+  String _repliedId(Map<String, dynamic> p) => asStr(
+    p['requestID'],
+    asStr(p['permissionID'], asStr(p['questionID'])),
+  );
+
+  /// A prompt event we could not make sense of. Log it and re-read the
+  /// server's lists rather than dropping it: the event stream is the fast path,
+  /// `GET /permission` + `GET /question` are the authority, and a prompt the UI
+  /// cannot parse is precisely a prompt the user must still be shown.
+  void _promptParseFailed(OcEvent e, String what) {
+    debugPrint(
+      'Prompt event unusable ($what): ${e.type} '
+      'keys=${e.properties.keys.toList()}',
+    );
+    unawaited(resyncPrompts());
   }
 
   void _handleEvent(OcEvent e) {
@@ -1963,28 +2073,64 @@ class OcStore extends ChangeNotifier {
       case 'permission.asked':
       case 'permission.updated':
       case 'permission.v2.asked':
+        // `permission.updated` is an update of the request already on screen,
+        // not a new one: replace it in place so a widened pattern list or a
+        // changed command is what the user actually sees, and so it does not
+        // take a second slot in the queue.
         final req = e.type == 'permission.v2.asked'
             ? PermissionReq.fromV2(asMap(p))
             : PermissionReq.fromJson(asMap(p));
-        if (req.id.isNotEmpty && !permissions.any((x) => x.id == req.id)) {
-          permissions.add(req);
-          _onPromptAdded();
-          notifyListeners();
+        if (req.id.isEmpty) {
+          // Never swallow a prompt we failed to understand: re-read the
+          // server's own lists, which are authoritative.
+          _promptParseFailed(e, 'permission ${req.type}');
+          break;
         }
+        // An id we already hold is the *same* request. `permission.updated`
+        // therefore updates it in place — a widened pattern list or a changed
+        // command is what the user then sees — and a replayed `asked` (a
+        // reconnect can repeat one) refreshes it harmlessly. Neither may take a
+        // second slot in the queue or reset its arrival position.
+        final at = permissions.indexWhere((x) => x.id == req.id);
+        if (at >= 0) {
+          permissions[at] = req;
+          notifyListeners();
+          break;
+        }
+        permissions.add(req);
+        _stampArrival([req.id]);
+        _onPromptAdded();
+        notifyListeners();
         break;
       case 'permission.replied':
       case 'permission.v2.replied':
-        final id = asStr(p['permissionID'], asStr(p['id']));
+        // opencode 1.18.27 names the field `requestID` in *both* v1 and v2
+        // (EventPermissionReplied / EventPermissionV2Replied). The old lookup
+        // read `permissionID`, fell through to the event's own `id` — an
+        // `evt_` that never matches a `per_` — so a permission answered from
+        // the TUI stayed on screen forever. All three spellings are accepted so
+        // an older or newer server is not misread.
+        final id = _repliedId(p);
+        if (id.isEmpty) {
+          _promptParseFailed(e, 'permission reply');
+          break;
+        }
         // Answered anywhere — here or in the TUI — drops it on the spot.
         permissions.removeWhere((x) => x.id == id);
+        _forgetArrival([id]);
         _onPromptRemoved();
         notifyListeners();
         break;
       case 'question.asked':
       case 'question.v2.asked':
         final q = QuestionReq.fromJson(asMap(p));
-        if (q.id.isNotEmpty && !questions.any((x) => x.id == q.id)) {
+        if (q.id.isEmpty) {
+          _promptParseFailed(e, 'question');
+          break;
+        }
+        if (!questions.any((x) => x.id == q.id)) {
           questions.add(q);
+          _stampArrival([q.id]);
           _onPromptAdded();
           // Question tool pauses the agent — treat as idle for UI so prompt is usable.
           if (_isCurrent(q.sessionId)) {
@@ -1998,9 +2144,17 @@ class OcStore extends ChangeNotifier {
       case 'question.replied':
       case 'question.rejected':
       case 'question.v2.replied':
-        questions.removeWhere(
-          (x) => x.id == asStr(p['questionID'], asStr(p['id'])),
-        );
+      case 'question.v2.rejected':
+        // `question.v2.rejected` exists on 1.18.27 and used to fall through to
+        // no case at all, so a rejected v2 question was never cleared.
+        // `requestID` is the field the server sends; see above.
+        final qid = _repliedId(p);
+        if (qid.isEmpty) {
+          _promptParseFailed(e, 'question reply');
+          break;
+        }
+        questions.removeWhere((x) => x.id == qid);
+        _forgetArrival([qid]);
         _onPromptRemoved();
         notifyListeners();
         break;

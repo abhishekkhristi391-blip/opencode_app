@@ -1,5 +1,5 @@
 # GRAPH REPORT
-27 files, 734 symbols, 1281 edges (872 EXTRACTED, 409 INFERRED)
+27 files, 740 symbols, 1287 edges (878 EXTRACTED, 409 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:473
@@ -38,8 +38,8 @@
 - none
 
 ## Rationale / TODO notes
-- WHY: the raw message needs this before the UI can show anything. - lib/models/models.dart:189
-- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:474
+- WHY: the raw message needs this before the UI can show anything. - lib/models/models.dart:218
+- NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store.dart:509
 - WHY: * the agent is quiet. A pending - lib/ui/chat.dart:2748
 - TODO: count only — this badge lives on the Todos row, and a waiting - lib/ui/home.dart:249
 

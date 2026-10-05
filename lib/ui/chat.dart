@@ -2802,16 +2802,17 @@ class _WorkingStripState extends State<_WorkingStrip> {
     final store = AppScope.of(context);
     final t = context.oc;
     final n = store.pendingPromptCount;
-    final perm = store.oldestPendingPermission;
+    // The same queue the sheet opens, so the strip can never describe a
+    // different request than the one a tap will show.
+    final next = store.oldestPendingPrompt;
+    final perm = next?.permission;
     final blocked = n > 0;
 
     // Transition detection, not state mutation: the slow warning is only ever
     // about *thinking*, and while a prompt is out the run is not slow, it is
     // stopped. Going blocked, or clearing a block, restarts the countdown so
     // the eight seconds measure the work rather than the wait.
-    final blockId = blocked
-        ? '${perm?.id ?? ''}/${store.oldestPendingQuestion?.id ?? ''}'
-        : null;
+    final blockId = blocked ? (next?.id ?? '') : null;
     if (_blockedOn != blockId && !_resyncScheduled) {
       _resyncScheduled = true;
       // Derived state, so it is committed after the frame rather than during
@@ -2831,7 +2832,7 @@ class _WorkingStripState extends State<_WorkingStrip> {
     final showSlow = _slow && !blocked;
 
     final String headline = blocked
-        ? (perm != null ? S.waitingApproval : S.waitingAnswer)
+        ? (next?.isPermission == true ? S.waitingApproval : S.waitingAnswer)
         : S.composerWorking(widget.agent);
 
     final String status = blocked
@@ -2910,7 +2911,9 @@ class _WorkingStripState extends State<_WorkingStrip> {
                     if (blocked) ...[
                       const SizedBox(width: OCSpace.xs),
                       _PromptChip(
-                        label: perm != null ? S.promptReview : S.promptAnswer,
+                        label: next?.isPermission == true
+                            ? S.promptReview
+                            : S.promptAnswer,
                         onTap: () => showPendingPrompt(context),
                       ),
                     ],
