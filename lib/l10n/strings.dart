@@ -341,6 +341,21 @@ class S {
   static const String permSend = 'Send';
   static const String permAlwaysWarning = 'Allowing broad patterns can be risky. Review carefully.';
 
+  /// Full labels for the approval sheet's stacked buttons.
+  ///
+  /// Separate from [permAllow]/[permAlways]/[permDeny] because those are also
+  /// used as short confirm-dialog labels elsewhere, where "Always allow in this
+  /// session" would be the wrong length. On the sheet itself the label has to
+  /// say what the choice actually grants, because these three buttons sit next
+  /// to each other and two of them change the server's config permanently.
+  static const String permSheetAllow = 'Allow once';
+  static const String permSheetAlways = 'Always allow in this session';
+  static const String permSheetDeny = 'Deny this action';
+
+  /// Command box overflow affordance.
+  static const String permCommandShowAll = 'Show full command';
+  static const String permCommandShowLess = 'Show less';
+
   // files
   static const String filesDeleteTitle = 'Delete?';
   static String filesDeleteBody(String p) => '$p will be deleted permanently.';

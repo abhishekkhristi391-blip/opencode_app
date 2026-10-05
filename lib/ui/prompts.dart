@@ -71,6 +71,97 @@ void showPendingPrompt(BuildContext context) {
   scope.notifier!.openPromptSheet();
 }
 
+/// The exact command about to run, collapsed to a few lines with a way to see
+/// all of it.
+///
+/// Approving a command you cannot read is approving nothing, but a `git` or
+/// `find` one-liner easily runs past three lines on a phone. So the box is
+/// capped by default and the toggle sits directly under the text it belongs to
+/// rather than in the card header, where it would read as chrome. A short
+/// single-line command is never collapsed — there is nothing to expand, and a
+/// button that does nothing is worse than no button.
+class _CommandBox extends StatefulWidget {
+  const _CommandBox(this.command);
+  final String command;
+
+  @override
+  State<_CommandBox> createState() => _CommandBoxState();
+}
+
+class _CommandBoxState extends State<_CommandBox> {
+  bool _open = false;
+
+  bool get _collapsible =>
+      widget.command.contains('\n') || widget.command.length > 110;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.oc;
+    final collapsible = _collapsible;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: OCSpace.md),
+        Text(
+          S.permFieldCommand.toUpperCase(),
+          style: OCTypography.micro.copyWith(
+            color: OCColors.textTertiary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(OCSpace.sm),
+          decoration: BoxDecoration(
+            color: OCColors.surfaceLowest,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: OCColors.border),
+          ),
+          child: SelectableText(
+            widget.command,
+            maxLines: collapsible && !_open ? 3 : null,
+            style: OCTypography.mono(size: 11.5),
+          ),
+        ),
+        if (collapsible)
+          Padding(
+            padding: const EdgeInsets.only(top: OCSpace.xxs),
+            child: TextButton(
+              onPressed: () => setState(() => _open = !_open),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: OCSpace.xs),
+                foregroundColor: t.acc,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _open
+                        ? S.permCommandShowLess
+                        : S.permCommandShowAll,
+                    style: OCTypography.micro.copyWith(
+                      color: t.acc,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    _open ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                    color: t.acc,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 /// Tool, exact command, directories and patterns for the request on screen.
 ///
 /// Split out of the card because these four are what the user is actually
@@ -86,48 +177,53 @@ class _PermissionFacts extends StatelessWidget {
     final t = context.oc;
     final rows = <(String, String)>[
       if (p.tool.isNotEmpty) (S.permFieldTool, p.tool),
-      if (p.command.isNotEmpty) (S.permFieldCommand, p.command),
       if (p.directories.isNotEmpty) (
         S.permFieldDirectories,
         p.directories.join('\n'),
       ),
       if (p.patterns.isNotEmpty) (S.permFieldPatterns, p.patterns.join('\n')),
     ];
-    if (rows.isEmpty) return const SizedBox.shrink();
+    if (rows.isEmpty && p.command.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: OCSpace.md),
-        Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(maxHeight: 200),
-          padding: const EdgeInsets.all(OCSpace.md),
-          decoration: BoxDecoration(
-            color: OCColors.surfaceLowest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final (label, value) in rows) ...[
-                  Text(
-                    label.toUpperCase(),
-                    style: OCTypography.micro.copyWith(
-                      color: OCColors.textTertiary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6,
+        // The command gets its own box rather than one more row in the dump
+        // below: it is the thing being approved, and it is the only field long
+        // enough to need collapsing.
+        if (p.command.isNotEmpty) _CommandBox(p.command),
+        if (rows.isNotEmpty) ...[
+          const SizedBox(height: OCSpace.md),
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxHeight: 200),
+            padding: const EdgeInsets.all(OCSpace.md),
+            decoration: BoxDecoration(
+              color: OCColors.surfaceLowest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final (label, value) in rows) ...[
+                    Text(
+                      label.toUpperCase(),
+                      style: OCTypography.micro.copyWith(
+                        color: OCColors.textTertiary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  SelectableText(value, style: OCTypography.mono(size: 11.5)),
-                  const SizedBox(height: OCSpace.xs),
+                    const SizedBox(height: 2),
+                    SelectableText(value, style: OCTypography.mono(size: 11.5)),
+                    const SizedBox(height: OCSpace.xs),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
+        ],
         // Broad grants get said out loud, next to the button that makes them.
         if (p.isBroadPattern)
           Padding(
@@ -198,32 +294,27 @@ class _PermissionCard extends StatelessWidget {
           ],
           _PermissionFacts(p),
           const SizedBox(height: OCSpace.lg),
-          Row(
-            children: [
-              Expanded(
-                child: OCButton(
-                  label: S.permDeny,
-                  variant: OCButtonVariant.ghostOutline,
-                  onPressed: () => store.answerPermission(p, 'reject'),
-                ),
-              ),
-              const SizedBox(width: OCSpace.sm),
-              Expanded(
-                child: OCButton(
-                  label: S.permAlways,
-                  variant: OCButtonVariant.secondaryPill,
-                  onPressed: () => store.answerPermission(p, 'always'),
-                ),
-              ),
-              const SizedBox(width: OCSpace.sm),
-              Expanded(
-                child: OCButton(
-                  label: S.permAllow,
-                  variant: OCButtonVariant.primaryBlack,
-                  onPressed: () => store.answerPermission(p, 'once'),
-                ),
-              ),
-            ],
+          // Stacked, not a row of three. Across 360dp each button had ~100dp to
+          // hold "Always Allow in Session", so the labels wrapped or clipped and
+          // the two irreversible choices looked identical in weight to the
+          // common one. Stacked, each label is on one line at full size, and the
+          // destructive choice sits last where a thumb is not already heading.
+          OCButton(
+            label: S.permSheetAllow,
+            variant: OCButtonVariant.primaryBlack,
+            onPressed: () => store.answerPermission(p, 'once'),
+          ),
+          const SizedBox(height: OCSpace.xs),
+          OCButton(
+            label: S.permSheetAlways,
+            variant: OCButtonVariant.secondaryPill,
+            onPressed: () => store.answerPermission(p, 'always'),
+          ),
+          const SizedBox(height: OCSpace.xs),
+          OCButton(
+            label: S.permSheetDeny,
+            variant: OCButtonVariant.ghostOutline,
+            onPressed: () => store.answerPermission(p, 'reject'),
           ),
           const SizedBox(height: OCSpace.sm),
           if (store.permissions.length > 1)
@@ -334,10 +425,11 @@ class _QuestionCardState extends State<_QuestionCard> {
                     final answers = <List<String>>[];
                     for (var i = 0; i < widget.q.questions.length; i++) {
                       final s = picks[i] ?? <String>{};
-                      if (widget.q.questions[i].custom) {
-                        final t = custom[i]?.text.trim();
-                        if (t != null && t.isNotEmpty) s.add(t);
-                      }
+                      // Unconditional, matching the unconditional field below:
+                      // the box is on every question, so a typed answer must
+                      // always be sent or the sheet would silently discard it.
+                      final t = custom[i]?.text.trim();
+                      if (t != null && t.isNotEmpty) s.add(t);
                       answers.add(s.toList());
                     }
                     store.answerQuestion(widget.q, answers);
@@ -453,34 +545,40 @@ class _QuestionCardState extends State<_QuestionCard> {
               ),
             ),
           ),
-        if (item.custom)
-          Padding(
-            padding: const EdgeInsets.only(top: OCSpace.sm),
-            child: TextField(
-              controller: custom.putIfAbsent(qi, TextEditingController.new),
-              decoration: InputDecoration(
-                hintText: S.questionCustomHint,
-                hintStyle: OCTypography.caption,
-                isDense: true,
-                filled: true,
-                fillColor: OCColors.surfaceSubtle,
-                prefixIcon: const Icon(
-                  Icons.edit_outlined,
-                  size: 17,
-                  color: OCColors.textTertiary,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(OCRadius.inner),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(OCRadius.inner),
-                  borderSide: BorderSide.none,
-                ),
+        // Every question gets the free-text card, not only the ones the server
+        // flagged `custom`. The flag describes what the *tool* suggested, not
+        // what the human may type, and a question with no free-text box is a
+        // question you cannot answer with your own words.
+        Padding(
+          padding: const EdgeInsets.only(top: OCSpace.sm),
+          child: TextField(
+            controller: custom.putIfAbsent(qi, TextEditingController.new),
+            minLines: 1,
+            maxLines: 3,
+            textInputAction: TextInputAction.newline,
+            decoration: InputDecoration(
+              hintText: S.questionCustomHint,
+              hintStyle: OCTypography.caption,
+              isDense: true,
+              filled: true,
+              fillColor: OCColors.surfaceSubtle,
+              prefixIcon: const Icon(
+                Icons.edit_outlined,
+                size: 17,
+                color: OCColors.textTertiary,
               ),
-              style: OCTypography.caption.copyWith(color: OCColors.textPrimary),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(OCRadius.inner),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(OCRadius.inner),
+                borderSide: BorderSide.none,
+              ),
             ),
+            style: OCTypography.caption.copyWith(color: OCColors.textPrimary),
           ),
+        ),
       ],
     );
   }
