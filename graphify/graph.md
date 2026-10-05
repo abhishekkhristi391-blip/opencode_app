@@ -145,7 +145,7 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::diffAddedRemoved [EXTR
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::diffAppliesTo [EXTRACTED] lib/l10n/strings.dart:328
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerConnectedTo [EXTRACTED] lib/l10n/strings.dart:845
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::drawerPending [EXTRACTED] lib/l10n/strings.dart:842
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::errorText [EXTRACTED] lib/l10n/strings.dart:1015
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::errorText [EXTRACTED] lib/l10n/strings.dart:1048
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::fileStats [EXTRACTED] lib/l10n/strings.dart:530
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesChangedCount [EXTRACTED] lib/l10n/strings.dart:432
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::filesCount [EXTRACTED] lib/l10n/strings.dart:251
@@ -163,11 +163,12 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::formatContext [EXTRACT
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyDeleteBody [EXTRACTED] lib/l10n/strings.dart:893
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::historyFiles [EXTRACTED] lib/l10n/strings.dart:300
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::jumpUnread [EXTRACTED] lib/l10n/strings.dart:865
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::label [EXTRACTED] lib/l10n/strings.dart:1013
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::label [EXTRACTED] lib/l10n/strings.dart:1046
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::mcpCount [EXTRACTED] lib/l10n/strings.dart:685
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::menuServerVersion [EXTRACTED] lib/l10n/strings.dart:855
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::messageCount [EXTRACTED] lib/l10n/strings.dart:252
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsContext [EXTRACTED] lib/l10n/strings.dart:458
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsCount [EXTRACTED] lib/l10n/strings.dart:1032
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsProvider [EXTRACTED] lib/l10n/strings.dart:915
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::modelsSelected [EXTRACTED] lib/l10n/strings.dart:459
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::moreToolsCount [EXTRACTED] lib/l10n/strings.dart:205
@@ -176,6 +177,7 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::netUnreachable [EXTRAC
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::partsAgent [EXTRACTED] lib/l10n/strings.dart:311
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::partsThinkingLines [EXTRACTED] lib/l10n/strings.dart:486
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::partsThoughtFor [EXTRACTED] lib/l10n/strings.dart:484
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::permMorePending [EXTRACTED] lib/l10n/strings.dart:1037
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::permSuggestingRules [EXTRACTED] lib/l10n/strings.dart:422
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::serverOnlineVersion [EXTRACTED] lib/l10n/strings.dart:111
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::sessionsCount [EXTRACTED] lib/l10n/strings.dart:496
@@ -188,13 +190,14 @@ lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPermExternalBody [E
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::setPermExternalTitle [EXTRACTED] lib/l10n/strings.dart:370
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::settingsConnectedVersion [EXTRACTED] lib/l10n/strings.dart:688
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::skillsCount [EXTRACTED] lib/l10n/strings.dart:686
-lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::slashCommand [EXTRACTED] lib/l10n/strings.dart:1014
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::slashCommand [EXTRACTED] lib/l10n/strings.dart:1047
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::statusCached [EXTRACTED] lib/l10n/strings.dart:782
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tasksProgress [EXTRACTED] lib/l10n/strings.dart:564
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tasksProgressSemantics [EXTRACTED] lib/l10n/strings.dart:565
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::termuxSetupNote [EXTRACTED] lib/l10n/strings.dart:967
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::thinkingGroup [EXTRACTED] lib/l10n/strings.dart:860
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::thinkingSteps [EXTRACTED] lib/l10n/strings.dart:863
+lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::todosSession [EXTRACTED] lib/l10n/strings.dart:1021
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::tokensUsed [EXTRACTED] lib/l10n/strings.dart:253
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolDone [EXTRACTED] lib/l10n/strings.dart:198
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::toolRunning [EXTRACTED] lib/l10n/strings.dart:197
@@ -975,6 +978,7 @@ lib/ui/primitives.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/primiti
 lib/ui/prompts.dart --calls--> lib/api/client.dart::answerQuestion [INFERRED 0.35] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --calls--> lib/api/client.dart::rejectQuestion [INFERRED 0.35] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/prompts.dart:4
+lib/ui/prompts.dart --calls--> lib/l10n/strings.dart::permMorePending [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --calls--> lib/l10n/strings.dart::permSuggestingRules [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/prompts.dart:5
 lib/ui/prompts.dart --calls--> lib/state/store.dart::answerPermission [INFERRED 0.6] lib/ui/prompts.dart:0
@@ -986,15 +990,15 @@ lib/ui/prompts.dart --calls--> lib/ui/primitives.dart::OCButton [INFERRED 0.6] l
 lib/ui/prompts.dart --calls--> lib/ui/primitives.dart::OCCard [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --calls--> lib/ui/primitives.dart::OCIconTile [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::PromptOverlay [EXTRACTED] lib/ui/prompts.dart:13
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::ShareCard [EXTRACTED] lib/ui/prompts.dart:333
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::ShareCard [EXTRACTED] lib/ui/prompts.dart:337
 lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_PermissionCard [EXTRACTED] lib/ui/prompts.dart:41
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCard [EXTRACTED] lib/ui/prompts.dart:141
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCardState [EXTRACTED] lib/ui/prompts.dart:149
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_question [EXTRACTED] lib/ui/prompts.dart:251
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_toggle [EXTRACTED] lib/ui/prompts.dart:163
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCard [EXTRACTED] lib/ui/prompts.dart:145
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_QuestionCardState [EXTRACTED] lib/ui/prompts.dart:153
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_question [EXTRACTED] lib/ui/prompts.dart:255
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::_toggle [EXTRACTED] lib/ui/prompts.dart:167
 lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::build [EXTRACTED] lib/ui/prompts.dart:17
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::createState [EXTRACTED] lib/ui/prompts.dart:146
-lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::dispose [EXTRACTED] lib/ui/prompts.dart:156
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::createState [EXTRACTED] lib/ui/prompts.dart:150
+lib/ui/prompts.dart --defines--> lib/ui/prompts.dart::dispose [EXTRACTED] lib/ui/prompts.dart:160
 lib/ui/prompts.dart --calls--> lib/ui/terminal_page.dart::clear [INFERRED 0.6] lib/ui/prompts.dart:0
 lib/ui/prompts.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/prompts.dart:8
 lib/ui/prompts.dart --calls--> lib/ui/theme.dart::mono [INFERRED 0.6] lib/ui/prompts.dart:0
@@ -1075,6 +1079,7 @@ lib/ui/settings_page.dart --calls--> lib/api/client.dart::revert [INFERRED 0.35]
 lib/ui/settings_page.dart --calls--> lib/api/client.dart::setApiKey [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/api/client.dart::upgrade [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/settings_page.dart:7
+lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::modelsCount [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setMcpLabel [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setMcpServers [INFERRED 0.6] lib/ui/settings_page.dart:0
 lib/ui/settings_page.dart --calls--> lib/l10n/strings.dart::setPassword [INFERRED 0.6] lib/ui/settings_page.dart:0
@@ -1173,6 +1178,9 @@ lib/ui/theme.dart --defines--> lib/ui/theme.dart::numeric [EXTRACTED] lib/ui/the
 lib/ui/theme.dart --defines--> lib/ui/theme.dart::of [EXTRACTED] lib/ui/theme.dart:377
 lib/ui/theme.dart --defines--> lib/ui/theme.dart::withColor [EXTRACTED] lib/ui/theme.dart:962
 lib/ui/todos_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/todos_page.dart:3
+lib/ui/todos_page.dart --calls--> lib/l10n/strings.dart::tasksProgress [INFERRED 0.6] lib/ui/todos_page.dart:0
+lib/ui/todos_page.dart --calls--> lib/l10n/strings.dart::tasksProgressSemantics [INFERRED 0.6] lib/ui/todos_page.dart:0
+lib/ui/todos_page.dart --calls--> lib/l10n/strings.dart::todosSession [INFERRED 0.6] lib/ui/todos_page.dart:0
 lib/ui/todos_page.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/todos_page.dart:4
 lib/ui/todos_page.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/todos_page.dart:5
 lib/ui/todos_page.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/todos_page.dart:6
@@ -1180,7 +1188,7 @@ lib/ui/todos_page.dart --calls--> lib/ui/primitives.dart::OCIconTile [INFERRED 0
 lib/ui/todos_page.dart --calls--> lib/ui/primitives.dart::OCProgressBar [INFERRED 0.6] lib/ui/todos_page.dart:0
 lib/ui/todos_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/todos_page.dart:7
 lib/ui/todos_page.dart --defines--> lib/ui/todos_page.dart::TodosPage [EXTRACTED] lib/ui/todos_page.dart:10
-lib/ui/todos_page.dart --defines--> lib/ui/todos_page.dart::_TodoTile [EXTRACTED] lib/ui/todos_page.dart:100
+lib/ui/todos_page.dart --defines--> lib/ui/todos_page.dart::_TodoTile [EXTRACTED] lib/ui/todos_page.dart:102
 lib/ui/todos_page.dart --defines--> lib/ui/todos_page.dart::build [EXTRACTED] lib/ui/todos_page.dart:14
 lib/ui/todos_page.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/todos_page.dart:8
 lib/ui/todos_page.dart --calls--> lib/ui/widgets.dart::EmptyHint [INFERRED 0.6] lib/ui/todos_page.dart:0

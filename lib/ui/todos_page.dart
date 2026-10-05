@@ -44,7 +44,7 @@ class TodosPage extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        '$done / ${todos.length} done',
+                        S.tasksProgress(done, todos.length),
                         style: OCTypography.bodyStrong,
                       ),
                       const Spacer(),
@@ -55,8 +55,10 @@ class TodosPage extends StatelessWidget {
                             value: todos.isEmpty ? 0 : done / todos.length,
                             height: 6,
                             animate: false,
-                            semanticLabel:
-                                '$done of ${todos.length} tasks done',
+                            semanticLabel: S.tasksProgressSemantics(
+                              done,
+                              todos.length,
+                            ),
                           ),
                         ),
                     ],
@@ -87,7 +89,7 @@ class TodosPage extends StatelessWidget {
                       0,
                     ),
                     child: Text(
-                      'Session: ${store.current!.label}',
+                      S.todosSession(store.current!.label),
                       style: OCTypography.micro,
                     ),
                   ),

@@ -444,7 +444,7 @@ class FilesPageState extends State<FilesPage> {
                   context,
                   title: S.filesDeleteTitle,
                   message: S.filesDeleteBody(n.path),
-                  confirm: 'Delete',
+                  confirm: S.deleteFile,
                   danger: true,
                 );
                 if (!ok) return;
@@ -688,7 +688,7 @@ class _FileEditorPageState extends State<FileEditorPage> {
           context,
           title: S.filesUnsaved,
           message: S.filesUnsavedExit,
-          confirm: 'Exit',
+          confirm: S.exitNoSave,
         );
         if (leave && mounted) Navigator.pop(context);
       },

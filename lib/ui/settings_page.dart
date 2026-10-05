@@ -421,7 +421,7 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text(S.cancel),
           ),
           OCButton(
             label: S.setConnect,
@@ -475,7 +475,7 @@ class _SettingsPageState extends State<SettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dlg),
-              child: const Text('Cancel'),
+              child: const Text(S.cancel),
             ),
             OCButton(
               label: S.setAdd,
@@ -594,7 +594,7 @@ class _Providers extends StatelessWidget {
             ),
             title: Text(p.name, style: OCTypography.caption),
             subtitle: Text(
-              '${p.models.length} models',
+              S.modelsCount(p.models.length),
               style: OCTypography.micro,
             ),
             trailing: TextButton(
@@ -603,10 +603,10 @@ class _Providers extends StatelessWidget {
                 await store.refreshCatalog();
                 if (context.mounted) showSnack(context, '${p.id} logout');
               },
-              child: const Text('Logout', style: TextStyle(fontSize: 12)),
+              child: const Text(S.logout, style: TextStyle(fontSize: 12)),
             ),
           ),
-        if (unconnected.isNotEmpty) const SectionTitle('API key daalo'),
+        if (unconnected.isNotEmpty) const SectionTitle(S.providersNeedsKey),
         for (final p in unconnected)
           ListTile(
             dense: true,
@@ -645,7 +645,7 @@ class _Providers extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text(S.cancel),
           ),
           OCButton(
             label: S.save,
@@ -734,11 +734,11 @@ class _ConfigEditorState extends State<_ConfigEditor> {
               try {
                 parsed = jsonDecode(c.text);
               } catch (e) {
-                showSnack(context, 'JSON invalid: $e', error: true);
+                showSnack(context, '${S.configInvalidJson}: $e', error: true);
                 return;
               }
               if (parsed is! Map<String, dynamic>) {
-                showSnack(context, 'Root object hona chahiye', error: true);
+                showSnack(context, S.configNotRootObject, error: true);
                 return;
               }
               await AppScope.read(context).saveConfig(parsed);

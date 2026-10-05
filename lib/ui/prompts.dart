@@ -64,7 +64,7 @@ class _PermissionCard extends StatelessWidget {
               const SizedBox(width: OCSpace.md),
               Expanded(
                 child: Text(
-                  'Permission chahiye',
+                  S.permTitle,
                   style: OCTypography.h2.copyWith(fontSize: 18),
                 ),
               ),
@@ -79,9 +79,13 @@ class _PermissionCard extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 220),
               padding: const EdgeInsets.all(OCSpace.md),
               decoration: BoxDecoration(
-                color: OCColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(OCRadius.inner),
+                // The reference's `container-lowest rounded-lg` command well,
+                // the same treatment the chat code blocks got in Batch 4: a
+                // surfaceSubtle panel here read as a second card inside a card.
+                color: OCColors.surfaceLowest,
+                borderRadius: BorderRadius.circular(8),
               ),
+              clipBehavior: Clip.antiAlias,
               child: SingleChildScrollView(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -128,7 +132,7 @@ class _PermissionCard extends StatelessWidget {
           const SizedBox(height: OCSpace.sm),
           Center(
             child: Text(
-              'Baaki ${store.permissions.length - 1} request(s) pending',
+              S.permMorePending(store.permissions.length - 1),
               style: OCTypography.micro,
             ),
           ),
@@ -196,7 +200,7 @@ class _QuestionCardState extends State<_QuestionCard> {
               const SizedBox(width: OCSpace.md),
               const Expanded(
                 child: Text(
-                  'Agent ne sawal pucha',
+                  S.questionTitle,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -343,7 +347,7 @@ class ShareCard extends StatelessWidget {
         accent: OCAccent.blue,
         size: 36,
       ),
-      title: Text('Share link', style: OCTypography.h3.copyWith(fontSize: 15)),
+      title: Text(S.shareLinkTitle, style: OCTypography.h3.copyWith(fontSize: 15)),
       subtitle: Text(
         url,
         maxLines: 2,

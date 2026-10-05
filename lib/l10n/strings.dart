@@ -1003,6 +1003,39 @@ class S {
   /// Group heading that carries a count, e.g. "MCP servers (3)".
   static String setMcpServers(int count) => 'MCP servers ($count)';
 
+  // ------------------------------------------------------------------
+  // prompts, commands, share
+  //
+  // These were Hinglish literals inside widgets, which broke both the
+  // "nothing is spelled out in a widget" rule and the one-language rule.
+  // ------------------------------------------------------------------
+  static const permTitle = 'Permission needed';
+  static const questionTitle = 'The agent asked a question';
+  static const shareLinkTitle = 'Share link';
+  static const commandsEmpty =
+      'Add markdown command files to .opencode/command/ or '
+      '~/.config/opencode/command/ to get slash commands here.';
+  static const providersNeedsKey = 'Needs an API key';
+
+  /// Header line naming the session a todo list belongs to.
+  static String todosSession(String label) => 'Session: $label';
+  static const configInvalidJson = 'JSON is invalid';
+  static const configNotRootObject = 'The config must be a JSON object';
+  static const cancel = 'Cancel';
+  static const logout = 'Log out';
+  static const copyDiff = 'Copy diff';
+  static const diffBinaryNote = 'Binary or new file';
+  static const deleteFile = 'Delete';
+  static const exitNoSave = 'Exit';
+
+  /// "12 models" beside a provider name.
+  static String modelsCount(int n) => '$n models';
+
+
+
+  /// "N more request(s) pending" under the first permission card.
+  static String permMorePending(int n) => '$n more request(s) pending';
+
   /// Terminal output placeholder. Was a Hinglish literal in the widget.
   static const terminalEmpty =
       'Type a command and press Enter.\nShortcuts are above the output.';

@@ -263,7 +263,7 @@ class _SessionDiffTile extends StatelessWidget {
                 ),
               ),
             if (d.addCount == 0 && d.delCount == 0)
-              const Text('binary ya new file', style: TextStyle(fontSize: 11)),
+              const Text(S.diffBinaryNote, style: TextStyle(fontSize: 11)),
           ],
         ),
         childrenPadding: const EdgeInsets.fromLTRB(
@@ -293,7 +293,7 @@ class _SessionDiffTile extends StatelessWidget {
                   onPressed: () => copyToClipboard(context, preview),
                   icon: const Icon(Icons.copy, size: 15),
                   label: const Text(
-                    'Copy diff',
+                    S.copyDiff,
                     style: TextStyle(fontSize: 12),
                   ),
                 ),

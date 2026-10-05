@@ -1,5 +1,5 @@
 # GRAPH REPORT
-27 files, 707 symbols, 1233 edges (842 EXTRACTED, 391 INFERRED)
+27 files, 710 symbols, 1241 edges (845 EXTRACTED, 396 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - OCIconTile (class) - 12 links - lib/ui/primitives.dart:473

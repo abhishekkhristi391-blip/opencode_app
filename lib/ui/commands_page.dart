@@ -28,7 +28,7 @@ class CommandsPage extends StatelessWidget {
                 const EmptyHint(
                   icon: Icons.code,
                   title: S.cmdNoCommands,
-                  message: 'Project me .opencode/command/ ya ~/.config/opencode/command/ me markdown command files daalo.',
+                  message: S.commandsEmpty,
                 ),
               ],
             )
