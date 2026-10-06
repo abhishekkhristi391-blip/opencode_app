@@ -15,3 +15,16 @@ import '../db/chat_db.dart';
 // line range of that file: a pure move, no logic touched.
 part 'store/store_types.dart';
 part 'store/store_ocstore.dart';
+
+// OcStore's behaviour, split by topic into extensions (see store_ocstore.dart). Moved
+// verbatim, except references to OcStore's statics are written OcStore.name.
+part 'store/store_ocstore_view_state.dart';
+part 'store/store_ocstore_cache.dart';
+part 'store/store_ocstore_connection.dart';
+part 'store/store_ocstore_sessions.dart';
+part 'store/store_ocstore_history.dart';
+part 'store/store_ocstore_run.dart';
+part 'store/store_ocstore_workspace.dart';
+part 'store/store_ocstore_prompts.dart';
+part 'store/store_ocstore_events.dart';
+part 'store/store_ocstore_messages.dart';
