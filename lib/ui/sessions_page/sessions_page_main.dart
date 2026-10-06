@@ -21,6 +21,20 @@ class SessionsPageState extends State<SessionsPage> {
   /// Called by the shell's header action.
   void focusSearch() => searchFocus.requestFocus();
 
+  @override
+  void initState() {
+    super.initState();
+    // Nothing else refreshes the list when this page opens. `connect()` fetches
+    // once at boot, so opening History while offline -- or before that fetch
+    // landed -- left it empty with no way out: the empty state is an
+    // `EmptyHint`, which emits no scroll notifications, so the
+    // `RefreshIndicator` around it could never fire, and the retry button only
+    // appears when `sessionsError` is set. With no row there is nothing to
+    // rename, delete or pin, which is how this showed up.
+    final store = AppScope.read(context);
+    if (store.sessions.isEmpty) unawaited(store.refreshSessions());
+  }
+
   void clearSearch() {
     searchCtrl.clear();
     query.value = '';
