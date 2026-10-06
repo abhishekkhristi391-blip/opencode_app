@@ -95,8 +95,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/state/store/store_ocstore_sessions.dart  (340 lines)
 - Defines (read with exact line ranges): class OcStoreSessions L9+, function refreshSessions L14-48, function _persistSessions L49-59, function _restoreSessionsFromCache L60-78, function newSession L79-96, function openSession L97-155, function _safeSession L156-166, function togglePin L167-173, function renameSession L174-182, function deleteSession L183-200, function forkSession L201-211, function shareSession L212-221, function unshareSession L222-230, function abortSession L231-258, function refreshTodos L259-296, function _applyTodosPayload L297-321, function ensureTodosFresh L322-328, function refreshDiff L329-340
 
-## lib/state/store/store_ocstore_view_state.dart  (118 lines)
-- Defines (read with exact line ranges): class OcStoreViewState L9+, function setShowTokensInChat L15-57, function _stampArrival L58-64, function _forgetArrival L65-75, function openPromptSheet L76-85, function dismissPromptSheet L86-93, function _onPromptAdded L94-100, function _onPromptRemoved L101-108, function sessionLabel L109-118
+## lib/state/store/store_ocstore_view_state.dart  (121 lines)
+- Defines (read with exact line ranges): class OcStoreViewState L9+, function setShowTokensInChat L15-57, function _stampArrival L58-64, function _forgetArrival L65-81, function openPromptSheet L82-88, function dismissPromptSheet L89-96, function _onPromptAdded L97-103, function _onPromptRemoved L104-111, function sessionLabel L112-121
 
 ## lib/state/store/store_ocstore_workspace.dart  (203 lines)
 - Defines (read with exact line ranges): class OcStoreWorkspace L9+, function _utilSession L10-64, function writeFile L65-104, function deleteEntry L105-115, function mkdirEntry L116-130, function refreshCommands L131-140, function refreshConfig L141-152, function saveConfig L153-163, function enableExternalDirectoryAccess L164-179, function addMcp L180-203
@@ -269,8 +269,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (3): lib/main.dart, lib/ui/chat.dart, lib/ui/home.dart
 - If changed, affects 7 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
-## lib/ui/prompts/prompts_permission.dart  (323 lines)
-- Defines (read with exact line ranges): class PromptOverlay L11+, function build L15-58, function showPendingPrompt L59-73, class _CommandBox L74+, function createState L79-81, class _CommandBoxState L82+, class _PermissionFacts L162+, class _PermissionCard L245+
+## lib/ui/prompts/prompts_permission.dart  (335 lines)
+- Defines (read with exact line ranges): class PromptOverlay L11+, function build L15-72, function showPendingPrompt L73-85, class _CommandBox L86+, function createState L91-93, class _CommandBoxState L94+, class _PermissionFacts L174+, class _PermissionCard L257+
 
 ## lib/ui/prompts/prompts_question.dart  (343 lines)
 - Defines (read with exact line ranges): class _QuestionCard L3+, function createState L8-10, class _QuestionCardState L11+, function dispose L18-24, function _toggle L25-40, function build L41-125, function _question L126-263, class _SessionLine L264+, class ShareCard L313+

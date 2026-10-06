@@ -71,14 +71,17 @@ extension OcStoreViewState on OcStore {
   /// True when the session can make no progress until the user replies.
   bool get awaitingPrompt => pendingPromptCount > 0;
 
-  /// Show the prompt sheet for the oldest pending request. A no-op when
-  /// nothing is pending, so a stale Review tap cannot open an empty card.
+  /// Show the prompt sheet for the oldest pending request.
+  ///
+  /// Always clears the flag *and* notifies, even when the flag was already
+  /// clear: the overlay lives in `MaterialApp.builder` behind a `const`
+  /// `Positioned` and no ancestor ever rebuilds it, so it only repaints on a
+  /// store notification. A tap that changed nothing therefore left it frozen
+  /// on its last frame, which is how the strip's Answer chip did nothing.
+  /// An empty queue still draws no card — [PromptOverlay] decides that.
   void openPromptSheet() {
-    if (!awaitingPrompt) return;
-    if (promptSheetDismissed) {
-      promptSheetDismissed = false;
-      notifyListeners();
-    }
+    promptSheetDismissed = false;
+    notifyListeners();
   }
 
   /// Dismiss the sheet without answering. The request stays pending on the

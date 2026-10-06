@@ -587,12 +587,12 @@ lib/state/store/store_ocstore_view_state.dart --calls--> lib/models/models/model
 lib/state/store/store_ocstore_view_state.dart --calls--> lib/state/store/store_ocstore_connection.dart::_persist [INFERRED 0.35] lib/state/store/store_ocstore_view_state.dart:0
 lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::OcStoreViewState [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:9
 lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::_forgetArrival [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:65
-lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::_onPromptAdded [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:94
-lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::_onPromptRemoved [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:101
+lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::_onPromptAdded [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:97
+lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::_onPromptRemoved [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:104
 lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::_stampArrival [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:58
-lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::dismissPromptSheet [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:86
-lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::openPromptSheet [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:76
-lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::sessionLabel [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:109
+lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::dismissPromptSheet [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:89
+lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::openPromptSheet [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:82
+lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::sessionLabel [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:112
 lib/state/store/store_ocstore_view_state.dart --defines--> lib/state/store/store_ocstore_view_state.dart::setShowTokensInChat [EXTRACTED] lib/state/store/store_ocstore_view_state.dart:15
 lib/state/store/store_ocstore_view_state.dart --calls--> lib/voice/voice_service/voice_service_lifecycle.dart::_persist [INFERRED 0.35] lib/state/store/store_ocstore_view_state.dart:0
 lib/state/store/store_ocstore_workspace.dart --calls--> lib/api/client/client_oc_client.dart::ApiException [INFERRED 0.6] lib/state/store/store_ocstore_workspace.dart:0
@@ -1414,20 +1414,22 @@ lib/ui/prompts/prompts_permission.dart --calls--> lib/l10n/strings.dart::permMor
 lib/ui/prompts/prompts_permission.dart --calls--> lib/l10n/strings.dart::permSuggestingRules [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/state/store/store_ocstore_prompts.dart::answerPermission [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/state/store/store_ocstore_view_state.dart::openPromptSheet [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
+lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/app_scope.dart::read [INFERRED 0.35] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/primitives/primitives_buttons_cards.dart::OCButton [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/primitives/primitives_buttons_cards.dart::OCCard [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/primitives/primitives_cells_controls.dart::OCIconTile [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::PromptOverlay [EXTRACTED] lib/ui/prompts/prompts_permission.dart:11
-lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_CommandBox [EXTRACTED] lib/ui/prompts/prompts_permission.dart:74
-lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_CommandBoxState [EXTRACTED] lib/ui/prompts/prompts_permission.dart:82
-lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_PermissionCard [EXTRACTED] lib/ui/prompts/prompts_permission.dart:245
-lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_PermissionFacts [EXTRACTED] lib/ui/prompts/prompts_permission.dart:162
+lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_CommandBox [EXTRACTED] lib/ui/prompts/prompts_permission.dart:86
+lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_CommandBoxState [EXTRACTED] lib/ui/prompts/prompts_permission.dart:94
+lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_PermissionCard [EXTRACTED] lib/ui/prompts/prompts_permission.dart:257
+lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::_PermissionFacts [EXTRACTED] lib/ui/prompts/prompts_permission.dart:174
 lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::build [EXTRACTED] lib/ui/prompts/prompts_permission.dart:15
-lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::createState [EXTRACTED] lib/ui/prompts/prompts_permission.dart:79
-lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::showPendingPrompt [EXTRACTED] lib/ui/prompts/prompts_permission.dart:59
+lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::createState [EXTRACTED] lib/ui/prompts/prompts_permission.dart:91
+lib/ui/prompts/prompts_permission.dart --defines--> lib/ui/prompts/prompts_permission.dart::showPendingPrompt [EXTRACTED] lib/ui/prompts/prompts_permission.dart:73
 lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/prompts/prompts_question.dart::_QuestionCard [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/prompts/prompts_question.dart::_SessionLine [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_permission.dart --calls--> lib/ui/theme/theme_radius_typography.dart::mono [INFERRED 0.6] lib/ui/prompts/prompts_permission.dart:0
+lib/ui/prompts/prompts_permission.dart --calls--> lib/voice/voice_scope.dart::read [INFERRED 0.35] lib/ui/prompts/prompts_permission.dart:0
 lib/ui/prompts/prompts_question.dart --calls--> lib/api/client/client_oc_client_workspace.dart::answerQuestion [INFERRED 0.35] lib/ui/prompts/prompts_question.dart:0
 lib/ui/prompts/prompts_question.dart --calls--> lib/api/client/client_oc_client_workspace.dart::rejectQuestion [INFERRED 0.35] lib/ui/prompts/prompts_question.dart:0
 lib/ui/prompts/prompts_question.dart --calls--> lib/l10n/strings.dart::permMorePending [INFERRED 0.6] lib/ui/prompts/prompts_question.dart:0

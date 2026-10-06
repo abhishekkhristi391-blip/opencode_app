@@ -1,10 +1,10 @@
 # GRAPH REPORT
-103 files, 932 symbols, 1904 edges (1094 EXTRACTED, 810 INFERRED)
+103 files, 932 symbols, 1906 edges (1094 EXTRACTED, 812 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - LIcon (class) - 22 links - lib/ui/line_icons/line_icons_widgets.dart:158
-- read (function) - 20 links - lib/ui/app_scope.dart:17
-- read (function) - 20 links - lib/voice/voice_scope.dart:26
+- read (function) - 21 links - lib/ui/app_scope.dart:17
+- read (function) - 21 links - lib/voice/voice_scope.dart:26
 - OCIconTile (class) - 18 links - lib/ui/primitives/primitives_cells_controls.dart:58
 - mono (function) - 18 links - lib/ui/theme/theme_radius_typography.dart:284
 - showSnack (function) - 17 links - lib/ui/widgets/widgets_navigation_feedback.dart:131

@@ -17,49 +17,61 @@ class PromptOverlay extends StatelessWidget {
     // so nothing above it rebuilds when a request arrives and a non-subscribing
     // read would leave the overlay frozen on its first (empty) frame.
     final store = AppScope.of(context);
-    if (store.promptSheetDismissed) return const SizedBox.shrink();
-    // One queue, oldest arrival first, whichever kind it is: a question asked
-    // before a burst of tool permissions must not sit behind them.
-    final next = store.oldestPendingPrompt;
-    if (next == null) return const SizedBox.shrink();
-    final p = next.permission;
-    final q = next.question;
-    return IgnorePointer(
-      ignoring: false,
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.6),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Tapping the scrim closes the sheet but answers nothing: the
-              // request is still pending on the server, so the badge stays up
-              // and the agent stays correctly reported as blocked.
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: store.dismissPromptSheet,
-                ),
+    // The subscription above alone does not reach the child: this layer sits in
+    // `MaterialApp.builder` behind a `const` `Positioned`, so no ancestor
+    // rebuild ever comes down. `ListenableBuilder` — the pattern `_ComposerWidget`
+    // already uses — is what makes a tap on the Answer chip repaint this layer.
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        if (store.promptSheetDismissed) return const SizedBox.shrink();
+        // One queue, oldest arrival first, whichever kind it is: a question asked
+        // before a burst of tool permissions must not sit behind them.
+        final next = store.oldestPendingPrompt;
+        if (next == null) return const SizedBox.shrink();
+        final p = next.permission;
+        final q = next.question;
+        return IgnorePointer(
+          ignoring: false,
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.6),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  // Tapping the scrim closes the sheet but answers nothing: the
+                  // request is still pending on the server, so the badge stays up
+                  // and the agent stays correctly reported as blocked.
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: store.dismissPromptSheet,
+                    ),
+                  ),
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(18),
+                      child: p != null ? _PermissionCard(p) : _QuestionCard(q!),
+                    ),
+                  ),
+                ],
               ),
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(18),
-                  child: p != null ? _PermissionCard(p) : _QuestionCard(q!),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
-/// Opens the pending prompt sheet from anywhere. Safe to call when nothing is
-/// pending: it simply does nothing, so a stale button cannot open a blank card.
+/// Opens the pending prompt sheet from anywhere.
+///
+/// The store is resolved through [AppScope.read], which asserts rather than
+/// returning null, so a tap can never be swallowed by a silent `return`.
+/// Whether there is anything to draw is decided by [PromptOverlay], which
+/// renders nothing when the queue is empty — a stale button still cannot open
+/// a blank card.
 void showPendingPrompt(BuildContext context) {
-  final scope = context.getInheritedWidgetOfExactType<AppScope>();
-  if (scope == null) return;
-  scope.notifier!.openPromptSheet();
+  AppScope.read(context).openPromptSheet();
 }
 
 /// The exact command about to run, collapsed to a few lines with a way to see
