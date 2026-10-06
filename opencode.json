@@ -2,7 +2,6 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "ARCHITECTURE.md",
-    "graphify/GRAPH_REPORT.md",
-    "graphify/FILES.md"
+    "graphify/GRAPH_REPORT.md"
   ]
 }

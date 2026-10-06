@@ -1152,7 +1152,17 @@ class S {
   // ------------------------------------------------------------------
   // helpers
   // ------------------------------------------------------------------
-  static String label(String l, String value) => '$l: $value';
+  static const scrollToBottom = 'Scroll to bottom';
   static String slashCommand(String name) => '/$name';
   static String errorText(Object e) => '$e';
+  static String label(String l, String value) => '$l: $value';
+
+  // --- grouped tools (Claude-like) ---
+  static String ranNTools(int n) => n == 1 ? "Ran 1 tool" : "Ran $n tools";
+  static String ranNCommands(int n) => n == 1 ? 'Ran 1 command' : 'Ran $n commands';
+  static String runningStep(String name) => '$name';
+  static String nSteps(int n) => n == 1 ? '1 step' : '$n steps';
+  static String toolGroupSummary(String summary) => summary;
+  static const toolGroupCollapsed = 'Tools';
+
 }
