@@ -98,21 +98,9 @@ class _SessionTile extends StatelessWidget {
                 ],
               ],
             ),
-            // A visible overflow button, because rename/delete/pin were only reachable
-            // through a long-press that nothing on screen advertised.
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (store.busy && active)
-                  const OCProgressRing(value: 0.7, size: 18, stroke: 2.5),
-                IconButton(
-                  onPressed: () => _showActions(context),
-                  icon: const Icon(Icons.more_vert),
-                  tooltip: S.sessionsActions,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
+            trailing: store.busy && active
+                ? const OCProgressRing(value: 0.7, size: 18, stroke: 2.5)
+                : null,
             onTap: () async {
               await store.openSession(s.id);
               if (context.mounted)
@@ -130,7 +118,6 @@ class _SessionTile extends StatelessWidget {
 
   Future<void> _showActions(BuildContext context) async {
     final store = AppScope.read(context);
-    final isPinned = store.pinned.contains(s.id);
     await showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -154,14 +141,54 @@ class _SessionTile extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: Icon(isPinned ? Icons.push_pin_outlined : Icons.push_pin),
-              title: Text(isPinned ? S.sessionsUnpin : S.sessionsPin),
-              subtitle: const Text(S.sessionsPinnedHint),
-              onTap: () {
+              leading: const Icon(Icons.call_split),
+              title: const Text(S.sessionsFork),
+              subtitle: const Text(S.sessionsForkHint),
+              onTap: () async {
                 Navigator.pop(sheetCtx);
-                store.togglePin(s.id);
+                final f = await store.forkSession(s.id);
+                if (f != null && context.mounted) {
+                  await store.openSession(f.id);
+                  if (context.mounted)
+                    showSnack(context, S.forkCreated(f.label));
+                }
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.account_tree_outlined),
+              title: const Text(S.sessionsChildren),
+              onTap: () async {
+                Navigator.pop(sheetCtx);
+                await _showChildren(context);
+              },
+            ),
+            if (s.isShared)
+              ListTile(
+                leading: const Icon(Icons.link_off),
+                title: const Text(S.sessionsUnshare),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  store.unshareSession(s.id);
+                },
+              )
+            else
+              ListTile(
+                leading: const Icon(Icons.ios_share),
+                title: const Text(S.sessionsShare),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  store.shareSession(s.id);
+                },
+              ),
+            if (s.shareUrl.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text(S.sessionsShareCopy),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  copyToClipboard(context, s.shareUrl, S.shareCopied);
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: OCColors.red),
               title: Text(S.delete, style: TextStyle(color: OCColors.redInk)),
@@ -180,6 +207,65 @@ class _SessionTile extends StatelessWidget {
             const SizedBox(height: 6),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showChildren(BuildContext context) async {
+    final store = AppScope.read(context);
+    List<Session> kids;
+    try {
+      kids = await store.api.childSessions(s.id);
+    } catch (e) {
+      if (context.mounted) showSnack(context, '$e', error: true);
+      return;
+    }
+    if (!context.mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: kids.isEmpty
+            ? const EmptyHint(
+                icon: Icons.account_tree_outlined,
+                title: S.sessionsChildrenEmptyTitle,
+                message: S.sessionsChildrenEmptyBody,
+              )
+            : ListView.builder(
+                itemCount: kids.length,
+                itemBuilder: (_, i) {
+                  final k = kids[i];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(
+                      Icons.subdirectory_arrow_right,
+                      color: OCColors.textTertiary,
+                    ),
+                    title: Text(
+                      k.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: OCTypography.caption,
+                    ),
+                    subtitle: Text(
+                      fmtAge(k.updated),
+                      style: OCTypography.micro,
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await store.openSession(k.id);
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ChatPage()),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
       ),
     );
   }

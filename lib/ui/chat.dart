@@ -21,7 +21,6 @@ import 'theme.dart';
 import 'widgets.dart';
 import '../voice/voice_scope.dart';
 import '../voice/voice_service.dart';
-import '../api/client.dart';
 
 // Split out of the original 3719-line chat.dart. Every part below is a verbatim
 // line range of that file: a pure move, no logic touched.

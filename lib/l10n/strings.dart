@@ -266,10 +266,6 @@ class S {
   static const sessionsFilteredEmptyBody =
       'Switch to All to include child sessions.';
   static const sessionsRename = 'Rename session';
-  static const sessionsPin = 'Pin to top';
-  static const sessionsActions = 'Session actions';
-  static const sessionsUnpin = 'Unpin';
-  static const sessionsPinnedHint = 'Pinned chats stay at the top';
   static const sessionsFork = 'Fork session';
   static const sessionsForkHint = 'New session with the same history';
   static const sessionsChildren = 'Show child sessions';
@@ -1152,17 +1148,7 @@ class S {
   // ------------------------------------------------------------------
   // helpers
   // ------------------------------------------------------------------
-  static const scrollToBottom = 'Scroll to bottom';
+  static String label(String l, String value) => '$l: $value';
   static String slashCommand(String name) => '/$name';
   static String errorText(Object e) => '$e';
-  static String label(String l, String value) => '$l: $value';
-
-  // --- grouped tools (Claude-like) ---
-  static String ranNTools(int n) => n == 1 ? "Ran 1 tool" : "Ran $n tools";
-  static String ranNCommands(int n) => n == 1 ? 'Ran 1 command' : 'Ran $n commands';
-  static String runningStep(String name) => '$name';
-  static String nSteps(int n) => n == 1 ? '1 step' : '$n steps';
-  static String toolGroupSummary(String summary) => summary;
-  static const toolGroupCollapsed = 'Tools';
-
 }

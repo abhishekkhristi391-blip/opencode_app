@@ -26,7 +26,6 @@ extension OcStoreConnection on OcStore {
     providerId = prefs.getString('provider') ?? '';
     modelId = prefs.getString('model') ?? '';
     toolsEnabled.addAll(prefs.getStringList('tools') ?? const []);
-    pinned.addAll(prefs.getStringList('pinned') ?? const []);
     showTokensInChat = prefs.getBool('showTokens') ?? false;
     booted = true;
     notifyListeners();
@@ -43,7 +42,6 @@ extension OcStoreConnection on OcStore {
     await p.setString('provider', providerId);
     await p.setString('model', modelId);
     await p.setStringList('tools', toolsEnabled.toList());
-    await p.setStringList('pinned', pinned.toList());
     await p.setBool('showTokens', showTokensInChat);
   }
 

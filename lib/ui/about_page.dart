@@ -5,7 +5,6 @@ import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';
-import '../state/store.dart';
 
 /// Version and connection status. Reached from More.
 class AboutPage extends StatelessWidget {

@@ -7,7 +7,6 @@ import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';
-import '../api/client.dart';
 
 // Split out of the original 806-line files_page.dart. Every part below holds whole
 // top-level declarations moved verbatim: a pure move, no logic touched.

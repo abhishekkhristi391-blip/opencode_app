@@ -231,26 +231,14 @@ class PermissionReq {
     required this.raw,
   });
 
-  /// Parses a request from the event stream *or* from `GET /permission`.
-  ///
-  /// The REST list is re-read on every connect, stream-up edge and resume, and
-  /// it replaces the whole list. It must therefore understand both key sets the
-  /// server uses (`permission`/`patterns`/`always`/`tool` and the v2
-  /// `action`/`resources`/`save`/`source`): a v1-only reading turned a card that
-  /// rendered correctly from its event into one with no rules and no patterns.
   factory PermissionReq.fromJson(Map<String, dynamic> j) {
-    List<String> strs(dynamic v) => asList(v).map((e) => e.toString()).toList();
-    final tool = asMap(j['tool']);
-    final t = tool.isNotEmpty ? tool : asMap(j['source']);
-    final kind = asStr(j['permission']);
-    final patterns = strs(j['patterns']);
-    final always = strs(j['always']);
+    final t = asMap(j['tool']);
     return PermissionReq(
       id: asStr(j['id']),
       sessionId: asStr(j['sessionID']),
-      permission: kind.isNotEmpty ? kind : asStr(j['action']),
-      patterns: patterns.isNotEmpty ? patterns : strs(j['resources']),
-      always: always.isNotEmpty ? always : strs(j['save']),
+      permission: asStr(j['permission']),
+      patterns: asList(j['patterns']).map((e) => e.toString()).toList(),
+      always: asList(j['always']).map((e) => e.toString()).toList(),
       metadata: asMap(j['metadata']),
       messageId: asStr(t['messageID']),
       callId: asStr(t['callID']),

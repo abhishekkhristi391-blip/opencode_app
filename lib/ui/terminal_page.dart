@@ -5,7 +5,6 @@ import '../l10n/strings.dart';
 import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';
-import '../state/store.dart';
 
 class TerminalPage extends StatefulWidget {
   const TerminalPage({super.key});
