@@ -1,13 +1,13 @@
 # GRAPH REPORT
-103 files, 926 symbols, 1899 edges (1088 EXTRACTED, 811 INFERRED)
+103 files, 932 symbols, 1904 edges (1094 EXTRACTED, 810 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - LIcon (class) - 22 links - lib/ui/line_icons/line_icons_widgets.dart:158
-- read (function) - 19 links - lib/ui/app_scope.dart:17
-- read (function) - 19 links - lib/voice/voice_scope.dart:26
+- read (function) - 20 links - lib/ui/app_scope.dart:17
+- read (function) - 20 links - lib/voice/voice_scope.dart:26
 - OCIconTile (class) - 18 links - lib/ui/primitives/primitives_cells_controls.dart:58
 - mono (function) - 18 links - lib/ui/theme/theme_radius_typography.dart:284
-- showSnack (function) - 18 links - lib/ui/widgets/widgets_navigation_feedback.dart:131
+- showSnack (function) - 17 links - lib/ui/widgets/widgets_navigation_feedback.dart:131
 - asMap (function) - 16 links - lib/models/models/models_session_message.dart:3
 - OCButton (class) - 13 links - lib/ui/primitives/primitives_buttons_cards.dart:94
 
@@ -52,7 +52,7 @@
 ## Rationale / TODO notes
 - WHY: the raw message needs this before the UI can show anything. - lib/models/models/models_session_message.dart:218
 - NOTE: there is deliberately no storage-permission gate here. File writes go - lib/state/store/store_ocstore_connection.dart:11
-- TODO: updates that landed while the socket was down are gone with it, and - lib/state/store/store_ocstore_connection.dart:215
+- TODO: updates that landed while the socket was down are gone with it, and - lib/state/store/store_ocstore_connection.dart:217
 - WHY: * the agent is quiet. A pending - lib/ui/chat/chat_run_progress.dart:9
 - WHY: hands-free or dictation stopped gets one snackbar, not a banner that - lib/ui/chat/chat_voice_strip.dart:42
 - WHY: the last attempt stopped, if it stopped badly. - lib/voice/voice_service/voice_service_state.dart:12

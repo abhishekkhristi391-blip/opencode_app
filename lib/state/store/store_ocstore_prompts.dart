@@ -25,10 +25,20 @@ extension OcStorePrompts on OcStore {
     }
     try {
       final plist = await api.pendingPermissions();
+      // A request answered here moments ago may still be in a list the server
+      // built before it saw our reply. Hide it for a bounded window; the window
+      // outlasts the 30s reply timeout, and a failed reply clears its entry.
+      final now = DateTime.now();
+      _answeredPermissions.removeWhere(
+        (_, at) => now.difference(at) > const Duration(seconds: 45),
+      );
       permissions = plist
           .where((e) => asStr(e['id']).isNotEmpty)
           .map((e) => PermissionReq.fromJson(asMap(e)))
-          .where((p) => p.id.isNotEmpty)
+          .where(
+            (p) =>
+                p.id.isNotEmpty && !_answeredPermissions.containsKey(p.id),
+          )
           .toList();
       // A fetch failure must NOT empty the list: the requests we already hold
       // are still pending, and clearing them on a flaky link is exactly how a
@@ -104,23 +114,54 @@ extension OcStorePrompts on OcStore {
     notifyListeners();
   }
 
+  /// Sends the reply on the current endpoint (`POST /permission/{id}/reply`) and
+  /// falls back to the legacy session-scoped route only when the server does not
+  /// know the first one. The legacy route is deprecated upstream, so it is no
+  /// longer the one every reply depends on.
+  Future<void> _sendPermissionReply(PermissionReq p, String response) async {
+    try {
+      await api.replyPermissionV1(p.id, response);
+    } on ApiException catch (e) {
+      if (!e.isNotFound || p.sessionId.isEmpty) rethrow;
+      await api.replyPermission(p.sessionId, p.id, response);
+    }
+  }
+
   Future<void> answerPermission(PermissionReq p, String response) async {
+    // Idempotent: a double tap, or a request already answered in the TUI (its
+    // `permission.replied` event has removed it), must not send a second reply.
+    if (!permissions.any((e) => e.id == p.id)) return;
+    final seq = _arrival[p.id];
     permissions.removeWhere((e) => e.id == p.id);
+    _answeredPermissions[p.id] = DateTime.now();
     _forgetArrival([p.id]);
     _onPromptRemoved();
     notifyListeners();
     try {
-      if (p.sessionId.isNotEmpty) {
-        await api.replyPermission(p.sessionId, p.id, response);
-      } else {
-        await api.replyPermissionV1(p.id, response);
-      }
+      await _sendPermissionReply(p, response);
     } on ApiException catch (e) {
+      if (e.isNotFound) {
+        // Both routes say the request no longer exists: it was answered
+        // elsewhere. Nothing to restore and nothing to tell the user.
+        unawaited(resyncPrompts());
+        return;
+      }
+      // The removal above was optimistic and the reply never reached the
+      // server, so the agent is *still* blocked on this request. Put the very
+      // same card back in its original queue slot so it can be retried, then
+      // let the server's list confirm.
+      _answeredPermissions.remove(p.id);
+      if (!permissions.any((x) => x.id == p.id)) {
+        permissions.add(p);
+        if (seq != null) {
+          _arrival[p.id] = seq;
+        } else {
+          _stampArrival([p.id]);
+        }
+        promptSheetDismissed = false;
+      }
       _toast(e.message);
-      // The removal above was optimistic. If the reply never reached the server
-      // the request is *still* pending, and leaving it deleted would hide a
-      // prompt the agent is genuinely blocked on until something else happened
-      // to trigger a resync. Re-read the server's list straight away.
+      notifyListeners();
       unawaited(resyncPrompts());
     }
   }

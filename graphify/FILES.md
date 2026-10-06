@@ -41,8 +41,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (1): lib/state/store.dart
 - If changed, affects 19 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
 
-## lib/l10n/strings.dart  (1155 lines)
-- Defines (read with exact line ranges): class S L9+, function serverOnlineVersion L111-190, function composerModelAgent L191-196, function toolRunning L197-197, function toolDone L198-204, function moreToolsCount L205-250, function filesCount L251-251, function messageCount L252-252, function tokensUsed L253-280, function sessionsDeleteBody L281-299, function historyFiles L300-307, function cmdArgs L308-308, function cmdUseSkill L309-309, function cmdUseLabel L310-310, function partsAgent L311-327, function diffAppliesTo L328-360, function filesDeleteBody L361-364, function filesNameLabel L365-366, function filesEmptyName L367-368, function filesNameHint L369-385, function setPermExternalTitle L386-387, function setPermExternalBody L388-391, function setPassword L392-402, function filesExists L403-403, function filesDeleteFailed L404-404, function filesFolderFailed L405-407, function added L408-430, function netTimeout L431-431, function netUnreachable L432-437, function permSuggestingRules L438-447, function filesChangedCount L448-473, function modelsContext L474-474, function modelsSelected L475-479, function setMcpLabel L480-499, function partsThoughtFor L500-501, function partsThinkingLines L502-508, function waitingYou L509-513, function promptSemantics L514-515, function composerWorking L516-517, function composerQueued L518-520 ...
+## lib/l10n/strings.dart  (1169 lines)
+- Defines (read with exact line ranges): class S L9+, function serverOnlineVersion L111-190, function composerModelAgent L191-196, function toolRunning L197-197, function toolDone L198-204, function moreToolsCount L205-250, function filesCount L251-251, function messageCount L252-252, function tokensUsed L253-284, function sessionsDeleteBody L285-303, function historyFiles L304-311, function cmdArgs L312-312, function cmdUseSkill L313-313, function cmdUseLabel L314-314, function partsAgent L315-331, function diffAppliesTo L332-364, function filesDeleteBody L365-368, function filesNameLabel L369-370, function filesEmptyName L371-372, function filesNameHint L373-389, function setPermExternalTitle L390-391, function setPermExternalBody L392-395, function setPassword L396-406, function filesExists L407-407, function filesDeleteFailed L408-408, function filesFolderFailed L409-411, function added L412-434, function netTimeout L435-435, function netUnreachable L436-441, function permSuggestingRules L442-451, function filesChangedCount L452-477, function modelsContext L478-478, function modelsSelected L479-483, function setMcpLabel L484-503, function partsThoughtFor L504-505, function partsThinkingLines L506-512, function waitingYou L513-517, function promptSemantics L518-519, function composerWorking L520-521, function composerQueued L522-524 ...
 - Imported by (17): lib/api/client.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
 - If changed, affects 21 file(s): lib/api/client.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart ...
 
@@ -54,8 +54,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (15): lib/api/client.dart, lib/api/events.dart, lib/state/store.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart ...
 - If changed, affects 21 file(s): lib/api/client.dart, lib/api/events.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart ...
 
-## lib/models/models/models_server_info.dart  (444 lines)
-- Defines (read with exact line ranges): class ModelInfo L3+, class Todo L46+, class FileNode L75+, class FileDiff L97+, class CommandInfo L123+, class SkillInfo L144+, class NamedStatus L159+, class VcsInfo L182+, class ServerPaths L194+, class PermissionReq L215+, function _fmt L336-342, class QuestionOption L343+, class QuestionItem L350+, class QuestionReq L373+, function fmtBytes L403-408, function fmtTime L409-414, function fmtAge L415-424, function fmtDuration L425-432, function baseName L433-437, function dirName L438-444
+## lib/models/models/models_server_info.dart  (456 lines)
+- Defines (read with exact line ranges): class ModelInfo L3+, class Todo L46+, class FileNode L75+, class FileDiff L97+, class CommandInfo L123+, class SkillInfo L144+, class NamedStatus L159+, class VcsInfo L182+, class ServerPaths L194+, class PermissionReq L215+, function _fmt L348-354, class QuestionOption L355+, class QuestionItem L362+, class QuestionReq L385+, function fmtBytes L415-420, function fmtTime L421-426, function fmtAge L427-436, function fmtDuration L437-444, function baseName L445-449, function dirName L450-456
 
 ## lib/models/models/models_session_message.dart  (401 lines)
 - Defines (read with exact line ranges): function asMap L3-6, function asList L7-8, function asInt L9-12, function asStr L13-14, function asDouble L15-17, function asBool L18-21, class Tokens L22+, class SessionSummary L50+, class PendingPrompt L71+, class Session L94+, function toMap L153-157, class Message L158+, class ToolStatus L236+, class Part L238+, function _short L364-373, class Agent L374+
@@ -66,16 +66,16 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Imported by (17): lib/main.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart ...
 - If changed, affects 18 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
 
-## lib/state/store/store_ocstore.dart  (301 lines)
-- Defines (read with exact line ranges): class OcStore L5+, function _messageText L125-148, function _stripEchoedOptimistic L149-244, function _parentDir L245-250, function _shellQuote L251-285, function dispose L286-301
+## lib/state/store/store_ocstore.dart  (311 lines)
+- Defines (read with exact line ranges): class OcStore L5+, function _messageText L129-152, function _stripEchoedOptimistic L153-248, function _parentDir L249-254, function _shellQuote L255-295, function dispose L296-311
 
 ## lib/state/store/store_ocstore_cache.dart  (171 lines)
 - Defines (read with exact line ranges): class OcStoreCache L9+, function _scheduleNotify L17-31, function _scheduleMessageNotify L32-50, function _debouncedTodos L51-65, function _dbRow L66-76, function _isCacheable L77-91, function _mergeHistory L92-112, function _cachedHistory L113-130, function _scheduleFlush L131-148, function _flushHistory L149-164, function _persistHistory L165-171
 
-## lib/state/store/store_ocstore_connection.dart  (329 lines)
-- Defines (read with exact line ranges): class OcStoreConnection L9+, function boot L19-34, function _persist L35-51, function setServer L52-59, function connect L60-109, function _offlineMessage L110-118, function _verifyReachability L119-173, function _startStream L174-195, function _onStreamStatus L196-227, function _resyncMessages L228-260, function refreshServerInfo L261-270, function refreshCatalog L271-302, function setModel L303-309, function setAgent L310-315, function toggleTool L316-329
+## lib/state/store/store_ocstore_connection.dart  (331 lines)
+- Defines (read with exact line ranges): class OcStoreConnection L9+, function boot L19-35, function _persist L36-53, function setServer L54-61, function connect L62-111, function _offlineMessage L112-120, function _verifyReachability L121-175, function _startStream L176-197, function _onStreamStatus L198-229, function _resyncMessages L230-262, function refreshServerInfo L263-272, function refreshCatalog L273-304, function setModel L305-311, function setAgent L312-317, function toggleTool L318-331
 - NOTE: there is deliberately no storage-permission gate here. File writes go :11
-- TODO: updates that landed while the socket was down are gone with it, and :215
+- TODO: updates that landed while the socket was down are gone with it, and :217
 
 ## lib/state/store/store_ocstore_events.dart  (270 lines)
 - Defines (read with exact line ranges): class OcStoreEvents L9+, function handleEvent L14-30, function _repliedId L31-39, function _promptParseFailed L40-47, function _handleEvent L48-262, function _errorText L263-270
@@ -86,14 +86,14 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/state/store/store_ocstore_messages.dart  (238 lines)
 - Defines (read with exact line ranges): class OcStoreMessages L9+, function _isCurrent L12-14, function _messageById L15-22, function _optimisticIndex L23-30, function _clearLocalEcho L31-35, function _upsertMessage L36-62, function _upsertPart L63-125, function _applyDelta L126-142, function _removePart L143-160, function _removeMessage L161-176, function _upsertSession L177-192, function _toast L193-193, function takeToast L194-200, function reconnectStream L201-209, function pauseConnections L210-228, function resumeConnections L229-238
 
-## lib/state/store/store_ocstore_prompts.dart  (154 lines)
-- Defines (read with exact line ranges): class OcStorePrompts L9+, function loadPending L14-54, function resyncPrompts L55-82, function _resyncPromptsOnce L83-106, function answerPermission L107-127, function answerQuestion L128-140, function rejectQuestion L141-154
+## lib/state/store/store_ocstore_prompts.dart  (195 lines)
+- Defines (read with exact line ranges): class OcStorePrompts L9+, function loadPending L14-64, function resyncPrompts L65-92, function _resyncPromptsOnce L93-120, function _sendPermissionReply L121-129, function answerPermission L130-168, function answerQuestion L169-181, function rejectQuestion L182-195
 
 ## lib/state/store/store_ocstore_run.dart  (262 lines)
 - Defines (read with exact line ranges): class OcStoreRun L9+, function _touchActivity L10-14, function _startBusyTimer L15-46, function _probeBusyState L47-94, function _clearBusyTimer L95-107, function _settleStuckStreaming L108-118, function _sendParts L119-166, function runCommand L167-203, function summarize L204-213, function revert L214-224, function unrevert L225-235, function initAgents L236-262
 
-## lib/state/store/store_ocstore_sessions.dart  (323 lines)
-- Defines (read with exact line ranges): class OcStoreSessions L9+, function refreshSessions L14-40, function _persistSessions L41-51, function _restoreSessionsFromCache L52-70, function newSession L71-88, function openSession L89-147, function _safeSession L148-156, function renameSession L157-165, function deleteSession L166-183, function forkSession L184-194, function shareSession L195-204, function unshareSession L205-213, function abortSession L214-241, function refreshTodos L242-279, function _applyTodosPayload L280-304, function ensureTodosFresh L305-311, function refreshDiff L312-323
+## lib/state/store/store_ocstore_sessions.dart  (340 lines)
+- Defines (read with exact line ranges): class OcStoreSessions L9+, function refreshSessions L14-48, function _persistSessions L49-59, function _restoreSessionsFromCache L60-78, function newSession L79-96, function openSession L97-155, function _safeSession L156-166, function togglePin L167-173, function renameSession L174-182, function deleteSession L183-200, function forkSession L201-211, function shareSession L212-221, function unshareSession L222-230, function abortSession L231-258, function refreshTodos L259-296, function _applyTodosPayload L297-321, function ensureTodosFresh L322-328, function refreshDiff L329-340
 
 ## lib/state/store/store_ocstore_view_state.dart  (118 lines)
 - Defines (read with exact line ranges): class OcStoreViewState L9+, function setShowTokensInChat L15-57, function _stampArrival L58-64, function _forgetArrival L65-75, function openPromptSheet L76-85, function dismissPromptSheet L86-93, function _onPromptAdded L94-100, function _onPromptRemoved L101-108, function sessionLabel L109-118
@@ -275,16 +275,16 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/prompts/prompts_question.dart  (343 lines)
 - Defines (read with exact line ranges): class _QuestionCard L3+, function createState L8-10, class _QuestionCardState L11+, function dispose L18-24, function _toggle L25-40, function build L41-125, function _question L126-263, class _SessionLine L264+, class ShareCard L313+
 
-## lib/ui/sessions_page.dart  (18 lines)
+## lib/ui/sessions_page.dart  (20 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
-## lib/ui/sessions_page/sessions_page_main.dart  (392 lines)
-- Defines (read with exact line ranges): class SessionsPage L3+, function createState L7-9, class SessionsPageState L10+, function focusSearch L22-23, function clearSearch L24-30, function dispose L31-39, function build L40-62, class _SessionsHeader L63+, function visibleSessions L167-187, class _SessionsList L188+, class _SessionsListState L197+, function _pushTileErrorGuard L299-310, function _popTileErrorGuard L311-328, class _GuardedSessionTile L329+, class _GuardedSessionTileState L338+, function initState L340-365, class _BrokenSessionRow L366+
+## lib/ui/sessions_page/sessions_page_main.dart  (406 lines)
+- Defines (read with exact line ranges): class SessionsPage L3+, function createState L7-9, class SessionsPageState L10+, function focusSearch L22-24, function initState L25-37, function clearSearch L38-44, function dispose L45-53, function build L54-76, class _SessionsHeader L77+, function visibleSessions L181-201, class _SessionsList L202+, class _SessionsListState L211+, function _pushTileErrorGuard L313-324, function _popTileErrorGuard L325-342, class _GuardedSessionTile L343+, class _GuardedSessionTileState L352+, class _BrokenSessionRow L380+
 
-## lib/ui/sessions_page/sessions_page_tiles.dart  (373 lines)
-- Defines (read with exact line ranges): class _SessionTile L3+, function build L13-118, function _showActions L119-213, function _showChildren L214-277, class _GroupedSessionList L278+, function _bucket L317-328, class _Row L329+, class _GroupHeaderDelegate L339+, function shouldRebuild L371-373
+## lib/ui/sessions_page/sessions_page_tiles.dart  (287 lines)
+- Defines (read with exact line ranges): class _SessionTile L3+, function build L13-130, function _showActions L131-191, class _GroupedSessionList L192+, function _bucket L231-242, class _Row L243+, class _GroupHeaderDelegate L253+, function shouldRebuild L285-287
 
 ## lib/ui/settings_page.dart  (24 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart, lib/voice/voice_scope.dart, lib/voice/voice_service.dart

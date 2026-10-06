@@ -264,6 +264,12 @@ class OcStore extends ChangeNotifier {
   bool _promptSyncing = false;
   bool _promptResyncAgain = false;
 
+  /// Permission ids the user has answered locally, with the time of the answer.
+  /// A `GET /permission` that was already in flight when the reply was sent can
+  /// still list the request; without this the stale list put the card back on
+  /// screen after it had been answered.
+  final Map<String, DateTime> _answeredPermissions = {};
+
   /// Newest optimistic user row. Only one prompt is in flight at a time, so the
   /// server's echo always belongs to the send that was made last — matching the
   /// *first* optimistic row instead used to delete the wrong bubble.
