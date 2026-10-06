@@ -18,6 +18,14 @@ extension OcStoreSessions on OcStore {
     try {
       final list = await api.sessions();
       sessions = list..sort((a, b) => b.updated.compareTo(a.updated));
+      // Pinned chats float above the rest, still newest-first inside each
+      // group. Re-sorted here rather than in the list widget so every consumer
+      // of [sessions] agrees on the order.
+      sessions.sort((a, b) {
+        final pa = pinned.contains(a.id) ? 0 : 1;
+        final pb = pinned.contains(b.id) ? 0 : 1;
+        return pa != pb ? pa - pb : b.updated.compareTo(a.updated);
+      });
       if (current != null) {
         final i = sessions.indexWhere((s) => s.id == current!.id);
         if (i >= 0) current = sessions[i];
@@ -154,7 +162,16 @@ extension OcStoreSessions on OcStore {
     }
   }
 
-  Future<void> renameSession(String id, String title) async {
+  /// Pins or unpins a chat. Local only: the server has no pinned concept, so the
+/// id just lives in prefs and moves the chat to the top of the list.
+Future<void> togglePin(String id) async {
+  if (!pinned.remove(id)) pinned.add(id);
+  notifyListeners();
+  unawaited(_persist());
+  await refreshSessions();
+}
+
+Future<void> renameSession(String id, String title) async {
     try {
       await api.renameSession(id, title);
       await refreshSessions();

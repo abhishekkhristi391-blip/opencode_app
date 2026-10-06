@@ -47,6 +47,10 @@ class OcStore extends ChangeNotifier {
 
   // ---- session ----
   List<Session> sessions = [];
+
+  /// Session ids the user pinned. Purely local — the server has no notion of a
+  /// pinned chat, so this lives in prefs and only decides sort order.
+  final Set<String> pinned = {};
   bool sessionsLoading = false;
   String? sessionsError;
   Session? current;

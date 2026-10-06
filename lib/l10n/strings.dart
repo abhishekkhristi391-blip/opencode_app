@@ -266,6 +266,10 @@ class S {
   static const sessionsFilteredEmptyBody =
       'Switch to All to include child sessions.';
   static const sessionsRename = 'Rename session';
+  static const sessionsPin = 'Pin to top';
+  static const sessionsActions = 'Session actions';
+  static const sessionsUnpin = 'Unpin';
+  static const sessionsPinnedHint = 'Pinned chats stay at the top';
   static const sessionsFork = 'Fork session';
   static const sessionsForkHint = 'New session with the same history';
   static const sessionsChildren = 'Show child sessions';
