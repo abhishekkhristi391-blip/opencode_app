@@ -8,6 +8,7 @@ import 'line_icons.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';
+import '../state/store.dart';
 
 // Split out of the original 673-line prompts.dart. Every part below holds whole
 // top-level declarations moved verbatim: a pure move, no logic touched.

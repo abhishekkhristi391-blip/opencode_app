@@ -8,6 +8,7 @@ import 'parts.dart';
 import 'primitives.dart';
 import 'theme.dart';
 import 'widgets.dart';
+import '../api/client.dart';
 
 class DiffPage extends StatefulWidget {
   const DiffPage({super.key});
