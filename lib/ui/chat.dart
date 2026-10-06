@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/client.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../state/store.dart';

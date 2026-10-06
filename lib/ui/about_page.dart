@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
+import '../state/store.dart';
 import 'app_scope.dart';
 import 'primitives.dart';
 import 'theme.dart';

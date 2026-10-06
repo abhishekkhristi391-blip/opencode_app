@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../api/client.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../state/store.dart';
