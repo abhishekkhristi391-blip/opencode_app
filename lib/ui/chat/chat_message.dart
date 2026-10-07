@@ -313,15 +313,27 @@ class _MessageTileState extends State<_MessageTile> {
         if (text.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 14, bottom: 4),
-            child: Markdown(
-              text,
-              // assistantBody, not body: the reference sets the assistant's
-              // prose in Source Serif 4 and the user's in Inter.
-              base: OCTypography.assistantBody.copyWith(color: t.ink),
-              onLink: (url) => launchUrl(
-                Uri.parse(url),
-                mode: LaunchMode.externalApplication,
-              ),
+            // Reference `.ai-response`: the orange brand avatar sits on the
+            // leading edge of the prose, with the text filling the rest.
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _AssistantAvatar(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Markdown(
+                    text,
+                    // assistantBody, not body: the reference sets the
+                    // assistant's prose in Source Serif 4 and the user's in
+                    // Inter.
+                    base: OCTypography.assistantBody.copyWith(color: t.ink),
+                    onLink: (url) => launchUrl(
+                      Uri.parse(url),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         if (m.streaming && !hasContent) const _TypingDots(),
@@ -351,6 +363,32 @@ class _MessageTileState extends State<_MessageTile> {
             hasContent)
           _ReplyActions(msg: m),
       ],
+    );
+  }
+}
+
+/// Reference `.ai-avatar`: a 30px terracotta disc with the brand glyph, the
+/// same fill that marks the app's own identity in the header. One per reply,
+/// on the leading edge of the prose.
+class _AssistantAvatar extends StatelessWidget {
+  const _AssistantAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: OCColors.orange,
+        shape: BoxShape.circle,
+      ),
+      child: const LIcon(
+        LI.code,
+        size: 15,
+        color: OCColors.orangeBright,
+        strokeWidth: 2,
+      ),
     );
   }
 }

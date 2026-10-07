@@ -142,23 +142,58 @@ class _IncomingFileChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sits inside the dark user bubble, so it inherits the bubble's contrast
-    // rather than a fixed light-only colour.
+    // Sits inside the dark user bubble as its own card, so it gets a card
+    // fill for contrast and the blue icon tile reads as an attachment rather
+    // than a piece of inline text.
     final t = context.oc;
-    final onBubble = t.ink;
     final isImg = part.mime.startsWith('image/');
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+    final label = part.filename.isEmpty ? baseName(part.url) : part.filename;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: t.card,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          LIcon(isImg ? LI.terminal : LI.attach, size: 15, color: onBubble),
-          const SizedBox(width: 6),
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: t.deep,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: LIcon(
+              isImg ? LI.attach : LI.doc,
+              size: 15,
+              color: t.tertiary,
+              strokeWidth: 1.9,
+            ),
+          ),
+          const SizedBox(width: 10),
           Flexible(
-            child: Text(
-              part.filename.isEmpty ? baseName(part.url) : part.filename,
-              style: OCTypography.caption.copyWith(color: onBubble),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: OCTypography.caption.copyWith(
+                    color: t.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  isImg ? 'IMAGE' : 'FILE',
+                  style: OCTypography.mono(size: 10, color: t.faint),
+                ),
+              ],
             ),
           ),
         ],

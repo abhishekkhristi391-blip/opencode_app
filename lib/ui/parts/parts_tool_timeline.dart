@@ -1,12 +1,13 @@
 part of '../parts.dart';
 
-/// Reference `.steps`: tool calls collapse into a compact vertical timeline
-/// instead of a stack of cards.
+/// Reference `.steps`: tool calls collapse into a compact vertical stack of
+/// action cards instead of a wall of cards.
 ///
-/// Each step is one 34px line — a status dot on a 2px rail, the tool name in
-/// bold, the summary in monospace with an ellipsis, and a chevron. Tapping a
-/// step expands its output into the dark code block below it. Non-tool parts
-/// (reasoning, patches, subtasks) still render as tiles underneath.
+/// Each step is one rounded card — a blue icon tile for the tool, the name in
+/// bold, the summary (command or file) in monospace, a status dot + label on
+/// the right, and a chevron. Tapping a step expands its output into the dark
+/// code block below it. Non-tool parts (reasoning, patches, subtasks) still
+/// render as tiles underneath.
 class ToolTimeline extends StatefulWidget {
   final List<Part> parts;
   const ToolTimeline({required this.parts, super.key});
@@ -54,25 +55,13 @@ class _ToolTimelineState extends State<ToolTimeline> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (thinking != null) thinking,
-        Padding(
-          padding: const EdgeInsets.only(left: 18),
-          child: Stack(
-            children: [
-              // The rail: a 2px line behind the dots, inset from the top and
-              // bottom so it does not overshoot the first and last step.
-              Positioned(
-                left: 4,
-                top: 10,
-                bottom: 10,
-                width: 2,
-                child: ColoredBox(color: context.oc.line),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final p in tools) _buildStep(p)],
-              ),
-            ],
-          ),
+        // Reference `.chain`: each step is one rounded card, stacked with a
+        // small gap, instead of rows on a shared rail. The card form survives
+        // inside the assistant block because the icons carry the tool kind
+        // where the dot rail once carried only status.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [for (final p in tools) _buildStep(p)],
         ),
         ...others,
       ],
@@ -84,20 +73,27 @@ class _ToolTimelineState extends State<ToolTimeline> {
     final key = '${p.id}:${p.toolCallId}';
     final open = _open.contains(key);
     final status = p.status;
-    // Reference `.step.run`: accent while in flight, green once finished,
-    // red on failure, muted outline before it starts.
-    final dotColor = switch (status) {
-      ToolStatus.completed => t.ok,
-      ToolStatus.error => t.err,
-      ToolStatus.running => t.acc,
-      _ => t.mute,
+    final exit = p.exitCode;
+    // A finished bash call that exited non-zero is a failure even when the
+    // event never reported `error`.
+    final bad = status == ToolStatus.error || (exit != null && exit != 0);
+
+    // Reference `.badge-dot`: accent while in flight, green once finished,
+    // red on failure, muted before it starts.
+    final dur = p.toolEnd > 0 ? fmtDuration(p.toolEnd - p.toolStart) : '';
+    final (Color dot, String statusText, Color labelColor) = switch (status) {
+      ToolStatus.completed =>
+        bad
+            ? (t.err, 'Failed', t.errInk)
+            : (t.ok, dur.isEmpty ? 'Completed' : 'Completed · $dur', t.okInk),
+      ToolStatus.error => (t.err, 'Failed', t.errInk),
+      ToolStatus.running => (t.acc, 'Running', t.accInk),
+      _ => (t.faint, 'Pending', t.faint),
     };
 
     final summary = (p.summaryLine.isEmpty ? p.toolName : p.summaryLine)
         .replaceAll('\n', ' ');
     final name = p.toolName.isEmpty ? 'tool' : p.toolName;
-    final dur = p.toolEnd > 0 ? fmtDuration(p.toolEnd - p.toolStart) : '';
-    final exit = p.exitCode;
     final out = p.output.isNotEmpty
         ? p.output
         : (p.errorText.isNotEmpty
@@ -110,111 +106,136 @@ class _ToolTimelineState extends State<ToolTimeline> {
               (k) => k != 'command' || p.toolName != 'bash',
             ));
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // 10px dot, 2px ring in the page background so the rail reads as
-        // passing behind it. Centred vertically against the step row.
-        Positioned(
-          left: -18,
-          top: 0,
-          bottom: 0,
-          child: Center(
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: t.bg, width: 2),
+    // Reference `.chain-icon`: a rounded tile in the design's cool blue, the
+    // glyph chosen by the tool kind.
+    final icon = switch (name) {
+      'bash' => LI.terminal,
+      'edit' || 'write' || 'patch' => LI.code,
+      _ => LI.spark,
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: t.card,
+        border: Border.all(color: t.line),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x2E000000),
+            offset: Offset(0, 3),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: hasDetail
+                ? () => setState(
+                    () => _open.contains(key)
+                        ? _open.remove(key)
+                        : _open.add(key),
+                  )
+                : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: t.deep,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: LIcon(icon, size: 16, color: t.tertiary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // `<b>tool</b>` — bold name.
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: OCTypography.body.copyWith(
+                            color: t.ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        // The summary (the command for bash, the file for
+                        // edit) truncates under it in monospace.
+                        Text(
+                          exit != null && exit != 0 ? 'exit $exit' : summary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: OCTypography.mono(
+                            size: 12,
+                            color: t.mute,
+                          ).copyWith(height: 1.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: dot,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: t.card, width: 1),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        statusText,
+                        style: OCTypography.caption.copyWith(
+                          fontSize: 12,
+                          color: labelColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 4),
+                  if (hasDetail)
+                    AnimatedRotation(
+                      turns: open ? 0.5 : 0,
+                      duration: OCMotion.micro,
+                      child: LIcon(LI.chevronDown, size: 16, color: t.mute),
+                    ),
+                ],
               ),
             ),
           ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: hasDetail
-                  ? () => setState(
-                      () => _open.contains(key)
-                          ? _open.remove(key)
-                          : _open.add(key),
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                child: Row(
-                  children: [
-                    // `<b>tool</b>` — bold name, then the summary filling the
-                    // rest of the line and truncating with an ellipsis.
-                    Flexible(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: OCTypography.body.copyWith(
-                          color: t.ink,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        [
-                          summary,
-                          if (dur.isNotEmpty) dur,
-                          if (exit != null) 'exit $exit',
-                          if (p.truncated) 'truncated',
-                        ].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: OCTypography.mono(
-                          size: 12,
-                          color: t.mute,
-                        ).copyWith(height: 1.2),
-                      ),
-                    ),
-                    if (hasDetail) ...[
-                      const SizedBox(width: 4),
-                      AnimatedRotation(
-                        turns: open ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 150),
-                        child: LIcon(LI.chevronDown, size: 16, color: t.mute),
-                      ),
-                    ],
-                  ],
-                ),
+          if (open)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (p.toolInput.isNotEmpty &&
+                      p.toolInput.keys.any(
+                        (k) => k != 'command' || p.toolName != 'bash',
+                      ))
+                    _InputBlock(json: p.toolInput),
+                  if (out.isNotEmpty) _OutputBlock(text: out, isError: bad),
+                ],
               ),
             ),
-            if (open)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (p.toolInput.isNotEmpty &&
-                        p.toolInput.keys.any(
-                          (k) => k != 'command' || p.toolName != 'bash',
-                        ))
-                      _InputBlock(json: p.toolInput),
-                    if (out.isNotEmpty)
-                      _OutputBlock(
-                        text: out,
-                        isError:
-                            status == ToolStatus.error ||
-                            (exit != null && exit != 0),
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

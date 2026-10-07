@@ -126,12 +126,26 @@ class _CodeBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = OCTokens.of(context);
+    final lines = code.split('\n');
+    final n = lines.length;
+    // Monospace digit width at 12.5px is ~7.3px; the gutter is sized to the
+    // count of digits so tall blocks do not make the numbers overflow.
+    final gutterWidth = n >= 1000
+        ? 30.0
+        : n >= 100
+        ? 24.0
+        : n >= 10
+        ? 16.0
+        : 9.0;
+    final lineNum = OCTypography.mono(
+      size: 12.5,
+      color: t.faint,
+    ).copyWith(height: 1.5);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        // Reference `--code`: dark in both themes.
+        // Reference `--code`: dark in both themes, lighter than the page.
         color: t.code,
-        // `rounded-2xl`, not 12.
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -148,18 +162,38 @@ class _CodeBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(
-              OCSpace.md,
-              8,
-              OCSpace.xs,
-              8,
-            ),
-            decoration: const BoxDecoration(color: OCColors.surfaceHigh),
+            padding: const EdgeInsets.fromLTRB(OCSpace.md, 8, OCSpace.xs, 8),
+            color: t.card,
             child: Row(
               children: [
+                if (lang.isNotEmpty) ...[
+                  // Reference `.ts-mini`: a solid pill in the cool blue, the
+                  // badge reading louder than the plain name beside it.
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: t.deep,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      lang,
+                      style: OCTypography.mono(size: 10, color: t.onTertiary)
+                          .copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Text(
                     lang.isEmpty ? 'code' : lang,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: OCTypography.mono(size: 11, color: t.codeInk),
                   ),
                 ),
@@ -186,17 +220,69 @@ class _CodeBlock extends StatelessWidget {
               OCSpace.md,
               OCSpace.sm,
               OCSpace.md,
-              OCSpace.md,
+              0,
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Text(
-                code,
-                style: OCTypography.mono(
-                  size: 12.5,
-                  color: Theme.of(context).colorScheme.onSurface,
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Reference `.line-numbers`: the gutter keeps a
+                    // right-aligned number per line and a hairline border
+                    // before the code. IntrinsicHeight + stretch lets the
+                    // hairline reach the full height of the code.
+                    if (n > 1) ...[
+                      SizedBox(
+                        width: gutterWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 1; i <= n; i++)
+                              Text(
+                                '$i',
+                                textAlign: TextAlign.right,
+                                style: lineNum,
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(width: 1, color: t.line),
+                      const SizedBox(width: OCSpace.md),
+                    ],
+                    Text(
+                      code,
+                      style: OCTypography.mono(
+                        size: 12.5,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ).copyWith(height: 1.5),
+                    ),
+                  ],
                 ),
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.md,
+              6,
+              OCSpace.md,
+              OCSpace.sm,
+            ),
+            child: Row(
+              children: [
+                LIcon(LI.copy, size: 13, color: t.faint),
+                const SizedBox(width: 6),
+                Text(
+                  S.codeLines(n),
+                  style: OCTypography.mono(size: 11, color: t.faint),
+                ),
+                const Spacer(),
+                Text(
+                  lang.isEmpty ? 'code' : lang,
+                  style: OCTypography.mono(size: 11, color: t.faint),
+                ),
+              ],
             ),
           ),
         ],
