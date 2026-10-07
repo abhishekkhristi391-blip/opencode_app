@@ -21,6 +21,7 @@ import 'settings_page.dart';
 import 'terminal_page.dart';
 import 'theme.dart';
 import 'todos_page.dart';
+import 'velo_avatar.dart';
 import 'widgets.dart';
 
 // Split out of the original 1858-line home.dart. Every part below holds whole

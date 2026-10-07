@@ -1,5 +1,92 @@
 part of '../home.dart';
 
+/// Keeps the Velo mascot's mood in sync with the app's real run state.
+///
+/// Runs can go silent for a while, and an error is only worth showing while it
+/// is still the latest thing that happened, so the mood is driven off the
+/// store's signals (`busy`, `pendingPromptCount`, `sessionError`) rather than
+/// guessed from message timestamps. A run that finishes cleanly gets a brief
+/// `success` burst before dropping back to `idle`.
+class _VeloLink extends StatefulWidget {
+  const _VeloLink({required this.store, required this.child});
+
+  final OcStore store;
+  final Widget child;
+
+  @override
+  State<_VeloLink> createState() => _VeloLinkState();
+}
+
+class _VeloLinkState extends State<_VeloLink> {
+  VeloMood _last = VeloMood.idle;
+  bool _wasBusy = false;
+  Timer? _reset;
+
+  @override
+  void initState() {
+    super.initState();
+    _sync();
+    widget.store.addListener(_sync);
+  }
+
+  @override
+  void didUpdateWidget(covariant _VeloLink old) {
+    super.didUpdateWidget(old);
+    if (old.store != widget.store) {
+      old.store.removeListener(_sync);
+      widget.store.addListener(_sync);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.store.removeListener(_sync);
+    _reset?.cancel();
+    super.dispose();
+  }
+
+  void _sync() {
+    final s = widget.store;
+    final hasError = (s.sessionError ?? '').isNotEmpty;
+    final hadRun = _wasBusy;
+    _wasBusy = s.busy;
+
+    final VeloMood m;
+    if (s.pendingPromptCount > 0) {
+      m = VeloMood.waiting;
+    } else if (s.busy) {
+      m = VeloMood.running;
+    } else if (hasError) {
+      m = VeloMood.error;
+    } else {
+      m = VeloMood.idle;
+    }
+
+    // A run just ended without an error: a short happy burst, then idle.
+    if (hadRun && !s.busy && !hasError) {
+      _last = VeloMood.success;
+      veloMood.value = VeloMood.success;
+      _reset?.cancel();
+      _reset = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        if (s.busy || (s.sessionError ?? '').isNotEmpty) return;
+        _last = VeloMood.idle;
+        veloMood.value = VeloMood.idle;
+      });
+      return;
+    }
+
+    if (m != _last) {
+      _last = m;
+      _reset?.cancel();
+      veloMood.value = m;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// A destination the drawer can switch to.
 class _Tab {
   final String label;
@@ -128,6 +215,10 @@ class HomeShellState extends State<HomeShell> {
             avatar: _AvatarButton(
               onTap: () => _showAvatarMenu(context),
               pending: store.pendingPromptCount,
+            ),
+            trailing: _VeloLink(
+              store: store,
+              child: const VeloBadge(size: 40),
             ),
             actions: _headerActions(context, store),
           ),
