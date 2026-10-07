@@ -153,35 +153,33 @@ jobs:
           import re, sys
           p = sys.argv[1]
           s = open(p).read()
+          KTS_SIGN = ("signingConfigs {\n"
+                      "    create(\"release\") {\n"
+                      "        keyAlias = \"upload\"\n"
+                      "        keyPassword = \"opencode\"\n"
+                      "        storeFile = file(\"upload-release.p12\")\n"
+                      "        storePassword = \"opencode\"\n"
+                      "    }\n"
+                      "}\n")
+          GROOVY_SIGN = ("signingConfigs {\n"
+                         "    release {\n"
+                         "        keyAlias \"upload\"\n"
+                         "        keyPassword \"opencode\"\n"
+                         "        storeFile file(\"upload-release.p12\")\n"
+                         "        storePassword \"opencode\"\n"
+                         "    }\n"
+                         "}\n")
           if p.endswith('.kts'):
               s2 = re.sub(r'\n\s*// TODO: Add your own signing config for the release build\.\n', '\n', s)
               s2 = re.sub(r'\n\s*// Signing with the debug keys for now.*\n', '\n', s2)
               if 'create("release")' not in s2:
-                  sign = '''signingConfigs {
-        create("release") {
-            keyAlias = "upload"
-            keyPassword = "opencode"
-            storeFile = file("upload-release.p12")
-            storePassword = "opencode"
-        }
-    }
-'''
-                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + sign + r'\1', s2, count=1)
+                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + KTS_SIGN + r'\1', s2, count=1)
               s2 = re.sub(r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
                           'signingConfig = signingConfigs.getByName("release")', s2)
           else:
               s2 = re.sub(r'\n\s*// TODO.*\n', '\n', s)
               if 'signingConfigs' not in s2:
-                  sign = '''signingConfigs {
-        release {
-            keyAlias "upload"
-            keyPassword "opencode"
-            storeFile file("upload-release.p12")
-            storePassword "opencode"
-        }
-    }
-'''
-                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + sign + r'\1', s2, count=1)
+                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + GROOVY_SIGN + r'\1', s2, count=1)
               s2 = re.sub(r'signingConfig\s+signingConfigs\s*\.\s*(debug|release)',
                           'signingConfig signingConfigs.release', s2)
           if s2 == s:
