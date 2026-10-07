@@ -6,12 +6,17 @@ class _Collapsible extends StatefulWidget {
   final String subtitle;
   final Color color;
   final Widget child;
+
+  /// One slim line instead of a card. For blocks that appear on every step of
+  /// a turn (the model's reasoning) and must not take over the transcript.
+  final bool compact;
   const _Collapsible({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.child,
     required this.color,
+    this.compact = false,
   });
 
   @override
@@ -21,8 +26,65 @@ class _Collapsible extends StatefulWidget {
 class _CollapsibleState extends State<_Collapsible> {
   bool open = false;
 
+  /// `[icon] Thought for 3s  v`: ~32dp tall, no card, no shadow. The body only
+  /// takes space once the user opens it.
+  Widget _buildCompact(BuildContext context) {
+    final t = context.oc;
+    final label = widget.subtitle.isNotEmpty ? widget.subtitle : widget.title;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => setState(() => open = !open),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 32),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(width: 2),
+                    Icon(widget.icon, size: 15, color: widget.color),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: OCTypography.micro.copyWith(color: widget.color),
+                      ),
+                    ),
+                    Icon(
+                      open ? Icons.expand_less : Icons.expand_more,
+                      size: 16,
+                      color: t.faint,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (open)
+            Container(
+              margin: const EdgeInsets.only(top: 2, bottom: 4),
+              decoration: BoxDecoration(
+                color: t.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: widget.child,
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.compact) return _buildCompact(context);
     // The reference draws these as `rounded-xl` (12) cards, one step tighter
     // than the 16 the app used, so a stack of tool cards reads as a list of
     // chips rather than a column of large panels. One constant drives the card

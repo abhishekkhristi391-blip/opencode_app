@@ -27,8 +27,28 @@ class _ReplyMeta extends StatelessWidget {
   }
 }
 
-/// Copy, read aloud, revert, and the overflow menu — one row, under every
-/// finished reply.
+/// The assistant messages of the turn that ends at [msg]: everything since the
+/// user's last message.
+List<ChatMessage> _turnOf(OcStore store, ChatMessage msg) {
+  final all = store.messages;
+  final end = all.indexWhere((x) => x.info.id == msg.info.id);
+  if (end < 0) return [msg];
+  var start = end;
+  while (start > 0 && !all[start - 1].info.isUser) {
+    start--;
+  }
+  return all.sublist(start, end + 1);
+}
+
+/// The prose of a turn, step messages joined; tool and reasoning parts are not
+/// text and stay out.
+String _replyText(Iterable<ChatMessage> turn) => turn
+    .expand((m) => m.parts.where((p) => p.type == 'text').map((p) => p.text))
+    .where((s) => s.trim().isNotEmpty)
+    .join('\n\n');
+
+/// Copy, read aloud, revert, and the overflow menu: one row, under the last
+/// message of every finished turn.
 ///
 /// The overflow used to be a second row of its own under the newest reply only,
 /// so the same message carried two action rows while older replies carried
@@ -51,13 +71,8 @@ class _ReplyActions extends StatelessWidget {
           _ActionBtn(
             icon: LI.copy,
             label: S.copy,
-            onTap: () {
-              final text = msg.parts
-                  .where((p) => p.type == 'text')
-                  .map((p) => p.text)
-                  .join('\n');
-              copyToClipboard(context, text);
-            },
+            onTap: () =>
+                copyToClipboard(context, _replyText(_turnOf(store, msg))),
           ),
           // Read aloud is the one reply action that has to repaint while it
           // runs, so it subscribes to the service on its own. The tile's cached
@@ -67,7 +82,8 @@ class _ReplyActions extends StatelessWidget {
           _ActionBtn(
             icon: LI.undo,
             label: S.messageUndo,
-            onTap: () => store.revert(msg.info.id),
+            // Undo the whole turn, not just its last step.
+            onTap: () => store.revert(_turnOf(store, msg).first.info.id),
           ),
           const SizedBox(width: OCSpace.xxs),
           _ActionDot(
@@ -109,10 +125,7 @@ class _ReadAloudAction extends StatelessWidget {
             voice.stopSpeaking();
             return;
           }
-          final text = msg.parts
-              .where((p) => p.type == 'text')
-              .map((p) => p.text)
-              .join('\n');
+          final text = _replyText(_turnOf(AppScope.read(context), msg));
           if (text.trim().isEmpty) {
             showSnack(context, S.voiceNothingToRead);
             return;

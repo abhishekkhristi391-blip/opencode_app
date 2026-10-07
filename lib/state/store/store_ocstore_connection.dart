@@ -1,6 +1,11 @@
 // ignore_for_file: invalid_use_of_protected_member
 part of '../store.dart';
 
+/// How long after its last sign of life (an event, a good probe) the server is
+/// still presumed up even if a health check fails. A server on the phone that
+/// is busy running a tool answers /health slowly; that is not an outage.
+const _aliveWindow = Duration(seconds: 40);
+
 /// Boot, server connection, reachability probe, event stream and catalog refresh.
 ///
 /// Moved out of [OcStore] verbatim. It is an extension, so every call site and every
@@ -64,15 +69,29 @@ extension OcStoreConnection on OcStore {
     _connecting = true;
     try {
       fatalError = null;
-      online = false;
+      // A different server (or different credentials) invalidates the stream and
+      // every sign of life that came from it. The same server does not: Retry on
+      // a stream that is still delivering must not flash "Offline" over a header
+      // that was already accurate.
+      final changed =
+          api.baseUrl != baseUrl ||
+          api.username != username ||
+          api.password != password;
+      if (changed) {
+        unawaited(_stream?.shutdown());
+        _stream = null;
+        _lastAlive = DateTime.fromMillisecondsSinceEpoch(0);
+      }
+      if (changed || !(_stream?.live ?? false)) online = false;
       api.baseUrl = baseUrl;
       api.username = username;
       api.password = password;
       notifyListeners();
 
       try {
-        final h = await api.health().timeout(const Duration(seconds: 8));
+        final h = await api.health().timeout(const Duration(seconds: 12));
         serverVersion = h.version;
+        _lastAlive = DateTime.now();
         online = true;
         fatalError = null;
         notifyListeners();
@@ -86,23 +105,57 @@ extension OcStoreConnection on OcStore {
           resyncPrompts(),
         ]);
       } on ApiException catch (e) {
-        fatalError = e.message;
         // Health check failed, so refreshSessions() above never ran. Populate
         // the session list from disk anyway, otherwise the cached chat history
         // has no entry point while the server is unreachable.
-        await _restoreSessionsFromCache();
+        if (_healthFailed(e.message)) await _restoreSessionsFromCache();
       } catch (e) {
         // Anything the client did not already translate (a raw socket error
         // from a half-open handshake, a format error from an HTTP 200 that was
         // not JSON) becomes one actionable line instead of a stack trace.
         if (kDebugMode) debugPrint('connect failed: $e');
-        fatalError = _offlineMessage();
-        await _restoreSessionsFromCache();
+        if (_healthFailed(_offlineMessage())) await _restoreSessionsFromCache();
       }
       notifyListeners();
     } finally {
       _connecting = false;
     }
+  }
+
+  /// Whether the server has shown a sign of life inside [_aliveWindow].
+  bool get _recentlyAlive =>
+      DateTime.now().difference(_lastAlive) < _aliveWindow;
+
+  /// Called for every event off the stream: the best proof of life there is.
+  ///
+  /// It also repairs the header. A probe that timed out under load used to set
+  /// `online = false` while the stream stayed connected, and since the stream
+  /// only reports edges nothing ever set it back: "Offline" over a chat that
+  /// was visibly streaming. Now the next event puts it right.
+  void _markAlive() {
+    _lastAlive = DateTime.now();
+    if (online && !reconnecting && fatalError == null) return;
+    final wasOffline = !online;
+    online = true;
+    reconnecting = false;
+    fatalError = null;
+    notifyListeners();
+    if (wasOffline) {
+      unawaited(refreshSessions());
+      unawaited(resyncPrompts());
+    }
+  }
+
+  /// Applies a failed health check. A slow answer is not an outage, so a server
+  /// that has spoken recently stays online. Returns true when the failure stands.
+  bool _healthFailed(String message) {
+    if (_recentlyAlive) {
+      online = true;
+      fatalError = null;
+      return false;
+    }
+    fatalError = message;
+    return true;
   }
 
   /// The single user-facing offline string. Kept identical everywhere so the
@@ -122,14 +175,30 @@ extension OcStoreConnection on OcStore {
     var up = false;
     String? err;
     try {
-      final h = await api.health().timeout(const Duration(seconds: 6));
-      serverVersion = h.version;
-      up = true;
-    } on ApiException catch (e) {
-      err = e.message;
-    } catch (e) {
-      if (kDebugMode) debugPrint('reachability probe failed: $e');
-      err = _offlineMessage();
+      // Three spaced tries, not one: a server on the phone that is busy with a
+      // tool or a model answers /health slowly, and a single missed probe used
+      // to flip the header to Offline while the agent was visibly working.
+      for (var attempt = 0; attempt < 3 && !up && !_disposed; attempt++) {
+        if (attempt > 0) {
+          await Future<void>.delayed(const Duration(seconds: 2));
+        }
+        // An open stream, or any event inside the alive window, is proof.
+        if (_recentlyAlive || (_stream?.connected ?? false)) {
+          up = true;
+          break;
+        }
+        try {
+          final h = await api.health().timeout(const Duration(seconds: 10));
+          serverVersion = h.version;
+          _lastAlive = DateTime.now();
+          up = true;
+        } on ApiException catch (e) {
+          err = e.message;
+        } catch (e) {
+          if (kDebugMode) debugPrint('reachability probe failed: $e');
+          err = _offlineMessage();
+        }
+      }
     } finally {
       _reachProbeBusy = false;
     }
@@ -201,9 +270,11 @@ extension OcStoreConnection on OcStore {
       // to say "reconnecting" rather than flip straight to "offline" and then
       // back, which reads as two unrelated states.
       reconnecting = true;
+      notifyListeners();
       unawaited(_verifyReachability());
       return;
     }
+    _lastAlive = DateTime.now();
     online = true;
     reconnecting = false;
     fatalError = null;

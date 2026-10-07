@@ -13,6 +13,7 @@ extension OcStoreEvents on OcStore {
 
   void handleEvent(OcEvent e) {
     if (_disposed) return;
+    _markAlive();
     // FIX: one malformed event must never kill the handler / stream.
     try {
       _handleEvent(e);

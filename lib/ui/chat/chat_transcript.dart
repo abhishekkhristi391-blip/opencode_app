@@ -79,6 +79,25 @@ class _ChatMessages extends StatelessWidget {
       }
     }
 
+    // One agent turn is many assistant messages (one per step: think, run a
+    // command, think again...). Only the last one that shows anything carries
+    // the action row and the token line, otherwise every step grows a 48dp row
+    // and the transcript fills with buttons. A streaming message counts as
+    // shown so the row does not hop back one message while a reply starts.
+    final turnEnd = List<bool>.filled(messages.length, false);
+    var turnClosed = false;
+    for (var i = messages.length - 1; i >= 0; i--) {
+      final m = messages[i];
+      if (m.info.isUser) {
+        turnClosed = false;
+        continue;
+      }
+      if (!turnClosed && _showsSomething(m)) {
+        turnEnd[i] = true;
+        turnClosed = true;
+      }
+    }
+
     final hasOlder = store.hasMoreMessages;
     final leading = hasOlder ? 1 : 0;
 
@@ -132,6 +151,7 @@ class _ChatMessages extends StatelessWidget {
                   key: ValueKey(m.info.id),
                   msg: m,
                   isLastReply: index == lastAssistantIndex,
+                  turnEnd: turnEnd[index],
                   showTokens: store.showTokensInChat,
                 );
               },
@@ -148,6 +168,13 @@ class _ChatMessages extends StatelessWidget {
     );
   }
 }
+
+/// Whether an assistant message renders anything at all: a streaming one (its
+/// typing dots), an error, or any part other than the step bookkeeping.
+bool _showsSomething(ChatMessage m) =>
+    m.streaming ||
+    m.displayError != null ||
+    m.parts.any((p) => p.type != 'step-start' && p.type != 'step-finish');
 
 /// Floating pill that appears once the reader scrolls away from the tail.
 class _JumpToLatest extends StatelessWidget {

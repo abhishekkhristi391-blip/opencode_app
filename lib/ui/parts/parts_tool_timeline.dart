@@ -38,15 +38,22 @@ class _ToolTimelineState extends State<ToolTimeline> {
       }
       rest.add(p);
     }
-    final blocks = <Widget>[
-      if (reasoning.isNotEmpty) ThinkingGroup(parts: reasoning),
-      for (final p in rest) PartTile(p),
-    ];
-    if (tools.isEmpty) return Column(children: blocks);
+    // Reasoning comes first, as it happened: think, then act. It used to sit
+    // under the tool rows, which read as the model "going back to thinking"
+    // after every command.
+    final thinking = reasoning.isEmpty ? null : ThinkingGroup(parts: reasoning);
+    final others = <Widget>[for (final p in rest) PartTile(p)];
+    if (tools.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [if (thinking != null) thinking, ...others],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (thinking != null) thinking,
         Padding(
           padding: const EdgeInsets.only(left: 18),
           child: Stack(
@@ -67,7 +74,7 @@ class _ToolTimelineState extends State<ToolTimeline> {
             ],
           ),
         ),
-        ...blocks,
+        ...others,
       ],
     );
   }

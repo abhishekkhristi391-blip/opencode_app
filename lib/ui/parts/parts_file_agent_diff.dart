@@ -209,6 +209,7 @@ class ThinkingGroup extends StatelessWidget {
     if (text.trim().isEmpty) return const SizedBox.shrink();
 
     return _Collapsible(
+      compact: true,
       icon: Icons.psychology_alt_outlined,
       title: S.partsThinking,
       // Duration, not the first sentence: the first line of a reasoning block

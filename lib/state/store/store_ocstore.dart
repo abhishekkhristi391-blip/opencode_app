@@ -39,6 +39,10 @@ class OcStore extends ChangeNotifier {
   /// not been disproved yet. Presentation-only: the header shows a pulsing
   /// "Reconnecting" between Connected and Offline.
   bool reconnecting = false;
+
+  /// Last time the server proved it was alive: any event off the stream, or a
+  /// good health probe. A single slow probe must not outweigh this.
+  DateTime _lastAlive = DateTime.fromMillisecondsSinceEpoch(0);
   String serverVersion = '';
   ServerPaths? paths;
   VcsInfo? vcs;

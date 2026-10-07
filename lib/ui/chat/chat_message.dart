@@ -109,11 +109,16 @@ class _SuggestionCardState extends State<SuggestionCard> {
 class _MessageTile extends StatefulWidget {
   final ChatMessage msg;
   final bool isLastReply;
+
+  /// The last assistant message of its turn: the only one that gets the action
+  /// row and the token line. Earlier steps stack tightly above it.
+  final bool turnEnd;
   final bool showTokens;
   const _MessageTile({
     super.key,
     required this.msg,
     required this.isLastReply,
+    required this.turnEnd,
     required this.showTokens,
   });
 
@@ -147,6 +152,7 @@ class _MessageTileState extends State<_MessageTile> {
       Object.hashAll(m.parts.map(identityHashCode)),
       m.errorText,
       widget.isLastReply,
+      widget.turnEnd,
       widget.showTokens,
       _dismissedError,
     );
@@ -199,7 +205,9 @@ class _MessageTileState extends State<_MessageTile> {
         m.errorText != null;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
+      // Steps inside one turn sit close together; only the end of a turn (and a
+      // user bubble) gets the full gap before whatever follows.
+      padding: EdgeInsets.only(bottom: (!user && !widget.turnEnd) ? 4 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -328,12 +336,19 @@ class _MessageTileState extends State<_MessageTile> {
             m.displayError!,
             onDismiss: () => setState(() => _dismissedError = m.displayError),
           ),
-        if (m.displayError == null && !m.streaming && m.info.tokens.total > 0)
+        if (widget.turnEnd &&
+            m.displayError == null &&
+            !m.streaming &&
+            m.info.tokens.total > 0)
           _ReplyMeta(msg: m, visible: widget.showTokens),
-        // Every finished reply gets the same row. The row used to belong to the
-        // newest reply only, which meant scrolling up found a reply with no way
-        // to copy or undo it without a long press nobody discovers.
-        if (!m.streaming && m.displayError == null && hasContent)
+        // One row per finished turn, on its last message. A turn is several
+        // assistant messages (one per step), and a row on each of them is what
+        // filled the transcript with copy / speak / undo buttons between every
+        // command. Copy, read-aloud and undo act on the whole turn.
+        if (widget.turnEnd &&
+            !m.streaming &&
+            m.displayError == null &&
+            hasContent)
           _ReplyActions(msg: m),
       ],
     );
