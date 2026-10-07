@@ -137,6 +137,60 @@ jobs:
             exit 1
           fi
 
+      # Stable release signing: commit android/app/upload-release.p12 +
+      # key.properties and point the release buildType at them. Without this
+      # every run's `flutter create` generated a FRESH debug keystore, so each
+      # APK had a new signature and installing over the previous version failed
+      # with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+      - name: Stable release signing
+        run: |
+          K=android/app/build.gradle.kts
+          G=android/app/build.gradle
+          F=$K
+          [ ! -f "$F" ] && F=$G
+          [ -f android/app/upload-release.p12 ] || { echo "::error::keystore missing"; exit 1; }
+          python3 - "$F" <<'PY'
+          import re, sys
+          p = sys.argv[1]
+          s = open(p).read()
+          if p.endswith('.kts'):
+              s2 = re.sub(r'\n\s*// TODO: Add your own signing config for the release build\.\n', '\n', s)
+              s2 = re.sub(r'\n\s*// Signing with the debug keys for now.*\n', '\n', s2)
+              if 'create("release")' not in s2:
+                  sign = '''signingConfigs {
+        create("release") {
+            keyAlias = "upload"
+            keyPassword = "opencode"
+            storeFile = file("upload-release.p12")
+            storePassword = "opencode"
+        }
+    }
+'''
+                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + sign + r'\1', s2, count=1)
+              s2 = re.sub(r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
+                          'signingConfig = signingConfigs.getByName("release")', s2)
+          else:
+              s2 = re.sub(r'\n\s*// TODO.*\n', '\n', s)
+              if 'signingConfigs' not in s2:
+                  sign = '''signingConfigs {
+        release {
+            keyAlias "upload"
+            keyPassword "opencode"
+            storeFile file("upload-release.p12")
+            storePassword "opencode"
+        }
+    }
+'''
+                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + sign + r'\1', s2, count=1)
+              s2 = re.sub(r'signingConfig\s+signingConfigs\s*\.\s*(debug|release)',
+                          'signingConfig signingConfigs.release', s2)
+          if s2 == s:
+              print("warning: no signing change applied")
+          open(p, 'w').write(s2)
+          PY
+          echo "--- signing verification ---"
+          grep -nE 'signingConfig|upload-release|keyAlias|storeFile' "$F" || true
+
       # Speed: android/ only exists after `flutter create`, so the Gradle
       # cache and settings are set up here instead of in setup-java.
       - name: Gradle speed settings
