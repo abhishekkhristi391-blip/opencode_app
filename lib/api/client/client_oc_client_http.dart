@@ -13,6 +13,8 @@ extension OcClientHttp on OcClient {
   Map<String, String> _headers({bool json = true}) => {
     if (json) 'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'User-Agent': 'opencode/1.18.27 ai-sdk/provider-utils/4.0.23 runtime/bun/1.4.0',
+    'x-opencode-client': 'cli',
     if (password.isNotEmpty)
       'Authorization':
           'Basic ${base64Encode(utf8.encode('$username:$password'))}',
