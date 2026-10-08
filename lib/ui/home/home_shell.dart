@@ -1,24 +1,24 @@
 part of '../home.dart';
 
-/// Keeps the Velo mascot's mood in sync with the app's real run state.
+/// Keeps the Buddy mascot's mood in sync with the app's real run state.
 ///
 /// Runs can go silent for a while, and an error is only worth showing while it
 /// is still the latest thing that happened, so the mood is driven off the
 /// store's signals (`busy`, `pendingPromptCount`, `sessionError`) rather than
 /// guessed from message timestamps. A run that finishes cleanly gets a brief
 /// `success` burst before dropping back to `idle`.
-class _VeloLink extends StatefulWidget {
-  const _VeloLink({required this.store, required this.child});
+class _BuddyLink extends StatefulWidget {
+  const _BuddyLink({required this.store, required this.child});
 
   final OcStore store;
   final Widget child;
 
   @override
-  State<_VeloLink> createState() => _VeloLinkState();
+  State<_BuddyLink> createState() => _BuddyLinkState();
 }
 
-class _VeloLinkState extends State<_VeloLink> {
-  VeloMood _last = VeloMood.idle;
+class _BuddyLinkState extends State<_BuddyLink> {
+  BuddyMood _last = BuddyMood.idle;
   bool _wasBusy = false;
   Timer? _reset;
 
@@ -30,7 +30,7 @@ class _VeloLinkState extends State<_VeloLink> {
   }
 
   @override
-  void didUpdateWidget(covariant _VeloLink old) {
+  void didUpdateWidget(covariant _BuddyLink old) {
     super.didUpdateWidget(old);
     if (old.store != widget.store) {
       old.store.removeListener(_sync);
@@ -51,27 +51,27 @@ class _VeloLinkState extends State<_VeloLink> {
     final hadRun = _wasBusy;
     _wasBusy = s.busy;
 
-    final VeloMood m;
+    final BuddyMood m;
     if (s.pendingPromptCount > 0) {
-      m = VeloMood.waiting;
+      m = BuddyMood.waiting;
     } else if (s.busy) {
-      m = VeloMood.running;
+      m = BuddyMood.coding;
     } else if (hasError) {
-      m = VeloMood.error;
+      m = BuddyMood.error;
     } else {
-      m = VeloMood.idle;
+      m = BuddyMood.idle;
     }
 
     // A run just ended without an error: a short happy burst, then idle.
     if (hadRun && !s.busy && !hasError) {
-      _last = VeloMood.success;
-      veloMood.value = VeloMood.success;
+      _last = BuddyMood.success;
+      buddyMood.value = BuddyMood.success;
       _reset?.cancel();
       _reset = Timer(const Duration(seconds: 3), () {
         if (!mounted) return;
         if (s.busy || (s.sessionError ?? '').isNotEmpty) return;
-        _last = VeloMood.idle;
-        veloMood.value = VeloMood.idle;
+        _last = BuddyMood.idle;
+        buddyMood.value = BuddyMood.idle;
       });
       return;
     }
@@ -79,7 +79,7 @@ class _VeloLinkState extends State<_VeloLink> {
     if (m != _last) {
       _last = m;
       _reset?.cancel();
-      veloMood.value = m;
+      buddyMood.value = m;
     }
   }
 
@@ -141,10 +141,10 @@ class HomeShellState extends State<HomeShell> {
   }
 
   void _pushAndClose(
-  Widget Function() page,
-  String title, [
-  List<Widget> actions = const [],
-]) {
+    Widget Function() page,
+    String title, [
+    List<Widget> actions = const [],
+  ]) {
     Navigator.of(context).pop();
     pushScreen(context, title: title, child: page(), actions: actions);
   }
@@ -216,9 +216,9 @@ class HomeShellState extends State<HomeShell> {
               onTap: () => _showAvatarMenu(context),
               pending: store.pendingPromptCount,
             ),
-            trailing: _VeloLink(
+            trailing: _BuddyLink(
               store: store,
-              child: const VeloBadge(size: 40),
+              child: const BuddyBadge(size: 40),
             ),
             actions: _headerActions(context, store),
           ),
@@ -421,7 +421,8 @@ class HomeShellState extends State<HomeShell> {
         pending: store.pendingPromptCount,
         onClose: () => Navigator.pop(ctx),
         onOpen: (page, title) => _pushAndClose(page, title),
-        onServer: () => _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
+        onServer: () =>
+            _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
         // Dismissing the menu only closes the menu. The prompt is still
         // pending, so it is still on the server and the badge is still up —
         // that is the whole point of rebuilding from GET /permission.

@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
 import 'about_page.dart';
+import 'buddy_avatar.dart';
 import 'chat.dart';
 import 'commands_page.dart';
 import 'diff_page.dart';
@@ -21,7 +22,6 @@ import 'settings_page.dart';
 import 'terminal_page.dart';
 import 'theme.dart';
 import 'todos_page.dart';
-import 'velo_avatar.dart';
 import 'widgets.dart';
 
 // Split out of the original 1858-line home.dart. Every part below holds whole
