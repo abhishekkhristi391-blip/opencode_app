@@ -79,6 +79,97 @@ class OcStore extends ChangeNotifier {
   /// Defaults to off; the chat redesign hides tokens behind this flag.
   bool showTokensInChat = false;
 
+  // ---- mascot ----
+  Future<void> setMascot(BuddyChar c) async {
+    BuddyController.instance.character = c;
+    await _prefs?.setString('mascot', c.name);
+  }
+
+  String _buddySignal = '';
+  final Set<String> _buddyAsking = {};
+
+  bool get _buddyFree => BuddyController.instance.pending == null;
+
+  void _buddyCall(String signal, void Function(BuddyController b) fn) {
+    if (_disposed || !_buddyFree || _buddySignal == signal) return;
+    _buddySignal = signal;
+    fn(BuddyController.instance);
+  }
+
+  void _buddyDone() {
+    if (_disposed || !_buddyFree || _buddySignal == 'done') return;
+    _buddySignal = 'done';
+    BuddyController.instance.done();
+  }
+
+  void _buddyError(String msg) {
+    if (_disposed || !_buddyFree || _buddySignal == 'error') return;
+    _buddySignal = 'error';
+    BuddyController.instance.error(msg);
+  }
+
+  void _buddyConnecting() {
+    if (_disposed || busy || !_buddyFree) return;
+    BuddyController.instance.connecting();
+  }
+
+  void _buddyConnected() {
+    if (_disposed || busy || !_buddyFree) return;
+    _buddySignal = '';
+    BuddyController.instance.connected();
+  }
+
+  void _buddyDisconnected() {
+    if (_disposed || !_buddyFree) return;
+    BuddyController.instance.disconnected();
+  }
+
+  void _buddyPart(Part part) {
+    switch (part.type) {
+      case 'reasoning':
+        _buddyCall('thinking', (b) => b.thinking());
+        break;
+      case 'text':
+        _buddyCall('writing', (b) => b.writing());
+        break;
+      case 'tool':
+        if (part.status == ToolStatus.pending ||
+            part.status == ToolStatus.running) {
+          final detail = part.summaryLine;
+          _buddyCall('tool:${part.toolName}:$detail',
+              (b) => b.toolStart(part.toolName, detail: detail));
+        } else {
+          _buddyToolEnded();
+        }
+        break;
+    }
+  }
+
+  void _buddyToolEnded() {
+    if (_disposed || !_buddyFree || _anyToolRunning()) return;
+    _buddyCall('toolEnd', (b) => b.toolEnd());
+  }
+
+  bool _anyToolRunning() {
+    for (final m in messages) {
+      for (final p in m.parts) {
+        if (p.type == 'tool' &&
+            (p.status == ToolStatus.pending ||
+                p.status == ToolStatus.running)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+    _syncBuddyPermission();
+  }
+
   // ---- prompts ----
   List<PermissionReq> permissions = [];
   List<QuestionReq> questions = [];

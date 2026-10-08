@@ -145,6 +145,7 @@ extension OcStoreRun on OcStore {
       busy = false;
       messagesLoading = false;
       sessionError = e.message;
+      _buddyError(e.message);
       // Remove the optimistic user message on error
       messages.removeWhere(
         (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
@@ -155,6 +156,7 @@ extension OcStoreRun on OcStore {
       busy = false;
       messagesLoading = false;
       sessionError = e.toString();
+      _buddyError(e.toString());
       // Remove the optimistic user message on error
       messages.removeWhere(
         (m) => m.info.raw['optimistic'] == true && m.info.role == 'user',
@@ -177,6 +179,7 @@ extension OcStoreRun on OcStore {
     busy = true;
     busyStatus = '';
     _startBusyTimer();
+    _buddyCall('user', (b) => b.userSent());
     notifyListeners();
     try {
       await api.post(
@@ -195,6 +198,7 @@ extension OcStoreRun on OcStore {
       _clearBusyTimer();
       busy = false;
       sessionError = e.message;
+      _buddyError(e.message);
       _settleStuckStreaming();
       notifyListeners();
     }

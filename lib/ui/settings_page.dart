@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../state/store.dart';
 import '../voice/voice_scope.dart';
 import '../voice/voice_service.dart';
+import '../widgets/buddy.dart';
 import 'app_scope.dart';
 import 'chat.dart' show voiceFailureText;
 import 'commands_page.dart';

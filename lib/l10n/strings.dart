@@ -1028,6 +1028,12 @@ class S {
   static const setServerApi = 'Server API';
   static const setShowTokens = 'Show tokens in chat';
   static const setShowTokensSub = 'Under each reply';
+  static const setMascot = 'Mascot';
+  static const setMascotDev = 'Dev';
+  static const setMascotSticko = 'Sticko';
+  static const setMascotSara = 'Sara';
+  static const setMascotTest = 'Test mascot';
+  static const setMascotTestSub = 'Play the buddy demo animation';
   static const setConnectedWith = 'connected';
   static const setDisconnected = 'disconnected';
   static const setNotARepo = 'not a repo';

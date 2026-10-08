@@ -24,6 +24,9 @@ class PromptOverlay extends StatelessWidget {
     if (next == null) return const SizedBox.shrink();
     final p = next.permission;
     final q = next.question;
+    if (p != null && BuddyController.instance.pending?.id == p.id) {
+      return const SizedBox.shrink();
+    }
     return IgnorePointer(
       ignoring: false,
       child: Container(

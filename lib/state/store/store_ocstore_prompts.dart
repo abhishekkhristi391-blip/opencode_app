@@ -150,4 +150,46 @@ extension OcStorePrompts on OcStore {
       unawaited(resyncPrompts());
     }
   }
+
+  void _syncBuddyPermission() {
+    if (_disposed) return;
+    final ctrl = BuddyController.instance;
+    final shown = ctrl.pending;
+    if (shown != null) {
+      if (_buddyAsking.contains(shown.id) &&
+          !permissions.any((p) => p.id == shown.id)) {
+        ctrl.answerPermission(PermissionDecision.deny);
+      }
+      return;
+    }
+    if (_buddyAsking.isNotEmpty || permissions.isEmpty) return;
+    final next = oldestPendingPrompt;
+    if (next == null || !next.isPermission) return;
+    final p = next.permission!;
+    _buddyAsking.add(p.id);
+    unawaited(_buddyPermissionFlow(p));
+  }
+
+  Future<void> _buddyPermissionFlow(PermissionReq p) async {
+    try {
+      final d = await BuddyController.instance.askPermission(
+        id: p.id,
+        title: p.title,
+        detail: p.command.isNotEmpty ? p.command : p.subject,
+      );
+      if (_disposed) return;
+      if (!permissions.any((x) => x.id == p.id)) return;
+      final resp = switch (d) {
+        PermissionDecision.allow => 'once',
+        PermissionDecision.always => 'always',
+        PermissionDecision.deny => 'reject',
+      };
+      await answerPermission(p, resp);
+    } catch (e) {
+      if (kDebugMode) debugPrint('buddy permission flow failed: $e');
+    } finally {
+      _buddyAsking.remove(p.id);
+      if (!_disposed) _syncBuddyPermission();
+    }
+  }
 }

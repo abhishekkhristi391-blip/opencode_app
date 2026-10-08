@@ -120,6 +120,7 @@ extension OcStoreMessages on OcStore {
       msg.parts.add(part);
     }
     if (current != null) _scheduleFlush(current!.id, msg);
+    if (msg.info.role == 'assistant') _buddyPart(part);
     _scheduleMessageNotify();
   }
 
@@ -133,6 +134,11 @@ extension OcStoreMessages on OcStore {
         final raw = Map<String, dynamic>.from(m.parts[i].raw);
         raw[field] = '${asStr(raw[field])}$delta';
         m.parts[i] = Part.fromJson(raw);
+        if (m.parts[i].type == 'reasoning') {
+          _buddyCall('thinking', (b) => b.thinking());
+        } else if (m.parts[i].type == 'text') {
+          _buddyCall('writing', (b) => b.writing());
+        }
         if (current != null) _scheduleFlush(current!.id, m);
         _scheduleMessageNotify(); // was notifyListeners() on every single token
         return;

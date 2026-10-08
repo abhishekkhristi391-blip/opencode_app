@@ -170,6 +170,7 @@ extension OcStoreHistory on OcStore {
     if (trimmed.isNotEmpty) parts.insert(0, {'type': 'text', 'text': text});
     if (parts.isEmpty) return;
     clearAttachments();
+    _buddyCall('user', (b) => b.userSent());
 
     // Only one prompt is in flight, so the echo hand-over is 1:1. Clearing both
     // here keeps a send the server never echoed from stealing the next echo.

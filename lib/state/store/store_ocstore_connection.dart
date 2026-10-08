@@ -32,6 +32,13 @@ extension OcStoreConnection on OcStore {
     modelId = prefs.getString('model') ?? '';
     toolsEnabled.addAll(prefs.getStringList('tools') ?? const []);
     showTokensInChat = prefs.getBool('showTokens') ?? false;
+    final mascot = prefs.getString('mascot');
+    for (final c in BuddyChar.values) {
+      if (c.name == mascot) {
+        BuddyController.instance.character = c;
+        break;
+      }
+    }
     booted = true;
     notifyListeners();
     await connect();
@@ -67,6 +74,7 @@ extension OcStoreConnection on OcStore {
     // streams and two session refreshes would interleave into a duplicate.
     if (_connecting || _disposed) return;
     _connecting = true;
+    _buddyConnecting();
     try {
       fatalError = null;
       // A different server (or different credentials) invalidates the stream and
@@ -95,6 +103,7 @@ extension OcStoreConnection on OcStore {
         online = true;
         fatalError = null;
         notifyListeners();
+        _buddyConnected();
 
         _startStream();
         await Future.wait([
@@ -108,12 +117,14 @@ extension OcStoreConnection on OcStore {
         // Health check failed, so refreshSessions() above never ran. Populate
         // the session list from disk anyway, otherwise the cached chat history
         // has no entry point while the server is unreachable.
+        _buddyDisconnected();
         if (_healthFailed(e.message)) await _restoreSessionsFromCache();
       } catch (e) {
         // Anything the client did not already translate (a raw socket error
         // from a half-open handshake, a format error from an HTTP 200 that was
         // not JSON) becomes one actionable line instead of a stack trace.
         if (kDebugMode) debugPrint('connect failed: $e');
+        _buddyDisconnected();
         if (_healthFailed(_offlineMessage())) await _restoreSessionsFromCache();
       }
       notifyListeners();
@@ -270,6 +281,7 @@ extension OcStoreConnection on OcStore {
       // to say "reconnecting" rather than flip straight to "offline" and then
       // back, which reads as two unrelated states.
       reconnecting = true;
+      _buddyDisconnected();
       notifyListeners();
       unawaited(_verifyReachability());
       return;
@@ -279,6 +291,7 @@ extension OcStoreConnection on OcStore {
     reconnecting = false;
     fatalError = null;
     notifyListeners();
+    _buddyConnected();
 
     // A permission or question asked while we were away has no event left to
     // deliver it, so the prompt card would simply never appear.

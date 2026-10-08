@@ -9,6 +9,7 @@ import 'ui/prompts.dart';
 import 'ui/theme.dart';
 import 'voice/voice_scope.dart';
 import 'voice/voice_service.dart';
+import 'widgets/buddy.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,11 +97,13 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
           // editor), a dialog, a bottom sheet and the drawer are all *under* the
           // approval card. Inside a screen's own Stack any of those hid it, and a
           // hidden permission is an agent that waits forever.
-          builder: (context, child) => Stack(
-            children: [
-              if (child != null) child,
-              const Positioned.fill(child: PromptOverlay()),
-            ],
+          builder: (context, child) => BuddyOverlay(
+            child: Stack(
+              children: [
+                if (child != null) child,
+                const Positioned.fill(child: PromptOverlay()),
+              ],
+            ),
           ),
           home: const HomeShell(),
         ),

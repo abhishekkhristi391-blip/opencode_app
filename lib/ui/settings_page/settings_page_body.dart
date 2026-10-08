@@ -205,6 +205,57 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           ),
 
+          const SectionTitle(S.setMascot),
+          _Group(
+            children: [
+              ValueListenableBuilder<BuddyChar>(
+                valueListenable: buddyChar,
+                builder: (context, ch, _) => Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    OCSpace.sm,
+                    OCSpace.sm,
+                    OCSpace.sm,
+                    OCSpace.xs,
+                  ),
+                  child: Row(
+                    children: [
+                      for (final c in BuddyChar.values)
+                        Padding(
+                          padding: const EdgeInsets.only(right: OCSpace.sm),
+                          child: ChoiceChip(
+                            label: Text(
+                              c == BuddyChar.dev
+                                  ? S.setMascotDev
+                                  : c == BuddyChar.sticko
+                                      ? S.setMascotSticko
+                                      : S.setMascotSara,
+                              style: OCTypography.caption.copyWith(
+                                color: OCColors.textPrimary,
+                              ),
+                            ),
+                            selected: ch == c,
+                            onSelected: (_) => store.setMascot(c),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              _GroupDivider(),
+              _ActionTile(
+                icon: Icons.smart_toy_outlined,
+                title: S.setMascotTest,
+                subtitle: S.setMascotTestSub,
+                onTap: () {
+                  if (BuddyController.instance.pending == null) {
+                    BuddyController.instance.runDemo();
+                  }
+                },
+              ),
+              _GroupDivider(),
+            ],
+          ),
+
           // ---------------- voice ----------------
           const SectionTitle(S.setVoice),
           const _VoiceSettings(),

@@ -77,6 +77,7 @@ extension OcStoreEvents on OcStore {
           busyStatus = busy ? asStr(st['message'], 'busy') : '';
           if (wasBusy && !busy) {
             _clearBusyTimer();
+            _buddyDone();
             // The server declared the session idle, so a prompt typed during
             // the run is safe to release.
             unawaited(_flushQueue());
@@ -95,6 +96,7 @@ extension OcStoreEvents on OcStore {
           busy = false;
           busyStatus = '';
           messagesLoading = false;
+          _buddyDone();
           notifyListeners();
           // The run is over: commit the tail now instead of waiting out the
           // flush debounce, so killing the app here still keeps the answer.
@@ -110,11 +112,13 @@ extension OcStoreEvents on OcStore {
       case 'session.error':
         if (_isCurrent(asStr(p['sessionID']))) {
           _clearBusyTimer();
-          sessionError = _errorText(asMap(p['error']));
+          final msg = _errorText(asMap(p['error']));
+          sessionError = msg;
           busy = false;
           messagesLoading = false;
           // A failed run's message never gets a completion stamp either.
           _settleStuckStreaming();
+          _buddyError(msg);
           notifyListeners();
           unawaited(_flushQueue());
         }

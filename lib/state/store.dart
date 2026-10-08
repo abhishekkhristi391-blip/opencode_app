@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/client.dart';
 import '../api/events.dart';
+import '../widgets/buddy.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../db/chat_db.dart';
