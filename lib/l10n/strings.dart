@@ -410,6 +410,8 @@ class S {
   // ---- third de-Hinglish sweep: toasts / empty states ----
   static const String codeCopied = 'Code copied';
   static String codeLines(int n) => '$n lines';
+  static String codeShowAll(int n) => 'Show all $n lines';
+  static const String codeCollapse = 'Collapse';
   static const String contextCompacted = 'Context compacted';
   static const String questionMultiHint = 'More than one may be selected';
   static const String linkCopied = 'Link copied';
