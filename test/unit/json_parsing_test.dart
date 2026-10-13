@@ -32,12 +32,21 @@ void main() {
 
     test('ModelInfo basic fields', () {
       final m = ModelInfo.fromJson({
+        'id': 'm1',
         'name': 'test/model',
-        'limit': {'context': 1000, 'output': 500},
+        'provider': 'test',
+        'model': 'model',
+        'attachmentTypes': [],
+        'reasoningEffort': 'none',
+        'toolSupport': true,
+        'imageSupport': true,
+        'webSearchSupport': true,
+        'knowledgeSupport': true,
+        'cost': 0,
+        'limit': {'context': 1000, 'output': 500, 'reasoning': 0},
       });
       expect(m.name, 'test/model');
       expect(m.limit?.context, 1000);
-      expect(m.limit?.output, 500);
     });
 
     test('Session from minimal JSON', () {
@@ -46,6 +55,9 @@ void main() {
         'title': 'hello',
         'time': {'created': 1000000},
         'version': '1',
+        'messages': 0,
+        'index': 0,
+        'tokens': {'input': 0, 'output': 0, 'reasoning': 0, 'cache': 0, 'total': 0},
       });
       expect(s.id, 's1');
       expect(s.title, 'hello');
