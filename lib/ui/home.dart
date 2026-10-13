@@ -8,7 +8,6 @@ import '../models/models.dart';
 import '../state/store.dart';
 import 'app_scope.dart';
 import 'about_page.dart';
-import 'buddy_avatar.dart';
 import 'chat.dart';
 import 'commands_page.dart';
 import 'diff_page.dart';

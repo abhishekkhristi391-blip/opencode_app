@@ -1,92 +1,5 @@
 part of '../home.dart';
 
-/// Keeps the Buddy mascot's mood in sync with the app's real run state.
-///
-/// Runs can go silent for a while, and an error is only worth showing while it
-/// is still the latest thing that happened, so the mood is driven off the
-/// store's signals (`busy`, `pendingPromptCount`, `sessionError`) rather than
-/// guessed from message timestamps. A run that finishes cleanly gets a brief
-/// `success` burst before dropping back to `idle`.
-class _BuddyLink extends StatefulWidget {
-  const _BuddyLink({required this.store, required this.child});
-
-  final OcStore store;
-  final Widget child;
-
-  @override
-  State<_BuddyLink> createState() => _BuddyLinkState();
-}
-
-class _BuddyLinkState extends State<_BuddyLink> {
-  BuddyMood _last = BuddyMood.idle;
-  bool _wasBusy = false;
-  Timer? _reset;
-
-  @override
-  void initState() {
-    super.initState();
-    _sync();
-    widget.store.addListener(_sync);
-  }
-
-  @override
-  void didUpdateWidget(covariant _BuddyLink old) {
-    super.didUpdateWidget(old);
-    if (old.store != widget.store) {
-      old.store.removeListener(_sync);
-      widget.store.addListener(_sync);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.store.removeListener(_sync);
-    _reset?.cancel();
-    super.dispose();
-  }
-
-  void _sync() {
-    final s = widget.store;
-    final hasError = (s.sessionError ?? '').isNotEmpty;
-    final hadRun = _wasBusy;
-    _wasBusy = s.busy;
-
-    final BuddyMood m;
-    if (s.pendingPromptCount > 0) {
-      m = BuddyMood.waiting;
-    } else if (s.busy) {
-      m = BuddyMood.coding;
-    } else if (hasError) {
-      m = BuddyMood.error;
-    } else {
-      m = BuddyMood.idle;
-    }
-
-    // A run just ended without an error: a short happy burst, then idle.
-    if (hadRun && !s.busy && !hasError) {
-      _last = BuddyMood.success;
-      buddyMood.value = BuddyMood.success;
-      _reset?.cancel();
-      _reset = Timer(const Duration(seconds: 3), () {
-        if (!mounted) return;
-        if (s.busy || (s.sessionError ?? '').isNotEmpty) return;
-        _last = BuddyMood.idle;
-        buddyMood.value = BuddyMood.idle;
-      });
-      return;
-    }
-
-    if (m != _last) {
-      _last = m;
-      _reset?.cancel();
-      buddyMood.value = m;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
-}
-
 /// A destination the drawer can switch to.
 class _Tab {
   final String label;
@@ -141,10 +54,10 @@ class HomeShellState extends State<HomeShell> {
   }
 
   void _pushAndClose(
-    Widget Function() page,
-    String title, [
-    List<Widget> actions = const [],
-  ]) {
+  Widget Function() page,
+  String title, [
+  List<Widget> actions = const [],
+]) {
     Navigator.of(context).pop();
     pushScreen(context, title: title, child: page(), actions: actions);
   }
@@ -215,10 +128,6 @@ class HomeShellState extends State<HomeShell> {
             avatar: _AvatarButton(
               onTap: () => _showAvatarMenu(context),
               pending: store.pendingPromptCount,
-            ),
-            trailing: _BuddyLink(
-              store: store,
-              child: const BuddyBadge(size: 40),
             ),
             actions: _headerActions(context, store),
           ),
@@ -421,8 +330,7 @@ class HomeShellState extends State<HomeShell> {
         pending: store.pendingPromptCount,
         onClose: () => Navigator.pop(ctx),
         onOpen: (page, title) => _pushAndClose(page, title),
-        onServer: () =>
-            _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
+        onServer: () => _pushAndClose(() => const SettingsPage(), S.menuSwitchServer),
         // Dismissing the menu only closes the menu. The prompt is still
         // pending, so it is still on the server and the badge is still up —
         // that is the whole point of rebuilding from GET /permission.

@@ -119,55 +119,19 @@ List<_Block> _parse(String src) {
 // code block widget
 // ---------------------------------------------------------------------
 
-class _CodeBlock extends StatefulWidget {
+class _CodeBlock extends StatelessWidget {
   final String code, lang;
   const _CodeBlock({required this.code, required this.lang});
 
   @override
-  State<_CodeBlock> createState() => _CodeBlockState();
-}
-
-class _CodeBlockState extends State<_CodeBlock> {
-  /// Number of lines shown while a long block is collapsed. Anything longer
-  /// collapses to a preview with a ``Show all`` control.
-  static const _preview = 8;
-
-  bool _open = false;
-
-  void _toggle() => setState(() => _open = !_open);
-
-  @override
   Widget build(BuildContext context) {
     final t = OCTokens.of(context);
-    final lines = widget.code.split('\n');
-    final n = lines.length;
-    final collapsible = n > _preview;
-    final shownLines = _open || !collapsible
-        ? lines
-        : lines.take(_preview).toList();
-    final shownText = shownLines.join('\n');
-    // Monospace digit width at 12.5px is ~7.3px; the gutter is sized to the
-    // count of digits so tall blocks do not make the numbers overflow.
-    final gutterWidth = n >= 1000
-        ? 30.0
-        : n >= 100
-        ? 24.0
-        : n >= 10
-        ? 16.0
-        : 9.0;
-    final lineNum = OCTypography.mono(
-      size: 12.5,
-      color: t.faint,
-    ).copyWith(height: 1.5);
-    final codeInkStyle = OCTypography.mono(
-      size: 12.5,
-      color: Theme.of(context).colorScheme.onSurface,
-    ).copyWith(height: 1.5);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        // Reference `--code`: dark in both themes, lighter than the page.
+        // Reference `--code`: dark in both themes.
         color: t.code,
+        // `rounded-2xl`, not 12.
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -184,38 +148,18 @@ class _CodeBlockState extends State<_CodeBlock> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(OCSpace.md, 8, OCSpace.xs, 8),
-            color: t.card,
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.md,
+              8,
+              OCSpace.xs,
+              8,
+            ),
+            decoration: const BoxDecoration(color: OCColors.surfaceHigh),
             child: Row(
               children: [
-                if (widget.lang.isNotEmpty) ...[
-                  // Reference `.ts-mini`: a solid pill in the cool blue, the
-                  // badge reading louder than the plain name beside it.
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: t.deep,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Text(
-                      widget.lang,
-                      style: OCTypography.mono(size: 10, color: t.onTertiary)
-                          .copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
                 Expanded(
                   child: Text(
-                    widget.lang.isEmpty ? 'code' : widget.lang,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    lang.isEmpty ? 'code' : lang,
                     style: OCTypography.mono(size: 11, color: t.codeInk),
                   ),
                 ),
@@ -225,7 +169,7 @@ class _CodeBlockState extends State<_CodeBlock> {
                   tooltip: S.copy,
                   icon: LIcon(LI.copy, size: 16, color: t.codeInk),
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: widget.code));
+                    Clipboard.setData(ClipboardData(text: code));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(S.codeCopied),
@@ -242,118 +186,17 @@ class _CodeBlockState extends State<_CodeBlock> {
               OCSpace.md,
               OCSpace.sm,
               OCSpace.md,
-              0,
+              OCSpace.md,
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Reference `.line-numbers`: the gutter keeps a
-                    // right-aligned number per line and a hairline border
-                    // before the code. IntrinsicHeight + stretch lets the
-                    // hairline reach the full height of the code.
-                    if (shownLines.length > 1) ...[
-                      SizedBox(
-                        width: gutterWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var i = 1; i <= shownLines.length; i++)
-                              Text(
-                                '$i',
-                                textAlign: TextAlign.right,
-                                style: lineNum,
-                              ),
-                          ],
-                        ),
-                      ),
-                      Container(width: 1, color: t.line),
-                      const SizedBox(width: OCSpace.md),
-                    ],
-                    Text(shownText, style: codeInkStyle),
-                  ],
+              child: Text(
+                code,
+                style: OCTypography.mono(
+                  size: 12.5,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-            ),
-          ),
-          if (collapsible && !_open)
-            // The whole band is a target: a long file collapses to a preview,
-            // and this is the only control for getting it back without
-            // reaching under the play area.
-            InkWell(
-              onTap: _toggle,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: OCSpace.md,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        S.codeShowAll(n),
-                        style: OCTypography.mono(size: 11, color: t.codeInk),
-                      ),
-                    ),
-                    LIcon(LI.chevronDown, size: 14, color: t.codeInk),
-                  ],
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              OCSpace.md,
-              6,
-              OCSpace.md,
-              OCSpace.sm,
-            ),
-            child: Row(
-              children: [
-                LIcon(LI.copy, size: 13, color: t.faint),
-                const SizedBox(width: 6),
-                Text(
-                  S.codeLines(n),
-                  style: OCTypography.mono(size: 11, color: t.faint),
-                ),
-                const Spacer(),
-                if (collapsible)
-                  InkWell(
-                    onTap: _toggle,
-                    borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedRotation(
-                            turns: _open ? 0.5 : 0,
-                            duration: OCMotion.micro,
-                            child: LIcon(
-                              LI.chevronDown,
-                              size: 13,
-                              color: t.codeInk,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _open ? S.codeCollapse : S.codeShowAll(n),
-                            style: OCTypography.mono(
-                              size: 11,
-                              color: t.codeInk,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    widget.lang.isEmpty ? 'code' : widget.lang,
-                    style: OCTypography.mono(size: 11, color: t.faint),
-                  ),
-              ],
             ),
           ),
         ],
