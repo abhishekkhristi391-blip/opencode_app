@@ -40,3 +40,5 @@ flutter:
     - family: JetBrainsMono
       fonts:
         - asset: assets/fonts/JetBrainsMono.ttf
+  flutter_test:
+    sdk: flutter
