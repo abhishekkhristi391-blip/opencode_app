@@ -44,7 +44,7 @@ class ChatDB {
     final path = '${dir.path}/opencode_chat.db';
     final opened = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, _) async {
         await _createMessages(db);
         await _createSessions(db);
@@ -54,6 +54,8 @@ class ChatDB {
         // arbitrary order and cannot be repaired without re-reading every
         // `data` blob. Drop it; the next open repopulates from the server.
         if (old < 2) await db.execute('DROP TABLE IF EXISTS messages');
+        // v3 changed the read order to (created_at, id) and reads only the
+        // newest page, so the index has to carry `id` too.
         await _createMessages(db);
         await _createSessions(db);
       },
@@ -71,9 +73,11 @@ class ChatDB {
         created_at INTEGER NOT NULL
       )
     ''');
+    // v2's index omits `id`, which the (created_at, id) read order needs.
+    await db.execute('DROP INDEX IF EXISTS idx_messages_session');
     await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_messages_session '
-      'ON messages(session_id, created_at)',
+      'CREATE INDEX IF NOT EXISTS idx_messages_session_created_id '
+      'ON messages(session_id, created_at, id)',
     );
   }
 
@@ -160,9 +164,14 @@ class ChatDB {
     });
   }
 
+  /// The newest `limit` cached messages for a session, handed back oldest-first.
+  ///
+  /// The query walks the index backwards so a capped read keeps the *tail* of
+  /// the conversation rather than its opening, then reverses in memory to the
+  /// ascending order the caller (and the transcript) expects.
   Future<List<Map<String, dynamic>>> loadMessages(
     String sessionId, {
-    int limit = 500,
+    int limit = 40,
   }) {
     return _enqueue(() async {
       final d = await db;
@@ -170,12 +179,37 @@ class ChatDB {
         'messages',
         where: 'session_id=?',
         whereArgs: [sessionId],
-        // rowid breaks ties between messages sharing a timestamp, and follows
-        // insertion order within a session.
-        orderBy: 'created_at ASC, rowid ASC',
+        orderBy: 'created_at DESC, id DESC',
         limit: limit,
       );
-      return res
+      return res.reversed
+          .map((e) => jsonDecode(e['data'] as String) as Map<String, dynamic>)
+          .toList();
+    });
+  }
+
+  /// The cached page strictly older than ([created], [id]), oldest-first.
+  ///
+  /// This is the offline half of "load older": when the server cannot serve the
+  /// page before the oldest message on screen, the cache still can, so a session
+  /// stays readable with no connection.
+  Future<List<Map<String, dynamic>>> loadOlderThan(
+    String sessionId, {
+    required int created,
+    required String id,
+    int limit = 40,
+  }) {
+    return _enqueue(() async {
+      final d = await db;
+      final res = await d.query(
+        'messages',
+        where:
+            'session_id=? AND (created_at < ? OR (created_at = ? AND id < ?))',
+        whereArgs: [sessionId, created, created, id],
+        orderBy: 'created_at DESC, id DESC',
+        limit: limit,
+      );
+      return res.reversed
           .map((e) => jsonDecode(e['data'] as String) as Map<String, dynamic>)
           .toList();
     });
@@ -231,4 +265,30 @@ class ChatDB {
           .toList();
     });
   }
+
+  // Compatibility methods for tests
+  Future<void> clearAll() async {
+    final d = await db;
+    await d.delete('messages');
+    await d.delete('sessions');
+  }
+
+  Future<void> writeSession(Session session) async {
+    await saveSession(session.id, session.raw, session.updated);
+  }
+
+  Future<void> writeMessage(Message msg, String sessionId) async {
+    await upsertMessages(sessionId, [msg.raw]);
+  }
+
+  Future<List<Session>> sessions() async {
+    final rows = await loadSessions();
+    return rows.map((e) => Session.fromJson(e)).toList();
+  }
+
+  Future<List<Message>> messages(String sessionId, {int limit = 1000}) async {
+    final rows = await loadMessages(sessionId, limit: limit);
+    return rows.map((e) => Message.fromJson(e)).toList();
+  }
+
 }
