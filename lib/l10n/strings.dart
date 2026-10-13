@@ -500,6 +500,24 @@ class S {
   static String partsThoughtFor(int secs) =>
       secs < 1 ? 'Thought for a moment' : 'Thought for ${secs}s';
   static String partsThinkingLines(int n) => n == 1 ? '1 line' : '$n lines';
+
+  // One collapsible block per batch of tool calls. The title is the summary
+  // the run shows while collapsed; the detail lives inside.
+  static const String groupWorking = 'Working';
+  static const String groupSearching = 'Searching files';
+  static const String groupSearchedFiles = 'Searched files';
+  static const String groupEditing = 'Editing files';
+  static const String groupEditedFiles = 'Edited files';
+  static const String groupRunningCommands = 'Running commands';
+  static const String groupBrowsing = 'Browsing the web';
+  static const String groupBrowsedWeb = 'Browsed the web';
+  static const String groupRunningTasks = 'Running tasks';
+  static const String groupRanTasks = 'Ran tasks';
+  static String groupRanCommands(int n) =>
+      n == 1 ? 'Ran 1 command' : 'Ran $n commands';
+  static String groupRanSteps(int n) =>
+      n == 1 ? 'Ran 1 step' : 'Ran $n steps';
+  static String groupSteps(int n) => n == 1 ? '1 step' : '$n steps';
   static const String composerPlaceholderStart = 'Ask anything\u2026';
   static const String composerPlaceholderReply = 'Reply to the agent\u2026';
   static const String composerStopHint = 'Tap to stop';
@@ -719,6 +737,9 @@ class S {
   static String toolsCount(int n) => 'Tools ($n)';
   static String settingsConnectedVersion(String v) =>
       v.isEmpty ? settingsConnected : '$settingsConnected ($v)';
+  static const mcpAuthRequiredTitle = 'Authentication required';
+  static const mcpCopyAuthUrl = 'Copy Auth URL';
+  static const mcpAuthUrlCopied = 'Auth URL copied to clipboard';
 
   // ------------------------------------------------------------------
   // prompts / permissions / questions

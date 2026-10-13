@@ -1,12 +1,10 @@
 part of '../parts.dart';
 
-/// Reference `.steps`: tool calls collapse into a compact vertical timeline
-/// instead of a stack of cards.
-///
-/// Each step is one 34px line — a status dot on a 2px rail, the tool name in
-/// bold, the summary in monospace with an ellipsis, and a chevron. Tapping a
-/// step expands its output into the dark code block below it. Non-tool parts
-/// (reasoning, patches, subtasks) still render as tiles underneath.
+/// Reference `.steps`: a whole batch of tool calls folds into one collapsible
+/// block under a single summary title ("Searched files", "Ran 3 commands"),
+/// so the transcript stays on the answer. Opening the block reveals the
+/// reasoning and the per-step rail; tapping a step expands its raw output.
+/// Non-tool parts (patches, subtasks) render as tiles inside the block.
 class ToolTimeline extends StatefulWidget {
   final List<Part> parts;
   const ToolTimeline({required this.parts, super.key});
@@ -21,6 +19,7 @@ class _ToolTimelineState extends State<ToolTimeline> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.oc;
     final tools = <Part>[];
     final rest = <Part>[];
     // Consecutive reasoning parts become one collapsed row. Rendered
@@ -38,44 +37,72 @@ class _ToolTimelineState extends State<ToolTimeline> {
       }
       rest.add(p);
     }
-    // Reasoning comes first, as it happened: think, then act. It used to sit
-    // under the tool rows, which read as the model "going back to thinking"
-    // after every command.
-    final thinking = reasoning.isEmpty ? null : ThinkingGroup(parts: reasoning);
     final others = <Widget>[for (final p in rest) PartTile(p)];
+
+    // No tool calls: reasoning keeps its own compact row and plain tiles
+    // (patches, retries, compaction) render as themselves.
     if (tools.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [if (thinking != null) thinking, ...others],
+        children: [
+          if (reasoning.isNotEmpty) ThinkingGroup(parts: reasoning),
+          ...others,
+        ],
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (thinking != null) thinking,
-        Padding(
-          padding: const EdgeInsets.only(left: 18),
-          child: Stack(
-            children: [
-              // The rail: a 2px line behind the dots, inset from the top and
-              // bottom so it does not overshoot the first and last step.
-              Positioned(
-                left: 4,
-                top: 10,
-                bottom: 10,
-                width: 2,
-                child: ColoredBox(color: context.oc.line),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final p in tools) _buildStep(p)],
-              ),
-            ],
+    // Every tool call of this step folds into one accordion. Collapsed it is a
+    // single summary line; opening it reveals the reasoning, the step-by-step
+    // rail and the raw output, so the transcript only ever shows the headline
+    // and the final answer.
+    final anyRunning = tools.any(
+      (p) => p.status == ToolStatus.running || p.status == ToolStatus.pending,
+    );
+    final anyError = tools.any((p) => p.status == ToolStatus.error);
+    final accent = anyError
+        ? t.err
+        : (anyRunning ? t.acc : t.mute);
+
+    return _Collapsible(
+      icon: _groupIcon(tools),
+      title: _groupTitle(tools, anyRunning),
+      subtitle: _groupSubtitle(tools),
+      color: accent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (reasoning.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: ThinkingGroup(parts: reasoning),
+            ),
+          _rail(context, tools),
+          ...others,
+        ],
+      ),
+    );
+  }
+
+  Widget _rail(BuildContext context, List<Part> tools) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 6, 0, 6),
+      child: Stack(
+        children: [
+          // The rail: a 2px line behind the dots, inset from the top and
+          // bottom so it does not overshoot the first and last step.
+          Positioned(
+            left: 4,
+            top: 10,
+            bottom: 10,
+            width: 2,
+            child: ColoredBox(color: context.oc.line),
           ),
-        ),
-        ...others,
-      ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [for (final p in tools) _buildStep(p)],
+          ),
+        ],
+      ),
     );
   }
 
@@ -326,4 +353,81 @@ String _firstLine(String s) {
       .split('\n')
       .firstWhere((e) => e.trim().isNotEmpty, orElse: () => '');
   return l.length > 70 ? '${l.substring(0, 70)}…' : l;
+}
+
+/// The kind of work a batch of tool calls represents. Drives the accordion's
+/// icon and its summary title.
+enum _Op { search, edit, command, web, agent, mixed }
+
+_Op _opOf(String name) => switch (name) {
+  'read' || 'glob' || 'grep' || 'list' || 'search' => _Op.search,
+  'write' || 'edit' || 'patch' || 'multiedit' => _Op.edit,
+  'bash' || 'shell' => _Op.command,
+  'webfetch' || 'websearch' => _Op.web,
+  'task' || 'agent' => _Op.agent,
+  _ => _Op.mixed,
+};
+
+/// The batch's dominant action: one category if the calls agree, the majority
+/// category when it clearly dominates (>=60%), otherwise a generic "mixed".
+_Op _dominantOp(List<Part> tools) {
+  final counts = <_Op, int>{};
+  for (final p in tools) {
+    final op = _opOf(p.toolName);
+    counts[op] = (counts[op] ?? 0) + 1;
+  }
+  if (counts.length == 1) return counts.keys.first;
+  for (final e in counts.entries) {
+    if (e.key != _Op.mixed && e.value / tools.length >= 0.6) return e.key;
+  }
+  return _Op.mixed;
+}
+
+IconData _groupIcon(List<Part> tools) => switch (_dominantOp(tools)) {
+  _Op.search => toolIcon('grep'),
+  _Op.edit => toolIcon('edit'),
+  _Op.command => toolIcon('bash'),
+  _Op.web => toolIcon('webfetch'),
+  _Op.agent => toolIcon('task'),
+  _Op.mixed => Icons.build_outlined,
+};
+
+String _groupTitle(List<Part> tools, bool running) {
+  final op = _dominantOp(tools);
+  final n = tools.length;
+  if (running) {
+    return switch (op) {
+      _Op.search => S.groupSearching,
+      _Op.edit => S.groupEditing,
+      _Op.command => S.groupRunningCommands,
+      _Op.web => S.groupBrowsing,
+      _Op.agent => S.groupRunningTasks,
+      _Op.mixed => S.groupWorking,
+    };
+  }
+  return switch (op) {
+    _Op.search => S.groupSearchedFiles,
+    _Op.edit => S.groupEditedFiles,
+    _Op.command => S.groupRanCommands(n),
+    _Op.web => S.groupBrowsedWeb,
+    _Op.agent => S.groupRanTasks,
+    _Op.mixed => S.groupRanSteps(n),
+  };
+}
+
+String _groupSubtitle(List<Part> tools) {
+  final start = tools
+      .map((p) => p.toolStart)
+      .where((v) => v > 0)
+      .fold<int>(0, (a, b) => a == 0 || b < a ? b : a);
+  final end = tools
+      .map((p) => p.toolEnd)
+      .where((v) => v > 0)
+      .fold<int>(0, (a, b) => b > a ? b : a);
+  final dur = start > 0 && end > start ? fmtDuration(end - start) : '';
+  // A single call names itself ("npm run build"); a batch reports its size.
+  final head = tools.length == 1
+      ? tools.single.summaryLine.replaceAll('\n', ' ').trim()
+      : S.groupSteps(tools.length);
+  return [if (head.isNotEmpty) head, if (dur.isNotEmpty) dur].join(' · ');
 }

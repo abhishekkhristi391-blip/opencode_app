@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'mcp_auth_handler.dart';
 import 'state/store.dart';
 import 'ui/app_scope.dart';
 import 'ui/home.dart';
@@ -30,20 +33,40 @@ class _OpenCodeAppState extends State<OpenCodeApp> with WidgetsBindingObserver {
   /// hands-free loop outlive any one screen, and the chat page is the only
   /// thing that should decide what they do.
   late final VoiceService voice = VoiceService(store);
+  late final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _deepLinkSub;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     store.boot();
-    // Fire and forget on purpose: boot must not wait for a speech engine that
-    // may not exist. warmUp() never prompts for anything, so it is safe to run
-    // before the first frame.
     unawaited(voice.warmUp());
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    try {
+      final initialLink = await _appLinks.getInitialLink();
+      if (initialLink != null) {
+        debugPrint('Deep link: initial link received: $initialLink');
+      }
+    } catch (e) {
+      debugPrint('Deep link: failed to get initial link: $e');
+    }
+    _deepLinkSub = _appLinks.uriLinkStream.listen(
+      (uri) {
+        debugPrint('Deep link received: $uri');
+      },
+      onError: (e) {
+        debugPrint('Deep link stream error: $e');
+      },
+    );
   }
 
   @override
   void dispose() {
+    _deepLinkSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     voice.dispose();
     store.dispose();

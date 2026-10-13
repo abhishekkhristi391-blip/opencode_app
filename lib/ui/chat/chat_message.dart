@@ -219,7 +219,15 @@ class _MessageTileState extends State<_MessageTile> {
             borderRadius: BorderRadius.circular(12),
             child: user
                 ? _userBubble(context, t, text, files, hasContent)
-                : _assistantBlock(context, t, text, others, m, hasContent),
+                : _assistantBlock(
+                    context,
+                    t,
+                    text,
+                    others,
+                    files,
+                    m,
+                    hasContent,
+                  ),
           ),
           // Only the user's own bubble gets this row. The assistant's actions
           // live inside [_assistantBlock], one row per reply; rendering this one
@@ -299,6 +307,7 @@ class _MessageTileState extends State<_MessageTile> {
     OCTokens t,
     String text,
     List<Part> others,
+    List<Part> files,
     ChatMessage m,
     bool hasContent,
   ) {
@@ -323,6 +332,13 @@ class _MessageTileState extends State<_MessageTile> {
                 mode: LaunchMode.externalApplication,
               ),
             ),
+          ),
+        // The run's attachments stay outside the collapsed tool block, so the
+        // file it produced is visible even while the steps are folded away.
+        for (final f in files)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: PartTile(f),
           ),
         if (m.streaming && !hasContent) const _TypingDots(),
         // Only the newest reply can carry an error, and that is what clears it
