@@ -1,5 +1,5 @@
 # GRAPH REPORT
-111 files, 1055 symbols, 2142 edges (1231 EXTRACTED, 911 INFERRED)
+111 files, 1060 symbols, 2162 edges (1235 EXTRACTED, 927 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - LIcon (class) - 22 links - lib/ui/line_icons/line_icons_widgets.dart:158
@@ -10,7 +10,7 @@
 - mono (function) - 18 links - lib/ui/theme/theme_radius_typography.dart:284
 - showSnack (function) - 18 links - lib/ui/widgets/widgets_navigation_feedback.dart:131
 - notifyListeners (function) - 17 links - lib/state/store/store_ocstore.dart:167
-- OCButton (class) - 15 links - lib/ui/primitives/primitives_buttons_cards.dart:94
+- OCButton (class) - 16 links - lib/ui/primitives/primitives_buttons_cards.dart:94
 
 ## Communities (modules that talk to each other)
 1. 34 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...
@@ -59,6 +59,7 @@
 - WHY: the last attempt stopped, if it stopped badly. - lib/voice/voice_service/voice_service_state.dart:12
 - WHY: hands-free turned itself off. The UI shows it once, then calls - lib/voice/voice_service/voice_service_state.dart:15
 - WHY: voice stopped, in terms the UI turns into one calm sentence. - lib/voice/voice_service/voice_service_types.dart:51
+- NOTE: this is deliberately a leaf-widget smoke test. Pumping the whole app - test/widget/home_test.dart:7
 
 ## Suggested questions
 - What breaks if I change LIcon?   -> impact

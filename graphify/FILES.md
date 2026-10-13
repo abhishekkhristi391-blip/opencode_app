@@ -6,8 +6,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 
 ## lib/api/client.dart  (24 lines)
 - Imports: lib/l10n/strings.dart, lib/models/models.dart
-- Imported by (10): lib/state/store.dart, lib/ui/chat.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/helpers/fake_client.dart, test/widget/home_test.dart
-- If changed, affects 21 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
+- Imported by (9): lib/state/store.dart, lib/ui/chat.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/helpers/fake_client.dart
+- If changed, affects 20 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
 
 ## lib/api/client/client_oc_client.dart  (44 lines)
 - Defines (read with exact line ranges): class ApiException L3+, function toString L13-16, function _parseBytes L17-25, class OcClient L26+
@@ -34,32 +34,31 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class OcEvent L12+, class EventStream L48+, function start L129-135, function reconnect L136-147, function _connect L148-248, function _checkLiveness L249-260, function _probeLiveness L261-325, function _handleFrame L326-342, function _setConnected L343-352, function _markDown L353-361, function _scheduleRetry L362-388, function stop L389-400, function shutdown L401-409, function _teardown L410-429
 - Imports: lib/models/models.dart
 - Imported by (1): lib/state/store.dart
-- If changed, affects 20 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
+- If changed, affects 19 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
 
-## lib/db/chat_db.dart  (269 lines)
-- Defines (read with exact line ranges): class ChatDB L21+, function _init L42-66, function _createMessages L67-83, function _createSessions L84-97, function _enqueue L98-110, function _sortKey L111-121, function _writeRow L122-135, function upsertMessages L136-154, function deleteMessage L155-171, function loadMessages L172-195, function loadOlderThan L196-217, function clearSession L218-227, function saveSessions L228-245, function saveSession L246-250, function deleteSessionRow L251-258, function loadSessions L259-269
+## lib/db/chat_db.dart  (302 lines)
+- Defines (read with exact line ranges): class ChatDB L23+, function _init L49-74, function _createMessages L75-91, function _createSessions L92-105, function _enqueue L106-118, function _sortKey L119-129, function _writeRow L130-143, function upsertMessages L144-162, function deleteMessage L163-179, function loadMessages L180-203, function loadOlderThan L204-225, function clearSession L226-235, function saveSessions L236-253, function saveSession L254-258, function deleteSessionRow L259-266, function loadSessions L267-277, function clearAll L278-283, function writeSession L284-287, function writeMessage L288-291, function sessions L292-296, function messages L297-302
+- Imports: lib/models/models.dart
 - Imported by (2): lib/state/store.dart, test/unit/chat_db_test.dart
-- If changed, affects 21 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
+- If changed, affects 20 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
 
 ## lib/l10n/strings.dart  (1182 lines)
 - Defines (read with exact line ranges): class S L9+, function serverOnlineVersion L111-190, function composerModelAgent L191-196, function toolRunning L197-197, function toolDone L198-204, function moreToolsCount L205-250, function filesCount L251-251, function messageCount L252-252, function tokensUsed L253-280, function sessionsDeleteBody L281-299, function historyFiles L300-307, function cmdArgs L308-308, function cmdUseSkill L309-309, function cmdUseLabel L310-310, function partsAgent L311-327, function diffAppliesTo L328-360, function filesDeleteBody L361-364, function filesNameLabel L365-366, function filesEmptyName L367-368, function filesNameHint L369-385, function setPermExternalTitle L386-387, function setPermExternalBody L388-391, function setPassword L392-402, function filesExists L403-403, function filesDeleteFailed L404-404, function filesFolderFailed L405-407, function added L408-430, function netTimeout L431-431, function netUnreachable L432-437, function permSuggestingRules L438-447, function filesChangedCount L448-473, function modelsContext L474-474, function modelsSelected L475-479, function setMcpLabel L480-499, function partsThoughtFor L500-501, function partsThinkingLines L502-515, function groupRanCommands L516-517, function groupRanSteps L518-519, function groupSteps L520-526, function waitingYou L527-531 ...
 - Imported by (17): lib/api/client.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
-- If changed, affects 23 file(s): lib/api/client.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart ...
+- If changed, affects 22 file(s): lib/api/client.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart ...
 
 ## lib/main.dart  (137 lines)
 - Defines (read with exact line ranges): function main L17-21, class OpenCodeApp L22+, function createState L26-28, class _OpenCodeAppState L29+, function initState L40-47, function _initDeepLinks L48-67, function dispose L68-76, function didChangeAppLifecycleState L77-103, function build L104-137
 - Imports: lib/mcp_auth_handler.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/home.dart, lib/ui/prompts.dart, lib/ui/theme.dart, lib/voice/voice_scope.dart, lib/voice/voice_service.dart, lib/widgets/buddy.dart
-- Imported by (1): test/widget/home_test.dart
-- If changed, affects 1 file(s): test/widget/home_test.dart
 
 ## lib/mcp_auth_handler.dart  (46 lines)
 - Defines (read with exact line ranges): class McpAuthHandler L6+, function initialize L13-31, function dispose L32-36, class McpAuthException L37+, function toString L44-46
 - Imported by (1): lib/main.dart
-- If changed, affects 2 file(s): lib/main.dart, test/widget/home_test.dart
+- If changed, affects 1 file(s): lib/main.dart
 
 ## lib/models/models.dart  (9 lines)
-- Imported by (18): lib/api/client.dart, lib/api/events.dart, lib/state/store.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart ...
-- If changed, affects 25 file(s): lib/api/client.dart, lib/api/events.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart ...
+- Imported by (19): lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/state/store.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
+- If changed, affects 25 file(s): lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart ...
 
 ## lib/models/models/models_server_info.dart  (444 lines)
 - Defines (read with exact line ranges): class ModelInfo L3+, class Todo L46+, class FileNode L75+, class FileDiff L97+, class CommandInfo L123+, class SkillInfo L144+, class NamedStatus L159+, class VcsInfo L182+, class ServerPaths L194+, class PermissionReq L215+, function _fmt L336-342, class QuestionOption L343+, class QuestionItem L350+, class QuestionReq L373+, function fmtBytes L403-408, function fmtTime L409-414, function fmtAge L415-424, function fmtDuration L425-432, function baseName L433-437, function dirName L438-444
@@ -70,8 +69,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 
 ## lib/state/store.dart  (32 lines)
 - Imports: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/widgets/buddy.dart
-- Imported by (18): lib/main.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart ...
-- If changed, affects 19 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
+- Imported by (17): lib/main.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart ...
+- If changed, affects 18 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
 
 ## lib/state/store/store_ocstore.dart  (398 lines)
 - Defines (read with exact line ranges): class OcStore L5+, function setMascot L83-92, function _buddyCall L93-98, function _buddyDone L99-104, function _buddyError L105-110, function _buddyConnecting L111-115, function _buddyConnected L116-121, function _buddyDisconnected L122-126, function _buddyPart L127-147, function _buddyToolEnded L148-152, function _anyToolRunning L153-166, function notifyListeners L167-219, function _messageText L220-243, function _stripEchoedOptimistic L244-341, function _parentDir L342-347, function _shellQuote L348-382, function dispose L383-398
@@ -115,13 +114,13 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class AboutPage L11+, function build L15-120
 - Imports: lib/l10n/strings.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/app_scope.dart  (23 lines)
 - Defines (read with exact line ranges): class AppScope L6+, function of L10-16, function read L17-23
 - Imports: lib/state/store.dart
 - Imported by (14): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart ...
-- If changed, affects 15 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
+- If changed, affects 14 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
 
 ## lib/ui/buddy_avatar.dart  (682 lines)
 - Defines (read with exact line ranges): class BuddyChar L17+, class BuddyMood L19+, class BuddyBadge L39+, function build L46-56, class BuddyAvatar L57+, function createState L75-77, class _BuddyAvatarState L78+, function dispose L86-111, class _BuddyPainter L112+, function _w L131-132, function _text L133-155, function paint L156-184, function _seated L185-297, function _running L298-369, function _head L370-532, function _effects L533-627, function shouldRepaint L628-632, class BuddyDemoPage L633+, class _BuddyDemoPageState L640+
@@ -129,7 +128,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/chat.dart  (42 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/primitives.dart, lib/ui/prompts.dart, lib/ui/theme.dart, lib/ui/widgets.dart, lib/voice/voice_scope.dart, lib/voice/voice_service.dart
 - Imported by (5): lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
-- If changed, affects 7 file(s): lib/main.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 6 file(s): lib/main.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
 ## lib/ui/chat/chat_agent_sheets.dart  (267 lines)
 - Defines (read with exact line ranges): class _ModelPill L16+, function build L21-33, function showAgentSheet L34-83, function showModelSheet L84-127, class _SheetOption L128+, function _pickAgentSheet L163-204, function _pickToolsSheet L205-267
@@ -179,18 +178,18 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class CommandsPage L14+, function build L18-45, class _CommandTile L46+, class SkillsSection L151+
 - Imports: lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/markdown.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (2): lib/ui/home.dart, lib/ui/settings_page.dart
-- If changed, affects 4 file(s): lib/main.dart, lib/ui/home.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, lib/ui/settings_page.dart
 
 ## lib/ui/diff_page.dart  (550 lines)
 - Defines (read with exact line ranges): class DiffPage L13+, function createState L17-19, class _DiffPageState L20+, function initState L30-34, function _load L35-81, function build L82-215, class _SessionDiffTile L216+, class _SessionDiffTileState L224+, function _unifiedPreview L379-392, function _split L393-396, function _diffOps L397-442, function _toGitPatch L443-445, class _GitDiffView L446+, class _GitDiffViewState L455+
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/parts.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/files_page.dart  (16 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/files_page/files_page_browser.dart  (468 lines)
 - Defines (read with exact line ranges): class FilesPage L3+, function createState L7-9, class FilesPageState L10+, function initState L20-25, function reload L26-29, function promptCreate L30-32, function dispose L33-40, function _normDir L41-53, function _validName L54-64, function _createMenu L65-94, function _newFile L95-125, function _newFolder L126-141, function _load L142-179, function build L180-353, function _open L354-361, function _menu L362-465, function _q L466-468
@@ -201,7 +200,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/home.dart  (32 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/line_icons.dart, lib/ui/models_page.dart, lib/ui/primitives.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart
 - Imported by (1): lib/main.dart
-- If changed, affects 2 file(s): lib/main.dart, test/widget/home_test.dart
+- If changed, affects 1 file(s): lib/main.dart
 
 ## lib/ui/home/home_avatar_drawer.dart  (411 lines)
 - Defines (read with exact line ranges): class _AvatarButton L5+, function createState L15-17, class _AvatarButtonState L18+, function initState L28-34, function _startPulse L35-43, function didUpdateWidget L44-55, function dispose L56-62, function build L63-127, class _PromptCountBadge L128+, class _DrawerBadge L178+, class _Drawer L213+
@@ -218,7 +217,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/line_icons.dart  (25 lines)
 - Imports: lib/ui/theme.dart
 - Imported by (6): lib/ui/chat.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/widgets.dart
-- If changed, affects 16 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
+- If changed, affects 15 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart ...
 
 ## lib/ui/line_icons/line_icons_painter.dart  (935 lines)
 - Defines (read with exact line ranges): class LLinePainter L3+, function paint L17-37, function _path L38-43, function _draw L44-931, function shouldRepaint L932-935
@@ -229,7 +228,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/markdown.dart  (24 lines)
 - Imports: lib/l10n/strings.dart, lib/ui/line_icons.dart, lib/ui/theme.dart
 - Imported by (3): lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/parts.dart
-- If changed, affects 10 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 9 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
 ## lib/ui/markdown/markdown_code_block.dart  (207 lines)
 - Defines (read with exact line ranges): function _parse L3-8, function flushPara L9-121, class _CodeBlock L122+, function build L127-207
@@ -241,12 +240,12 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class ModelsPage L13+, function createState L17-19, class _ModelsPageState L20+, function initState L26-33, function dispose L34-39, function build L40-244, class _AgentDropdown L245+, class _ProviderBlock L278+, class _ModelTag L408+
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (2): lib/ui/chat.dart, lib/ui/home.dart
-- If changed, affects 7 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 6 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
 ## lib/ui/parts.dart  (24 lines)
 - Imports: lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (2): lib/ui/chat.dart, lib/ui/diff_page.dart
-- If changed, affects 9 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 8 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
 ## lib/ui/parts/parts_file_agent_diff.dart  (267 lines)
 - Defines (read with exact line ranges): class _FilePart L3+, function build L8-46, class _AgentPart L47+, class _RetryPart L69+, class _UnknownPart L101+, class DiffText L133+, class ThinkingGroup L185+
@@ -259,7 +258,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 
 ## lib/ui/primitives.dart  (25 lines)
 - Imports: lib/ui/theme.dart
-- Imported by (14): lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, lib/ui/terminal_page.dart ...
+- Imported by (15): lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, lib/ui/terminal_page.dart ...
 - If changed, affects 16 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
 
 ## lib/ui/primitives/primitives_buttons_cards.dart  (401 lines)
@@ -277,7 +276,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/prompts.dart  (18 lines)
 - Imports: lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/line_icons.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart, lib/widgets/buddy.dart
 - Imported by (3): lib/main.dart, lib/ui/chat.dart, lib/ui/home.dart
-- If changed, affects 8 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 7 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
 ## lib/ui/prompts/prompts_permission.dart  (326 lines)
 - Defines (read with exact line ranges): class PromptOverlay L11+, function build L15-61, function showPendingPrompt L62-76, class _CommandBox L77+, function createState L82-84, class _CommandBoxState L85+, class _PermissionFacts L165+, class _PermissionCard L248+
@@ -288,7 +287,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/sessions_page.dart  (18 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/sessions_page/sessions_page_main.dart  (392 lines)
 - Defines (read with exact line ranges): class SessionsPage L3+, function createState L7-9, class SessionsPageState L10+, function focusSearch L22-23, function clearSearch L24-30, function dispose L31-39, function build L40-62, class _SessionsHeader L63+, function visibleSessions L167-187, class _SessionsList L188+, class _SessionsListState L197+, function _pushTileErrorGuard L299-310, function _popTileErrorGuard L311-328, class _GuardedSessionTile L329+, class _GuardedSessionTileState L338+, function initState L340-365, class _BrokenSessionRow L366+
@@ -299,7 +298,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/settings_page.dart  (26 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart, lib/voice/voice_scope.dart, lib/voice/voice_service.dart, lib/widgets/buddy.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/settings_page/settings_page_body.dart  (727 lines)
 - Defines (read with exact line ranges): class SettingsPage L3+, function createState L7-9, class _SettingsPageState L10+, function initState L12-17, function build L18-430, function _editServer L431-493, function _addMcp L494-569, function _handleMcpAuth L570-626, function _extractAuthUri L627-690, function _launchExternal L691-727
@@ -314,10 +313,10 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class TerminalPage L10+, function createState L14-16, class TerminalPageState L17+, function clear L59-66, function newSession L67-75, function dispose L76-81, function _append L82-95, function _run L96-135, function _buildOutput L136-174, function build L175-407, function _terminalStyle L408-411
 - Imports: lib/l10n/strings.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/primitives.dart, lib/ui/theme.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/theme.dart  (16 lines)
-- Imported by (18): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/primitives.dart ...
+- Imported by (19): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/primitives.dart ...
 - If changed, affects 19 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/line_icons.dart, lib/ui/markdown.dart, lib/ui/models_page.dart ...
 
 ## lib/ui/theme/theme_build_theme.dart  (280 lines)
@@ -336,7 +335,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class TodosPage L11+, function createState L15-17, class _TodosPageState L18+, function initState L20-31, function build L32-49, class _TodosBody L50+, class _TodoTile L151+, function _leading L199-221, class _ActivePulse L222+, class _ActivePulseState L230+, function dispose L244-257
 - Imports: lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart
 - Imported by (1): lib/ui/home.dart
-- If changed, affects 3 file(s): lib/main.dart, lib/ui/home.dart, test/widget/home_test.dart
+- If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
 ## lib/ui/velo_avatar.dart  (384 lines)
 - Defines (read with exact line ranges): class VeloMood L15+, class VeloBadge L23+, function build L27-32, class VeloAvatar L33+, function createState L39-41, class _VeloAvatarState L42+, function dispose L47-67, class _VeloPainter L68+, function _w L77-78, function _text L79-90, function _ellipse L91-99, function paint L100-187, function _fin L188-202, function _face L203-310, function _extrasBehind L311-337, function _extrasFront L338-381, function shouldRepaint L382-384
@@ -344,7 +343,7 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/widgets.dart  (16 lines)
 - Imports: lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/line_icons.dart, lib/ui/primitives.dart, lib/ui/theme.dart
 - Imported by (12): lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, lib/ui/todos_page.dart
-- If changed, affects 14 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
+- If changed, affects 13 file(s): lib/main.dart, lib/ui/about_page.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/parts.dart, lib/ui/prompts.dart ...
 
 ## lib/ui/widgets/widgets_header_button.dart  (149 lines)
 - Defines (read with exact line ranges): class HeaderButton L4+, function build L21-56, class CountBadge L57+, class InfoRow L90+, function toolIcon L128-141, function toolColor L142-149
@@ -359,12 +358,12 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): class VoiceScope L12+, function of L19-25, function read L26-32
 - Imports: lib/voice/voice_service.dart
 - Imported by (3): lib/main.dart, lib/ui/chat.dart, lib/ui/settings_page.dart
-- If changed, affects 8 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, test/widget/home_test.dart
+- If changed, affects 7 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart
 
 ## lib/voice/voice_service.dart  (24 lines)
 - Imports: lib/state/store.dart
 - Imported by (4): lib/main.dart, lib/ui/chat.dart, lib/ui/settings_page.dart, lib/voice/voice_scope.dart
-- If changed, affects 9 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, lib/voice/voice_scope.dart, test/widget/home_test.dart
+- If changed, affects 8 file(s): lib/main.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/home.dart, lib/ui/models_page.dart, lib/ui/sessions_page.dart, lib/ui/settings_page.dart, lib/voice/voice_scope.dart
 
 ## lib/voice/voice_service/voice_service_conversation.dart  (238 lines)
 - Defines (read with exact line ranges): class VoiceServiceConversation L9+, function _finishUtterance L10-26, function _commitUtterance L27-41, function _sendAndWait L42-70, function _onEmptyUtterance L71-87, function toggleConversation L88-95, function startConversation L96-116, function endConversation L117-137, function _onSessionChanged L138-154, function _handleTail L155-184, function _lastAssistantMessage L185-192, function _checkInactivity L193-198, function _resumeLoop L199-212, function _relisten L213-238
@@ -396,22 +395,21 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/widgets/buddy.dart  (755 lines)
 - Defines (read with exact line ranges): class BuddyChar L26+, class BuddyMood L28+, class BuddyBadge L36+, function build L41-47, class BuddyAvatar L48+, function createState L63-65, class _BuddyAvatarState L66+, function dispose L71-91, class _BuddyPainter L92+, function _w L110-111, function _text L112-124, function paint L125-151, function _seated L152-220, function _running L221-252, function _head L253-352, function _effects L353-419, function shouldRepaint L420-423, class BuddyDemoPage L424+, class _BuddyDemoPageState L430+, class PermissionDecision L456+, class PermissionRequest L458+, class BuddyController L468+, function character L482-486, function _set L487-506, function connecting L507-507, function connected L508-508, function disconnected L509-512, function userSent L513-515, function thinking L516-518, function writing L519-521, function toolStart L522-533, function toolEnd L534-536, function done L537-539, function error L540-543, function poke L544-552, function askPermission L553-563, function answerPermission L564-576, function runDemo L577-599, class BuddyOverlay L600+, class _PermissionCard L686+
 - Imported by (4): lib/main.dart, lib/state/store.dart, lib/ui/prompts.dart, lib/ui/settings_page.dart
-- If changed, affects 20 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
+- If changed, affects 19 file(s): lib/main.dart, lib/state/store.dart, lib/ui/about_page.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/diff_page.dart, lib/ui/files_page.dart, lib/ui/home.dart, lib/ui/models_page.dart ...
 
 ## test/helpers/fake_client.dart  (23 lines)
 - Defines (read with exact line ranges): class FakeOcClient L6+, function sessions L11-15, function sessionStatus L16-20, function close L21-23
 - Imports: lib/api/client.dart, lib/models/models.dart
-- Imported by (1): test/widget/home_test.dart
-- If changed, affects 1 file(s): test/widget/home_test.dart
 
-## test/unit/chat_db_test.dart  (62 lines)
-- Defines (read with exact line ranges): function main L6-62
+## test/unit/chat_db_test.dart  (64 lines)
+- Defines (read with exact line ranges): function main L6-64
 - Imports: lib/db/chat_db.dart, lib/models/models.dart
 
-## test/unit/json_parsing_test.dart  (68 lines)
-- Defines (read with exact line ranges): function main L4-68
+## test/unit/json_parsing_test.dart  (62 lines)
+- Defines (read with exact line ranges): function main L4-62
 - Imports: lib/models/models.dart
 
-## test/widget/home_test.dart  (19 lines)
-- Defines (read with exact line ranges): function main L9-19
-- Imports: lib/api/client.dart, lib/main.dart, lib/state/store.dart, test/helpers/fake_client.dart
+## test/widget/home_test.dart  (42 lines)
+- Defines (read with exact line ranges): function main L6-42
+- Imports: lib/ui/primitives.dart, lib/ui/theme.dart
+- NOTE: this is deliberately a leaf-widget smoke test. Pumping the whole app :7

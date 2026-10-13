@@ -6,6 +6,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfiNoIsolate;
+  ChatDB.overridePath = inMemoryDatabasePath;
 
   group('ChatDB basic operations', () {
     test('open, write and read session/messages', () async {

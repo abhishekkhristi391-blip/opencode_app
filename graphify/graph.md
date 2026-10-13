@@ -44,6 +44,7 @@ lib/api/client/client_oc_client_messages.dart --defines--> lib/api/client/client
 lib/api/client/client_oc_client_messages.dart --defines--> lib/api/client/client_oc_client_messages.dart::replyPermission [EXTRACTED] lib/api/client/client_oc_client_messages.dart:9
 lib/api/client/client_oc_client_messages.dart --defines--> lib/api/client/client_oc_client_messages.dart::replyPermissionV1 [EXTRACTED] lib/api/client/client_oc_client_messages.dart:20
 lib/api/client/client_oc_client_messages.dart --calls--> lib/db/chat_db.dart::deleteMessage [INFERRED 0.35] lib/api/client/client_oc_client_messages.dart:0
+lib/api/client/client_oc_client_messages.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/api/client/client_oc_client_messages.dart:0
 lib/api/client/client_oc_client_messages.dart --calls--> lib/models/models/models_session_message.dart::asBool [INFERRED 0.6] lib/api/client/client_oc_client_messages.dart:0
 lib/api/client/client_oc_client_messages.dart --calls--> lib/models/models/models_session_message.dart::asList [INFERRED 0.6] lib/api/client/client_oc_client_messages.dart:0
 lib/api/client/client_oc_client_messages.dart --calls--> lib/models/models/models_session_message.dart::asMap [INFERRED 0.6] lib/api/client/client_oc_client_messages.dart:0
@@ -89,6 +90,7 @@ lib/api/client/client_oc_client_sessions.dart --defines--> lib/api/client/client
 lib/api/client/client_oc_client_sessions.dart --defines--> lib/api/client/client_oc_client_sessions.dart::todos [EXTRACTED] lib/api/client/client_oc_client_sessions.dart:54
 lib/api/client/client_oc_client_sessions.dart --defines--> lib/api/client/client_oc_client_sessions.dart::unrevert [EXTRACTED] lib/api/client/client_oc_client_sessions.dart:127
 lib/api/client/client_oc_client_sessions.dart --defines--> lib/api/client/client_oc_client_sessions.dart::unshare [EXTRACTED] lib/api/client/client_oc_client_sessions.dart:74
+lib/api/client/client_oc_client_sessions.dart --calls--> lib/db/chat_db.dart::sessions [INFERRED 0.35] lib/api/client/client_oc_client_sessions.dart:0
 lib/api/client/client_oc_client_sessions.dart --calls--> lib/models/models/models_session_message.dart::asBool [INFERRED 0.6] lib/api/client/client_oc_client_sessions.dart:0
 lib/api/client/client_oc_client_sessions.dart --calls--> lib/models/models/models_session_message.dart::asList [INFERRED 0.6] lib/api/client/client_oc_client_sessions.dart:0
 lib/api/client/client_oc_client_sessions.dart --calls--> lib/models/models/models_session_message.dart::asMap [INFERRED 0.6] lib/api/client/client_oc_client_sessions.dart:0
@@ -158,22 +160,28 @@ lib/api/events.dart --calls--> lib/state/store/store_ocstore_history.dart::send 
 lib/api/events.dart --calls--> lib/ui/home/home_shell.dart::Function [INFERRED 0.6] lib/api/events.dart:0
 lib/db/chat_db.dart --calls--> lib/api/client/client_oc_client_messages.dart::deleteMessage [INFERRED 0.35] lib/db/chat_db.dart:0
 lib/db/chat_db.dart --calls--> lib/api/client/client_oc_client_sessions.dart::sessions [INFERRED 0.35] lib/db/chat_db.dart:0
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::ChatDB [EXTRACTED] lib/db/chat_db.dart:21
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_createMessages [EXTRACTED] lib/db/chat_db.dart:67
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_createSessions [EXTRACTED] lib/db/chat_db.dart:84
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_enqueue [EXTRACTED] lib/db/chat_db.dart:98
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_init [EXTRACTED] lib/db/chat_db.dart:42
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_sortKey [EXTRACTED] lib/db/chat_db.dart:111
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_writeRow [EXTRACTED] lib/db/chat_db.dart:122
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::clearSession [EXTRACTED] lib/db/chat_db.dart:218
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::deleteMessage [EXTRACTED] lib/db/chat_db.dart:155
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::deleteSessionRow [EXTRACTED] lib/db/chat_db.dart:251
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::loadMessages [EXTRACTED] lib/db/chat_db.dart:172
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::loadOlderThan [EXTRACTED] lib/db/chat_db.dart:196
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::loadSessions [EXTRACTED] lib/db/chat_db.dart:259
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::saveSession [EXTRACTED] lib/db/chat_db.dart:246
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::saveSessions [EXTRACTED] lib/db/chat_db.dart:228
-lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::upsertMessages [EXTRACTED] lib/db/chat_db.dart:136
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::ChatDB [EXTRACTED] lib/db/chat_db.dart:23
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_createMessages [EXTRACTED] lib/db/chat_db.dart:75
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_createSessions [EXTRACTED] lib/db/chat_db.dart:92
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_enqueue [EXTRACTED] lib/db/chat_db.dart:106
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_init [EXTRACTED] lib/db/chat_db.dart:49
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_sortKey [EXTRACTED] lib/db/chat_db.dart:119
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::_writeRow [EXTRACTED] lib/db/chat_db.dart:130
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::clearAll [EXTRACTED] lib/db/chat_db.dart:278
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::clearSession [EXTRACTED] lib/db/chat_db.dart:226
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::deleteMessage [EXTRACTED] lib/db/chat_db.dart:163
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::deleteSessionRow [EXTRACTED] lib/db/chat_db.dart:259
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::loadMessages [EXTRACTED] lib/db/chat_db.dart:180
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::loadOlderThan [EXTRACTED] lib/db/chat_db.dart:204
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::loadSessions [EXTRACTED] lib/db/chat_db.dart:267
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::messages [EXTRACTED] lib/db/chat_db.dart:297
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::saveSession [EXTRACTED] lib/db/chat_db.dart:254
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::saveSessions [EXTRACTED] lib/db/chat_db.dart:236
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::sessions [EXTRACTED] lib/db/chat_db.dart:292
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::upsertMessages [EXTRACTED] lib/db/chat_db.dart:144
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::writeMessage [EXTRACTED] lib/db/chat_db.dart:288
+lib/db/chat_db.dart --defines--> lib/db/chat_db.dart::writeSession [EXTRACTED] lib/db/chat_db.dart:284
+lib/db/chat_db.dart --imports--> lib/models/models.dart [EXTRACTED] lib/db/chat_db.dart:7
 lib/db/chat_db.dart --calls--> lib/ui/home/home_shell.dart::Function [INFERRED 0.6] lib/db/chat_db.dart:0
 lib/db/chat_db.dart --calls--> test/helpers/fake_client.dart::sessions [INFERRED 0.35] lib/db/chat_db.dart:0
 lib/l10n/strings.dart --defines--> lib/l10n/strings.dart::S [EXTRACTED] lib/l10n/strings.dart:9
@@ -380,6 +388,7 @@ lib/state/store/store_ocstore.dart --calls--> lib/widgets/buddy.dart::toolEnd [I
 lib/state/store/store_ocstore.dart --calls--> lib/widgets/buddy.dart::toolStart [INFERRED 0.6] lib/state/store/store_ocstore.dart:0
 lib/state/store/store_ocstore.dart --calls--> lib/widgets/buddy.dart::writing [INFERRED 0.6] lib/state/store/store_ocstore.dart:0
 lib/state/store/store_ocstore_cache.dart --calls--> lib/db/chat_db.dart::loadMessages [INFERRED 0.6] lib/state/store/store_ocstore_cache.dart:0
+lib/state/store/store_ocstore_cache.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/state/store/store_ocstore_cache.dart:0
 lib/state/store/store_ocstore_cache.dart --calls--> lib/db/chat_db.dart::upsertMessages [INFERRED 0.6] lib/state/store/store_ocstore_cache.dart:0
 lib/state/store/store_ocstore_cache.dart --calls--> lib/models/models/models_session_message.dart::asList [INFERRED 0.6] lib/state/store/store_ocstore_cache.dart:0
 lib/state/store/store_ocstore_cache.dart --calls--> lib/models/models/models_session_message.dart::asMap [INFERRED 0.6] lib/state/store/store_ocstore_cache.dart:0
@@ -407,6 +416,7 @@ lib/state/store/store_ocstore_connection.dart --calls--> lib/api/events.dart::Ev
 lib/state/store/store_ocstore_connection.dart --calls--> lib/api/events.dart::reconnect [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
 lib/state/store/store_ocstore_connection.dart --calls--> lib/api/events.dart::shutdown [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
 lib/state/store/store_ocstore_connection.dart --calls--> lib/api/events.dart::start [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
+lib/state/store/store_ocstore_connection.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
 lib/state/store/store_ocstore_connection.dart --calls--> lib/l10n/strings.dart::netUnreachable [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
 lib/state/store/store_ocstore_connection.dart --calls--> lib/state/store/store_ocstore.dart::_buddyConnected [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
 lib/state/store/store_ocstore_connection.dart --calls--> lib/state/store/store_ocstore.dart::_buddyConnecting [INFERRED 0.6] lib/state/store/store_ocstore_connection.dart:0
@@ -479,6 +489,7 @@ lib/state/store/store_ocstore_events.dart --calls--> lib/state/store/store_ocsto
 lib/state/store/store_ocstore_events.dart --calls--> lib/state/store/store_ocstore_view_state.dart::_stampArrival [INFERRED 0.6] lib/state/store/store_ocstore_events.dart:0
 lib/state/store/store_ocstore_events.dart --calls--> lib/state/store/store_types.dart::notify [INFERRED 0.6] lib/state/store/store_ocstore_events.dart:0
 lib/state/store/store_ocstore_history.dart --calls--> lib/db/chat_db.dart::loadOlderThan [INFERRED 0.6] lib/state/store/store_ocstore_history.dart:0
+lib/state/store/store_ocstore_history.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/state/store/store_ocstore_history.dart:0
 lib/state/store/store_ocstore_history.dart --calls--> lib/models/models/models_session_message.dart::Message [INFERRED 0.6] lib/state/store/store_ocstore_history.dart:0
 lib/state/store/store_ocstore_history.dart --calls--> lib/models/models/models_session_message.dart::Tokens [INFERRED 0.6] lib/state/store/store_ocstore_history.dart:0
 lib/state/store/store_ocstore_history.dart --calls--> lib/models/models/models_session_message.dart::asList [INFERRED 0.6] lib/state/store/store_ocstore_history.dart:0
@@ -614,7 +625,9 @@ lib/state/store/store_ocstore_sessions.dart --calls--> lib/api/client/client_oc_
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/db/chat_db.dart::clearSession [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/db/chat_db.dart::deleteSessionRow [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/db/chat_db.dart::loadSessions [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
+lib/state/store/store_ocstore_sessions.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/db/chat_db.dart::saveSessions [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
+lib/state/store/store_ocstore_sessions.dart --calls--> lib/db/chat_db.dart::sessions [INFERRED 0.35] lib/state/store/store_ocstore_sessions.dart:0
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/models/models/models_session_message.dart::asMap [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/models/models/models_session_message.dart::asStr [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
 lib/state/store/store_ocstore_sessions.dart --calls--> lib/state/store/store_ocstore.dart::notifyListeners [INFERRED 0.6] lib/state/store/store_ocstore_sessions.dart:0
@@ -839,6 +852,7 @@ lib/ui/chat/chat_input_controls.dart --defines--> lib/ui/chat/chat_input_control
 lib/ui/chat/chat_input_controls.dart --defines--> lib/ui/chat/chat_input_controls.dart::initState [EXTRACTED] lib/ui/chat/chat_input_controls.dart:31
 lib/ui/chat/chat_input_controls.dart --calls--> lib/ui/line_icons/line_icons_widgets.dart::LIcon [INFERRED 0.6] lib/ui/chat/chat_input_controls.dart:0
 lib/ui/chat/chat_input_controls.dart --calls--> lib/widgets/buddy.dart::_set [INFERRED 0.35] lib/ui/chat/chat_input_controls.dart:0
+lib/ui/chat/chat_message.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/ui/chat/chat_message.dart:0
 lib/ui/chat/chat_message.dart --defines--> lib/ui/chat/chat_message.dart::SuggestionCard [EXTRACTED] lib/ui/chat/chat_message.dart:8
 lib/ui/chat/chat_message.dart --defines--> lib/ui/chat/chat_message.dart::_MessageTile [EXTRACTED] lib/ui/chat/chat_message.dart:109
 lib/ui/chat/chat_message.dart --defines--> lib/ui/chat/chat_message.dart::_MessageTileState [EXTRACTED] lib/ui/chat/chat_message.dart:129
@@ -976,6 +990,7 @@ lib/ui/chat/chat_status.dart --defines--> lib/ui/chat/chat_status.dart::dispose 
 lib/ui/chat/chat_status.dart --calls--> lib/ui/line_icons/line_icons_widgets.dart::LIcon [INFERRED 0.6] lib/ui/chat/chat_status.dart:0
 lib/ui/chat/chat_status.dart --calls--> lib/ui/line_icons/line_icons_widgets.dart::LIconButton [INFERRED 0.6] lib/ui/chat/chat_status.dart:0
 lib/ui/chat/chat_status.dart --calls--> lib/ui/primitives/primitives_progress_chip.dart::OCProgressBar [INFERRED 0.6] lib/ui/chat/chat_status.dart:0
+lib/ui/chat/chat_transcript.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] lib/ui/chat/chat_transcript.dart:0
 lib/ui/chat/chat_transcript.dart --calls--> lib/ui/chat/chat_message.dart::_MessageTile [INFERRED 0.6] lib/ui/chat/chat_transcript.dart:0
 lib/ui/chat/chat_transcript.dart --calls--> lib/ui/chat/chat_status.dart::_BusyBar [INFERRED 0.6] lib/ui/chat/chat_transcript.dart:0
 lib/ui/chat/chat_transcript.dart --defines--> lib/ui/chat/chat_transcript.dart::_BusyBarWidget [EXTRACTED] lib/ui/chat/chat_transcript.dart:4
@@ -2117,6 +2132,7 @@ lib/widgets/buddy.dart --defines--> lib/widgets/buddy.dart::writing [EXTRACTED] 
 test/helpers/fake_client.dart --imports--> lib/api/client.dart [EXTRACTED] test/helpers/fake_client.dart:3
 test/helpers/fake_client.dart --calls--> lib/api/client/client_oc_client_sessions.dart::sessionStatus [INFERRED 0.35] test/helpers/fake_client.dart:0
 test/helpers/fake_client.dart --calls--> lib/api/client/client_oc_client_sessions.dart::sessions [INFERRED 0.35] test/helpers/fake_client.dart:0
+test/helpers/fake_client.dart --calls--> lib/db/chat_db.dart::sessions [INFERRED 0.35] test/helpers/fake_client.dart:0
 test/helpers/fake_client.dart --imports--> lib/models/models.dart [EXTRACTED] test/helpers/fake_client.dart:4
 test/helpers/fake_client.dart --defines--> test/helpers/fake_client.dart::FakeOcClient [EXTRACTED] test/helpers/fake_client.dart:6
 test/helpers/fake_client.dart --defines--> test/helpers/fake_client.dart::close [EXTRACTED] test/helpers/fake_client.dart:21
@@ -2124,6 +2140,11 @@ test/helpers/fake_client.dart --defines--> test/helpers/fake_client.dart::sessio
 test/helpers/fake_client.dart --defines--> test/helpers/fake_client.dart::sessions [EXTRACTED] test/helpers/fake_client.dart:11
 test/unit/chat_db_test.dart --calls--> lib/api/client/client_oc_client_sessions.dart::sessions [INFERRED 0.35] test/unit/chat_db_test.dart:0
 test/unit/chat_db_test.dart --imports--> lib/db/chat_db.dart [EXTRACTED] test/unit/chat_db_test.dart:2
+test/unit/chat_db_test.dart --calls--> lib/db/chat_db.dart::clearAll [INFERRED 0.6] test/unit/chat_db_test.dart:0
+test/unit/chat_db_test.dart --calls--> lib/db/chat_db.dart::messages [INFERRED 0.6] test/unit/chat_db_test.dart:0
+test/unit/chat_db_test.dart --calls--> lib/db/chat_db.dart::sessions [INFERRED 0.35] test/unit/chat_db_test.dart:0
+test/unit/chat_db_test.dart --calls--> lib/db/chat_db.dart::writeMessage [INFERRED 0.6] test/unit/chat_db_test.dart:0
+test/unit/chat_db_test.dart --calls--> lib/db/chat_db.dart::writeSession [INFERRED 0.6] test/unit/chat_db_test.dart:0
 test/unit/chat_db_test.dart --imports--> lib/models/models.dart [EXTRACTED] test/unit/chat_db_test.dart:3
 test/unit/chat_db_test.dart --calls--> test/helpers/fake_client.dart::sessions [INFERRED 0.35] test/unit/chat_db_test.dart:0
 test/unit/chat_db_test.dart --defines--> test/unit/chat_db_test.dart::main [EXTRACTED] test/unit/chat_db_test.dart:6
@@ -2134,9 +2155,8 @@ test/unit/json_parsing_test.dart --calls--> lib/models/models/models_session_mes
 test/unit/json_parsing_test.dart --calls--> lib/models/models/models_session_message.dart::asMap [INFERRED 0.6] test/unit/json_parsing_test.dart:0
 test/unit/json_parsing_test.dart --calls--> lib/models/models/models_session_message.dart::asStr [INFERRED 0.6] test/unit/json_parsing_test.dart:0
 test/unit/json_parsing_test.dart --defines--> test/unit/json_parsing_test.dart::main [EXTRACTED] test/unit/json_parsing_test.dart:4
-test/widget/home_test.dart --imports--> lib/api/client.dart [EXTRACTED] test/widget/home_test.dart:5
-test/widget/home_test.dart --imports--> lib/main.dart [EXTRACTED] test/widget/home_test.dart:3
-test/widget/home_test.dart --calls--> lib/main.dart::OpenCodeApp [INFERRED 0.6] test/widget/home_test.dart:0
-test/widget/home_test.dart --imports--> lib/state/store.dart [EXTRACTED] test/widget/home_test.dart:4
-test/widget/home_test.dart --imports--> test/helpers/fake_client.dart [EXTRACTED] test/widget/home_test.dart:7
-test/widget/home_test.dart --defines--> test/widget/home_test.dart::main [EXTRACTED] test/widget/home_test.dart:9
+test/widget/home_test.dart --imports--> lib/ui/primitives.dart [EXTRACTED] test/widget/home_test.dart:3
+test/widget/home_test.dart --calls--> lib/ui/primitives/primitives_buttons_cards.dart::OCButton [INFERRED 0.6] test/widget/home_test.dart:0
+test/widget/home_test.dart --imports--> lib/ui/theme.dart [EXTRACTED] test/widget/home_test.dart:4
+test/widget/home_test.dart --calls--> lib/ui/theme/theme_radius_typography.dart::buildAppTheme [INFERRED 0.6] test/widget/home_test.dart:0
+test/widget/home_test.dart --defines--> test/widget/home_test.dart::main [EXTRACTED] test/widget/home_test.dart:6

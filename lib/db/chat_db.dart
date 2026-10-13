@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../models/models.dart';
+
 /// Local chat history cache.
 ///
 /// The server is the source of truth; this only exists so a session opens with
@@ -32,6 +34,11 @@ class ChatDB {
   /// still sort after whatever is already stored instead of jumping to 1970.
   int _seq = DateTime.now().millisecondsSinceEpoch;
 
+  /// Test-only override for the database file location. The app leaves this
+  /// null and stores the cache beside its documents; tests point it at
+  /// `inMemoryDatabasePath` so they need no platform plugins.
+  static String? overridePath;
+
   Future<Database> get db async {
     final existing = _db;
     if (existing != null) return existing;
@@ -40,8 +47,9 @@ class ChatDB {
   }
 
   Future<Database> _init() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final path = '${dir.path}/opencode_chat.db';
+    final path =
+        overridePath ??
+        '${(await getApplicationDocumentsDirectory()).path}/opencode_chat.db';
     final opened = await openDatabase(
       path,
       version: 3,

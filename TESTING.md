@@ -1,7 +1,7 @@
 # CI & Testing Setup
 
 ## GitHub Actions CI
-A workflow is set up at `.github/workflows/ci.yml` that runs on every push and pull request to `main`/`master`:
+A workflow is set up at `.github/workflows/build.yml` that runs on every push and pull request to `main`:
 
 1. Checkout code
 2. Set up Flutter (stable) with caching via `subosito/flutter-action@v2`
@@ -15,8 +15,8 @@ A workflow is set up at `.github/workflows/ci.yml` that runs on every push and p
 Simple tests added (no app behavior changes):
 
 - `test/unit/json_parsing_test.dart` - validates `asMap`, `asList`, `asStr`, `asInt`, `asBool` helpers and basic model parsing (`ModelInfo`, `Session`)
-- `test/unit/chat_db_test.dart` - tests ChatDB open/write/read/clear using `sqflite_common_ffi` (for CI environment without Android device)
-- `test/widget/home_test.dart` - basic smoke test that app renders
+- `test/unit/chat_db_test.dart` - tests ChatDB open/write/read/clear using `sqflite_common_ffi` (in-memory DB, no Android device)
+- `test/widget/home_test.dart` - leaf-widget smoke test (renders `OCButton`). It deliberately does **not** pump the whole app: `OpenCodeApp` boots plugins (shared_preferences, path_provider) and opens a live connection, neither of which work under `flutter test`.
 - `test/helpers/fake_client.dart` - simple `FakeOcClient` for future widget tests
 
 Note: `sqflite_common_ffi` is added as a dev dependency for desktop/CI SQLite support.
