@@ -22,12 +22,15 @@ void main() {
       expect(asInt(5.6), 5);
 
       expect(asBool(true), true);
-      expect(asBool(1), true);
-      expect(asBool('true'), true);
-      expect(asBool('yes'), true);
       expect(asBool(false), false);
       expect(asBool(null), false);
       expect(asBool(''), false);
+      // asBool accepts only a real bool; every non-bool falls back to the
+      // default (false). Unlike asInt/asStr it does not coerce numbers or
+      // strings, because the server always sends real JSON booleans.
+      expect(asBool(1), false);
+      expect(asBool('true'), false);
+      expect(asBool('yes'), false);
     });
 
     test('ModelInfo basic fields', () {

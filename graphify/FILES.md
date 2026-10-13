@@ -405,8 +405,8 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 - Defines (read with exact line ranges): function main L6-64
 - Imports: lib/db/chat_db.dart, lib/models/models.dart
 
-## test/unit/json_parsing_test.dart  (62 lines)
-- Defines (read with exact line ranges): function main L4-62
+## test/unit/json_parsing_test.dart  (65 lines)
+- Defines (read with exact line ranges): function main L4-65
 - Imports: lib/models/models.dart
 
 ## test/widget/home_test.dart  (42 lines)
