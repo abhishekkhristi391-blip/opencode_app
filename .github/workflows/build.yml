@@ -1,0 +1,72 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Generate Android host project
+        run: |
+          cp pubspec.yaml /tmp/pubspec.yaml.bak
+          cp -r lib /tmp/lib.bak
+          [ -f analysis_options.yaml ] && cp analysis_options.yaml /tmp/analysis_options.yaml.bak
+          [ -d test ] && cp -r test /tmp/test.bak
+          flutter create . --platforms=android --project-name opencode_chat --org com.opencode.client
+          cp /tmp/pubspec.yaml.bak pubspec.yaml
+          rm -rf lib && cp -r /tmp/lib.bak lib
+          if [ -f /tmp/analysis_options.yaml.bak ]; then
+            cp /tmp/analysis_options.yaml.bak analysis_options.yaml
+          fi
+          if [ -d /tmp/test.bak ]; then
+            rm -rf test && cp -r /tmp/test.bak test
+          fi
+
+      - name: Manifest patches
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q '<uses-permission android:name="android.permission.INTERNET"/>' $M || sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
+          grep -q 'android:usesCleartextTraffic' $M || sed -i 's#<application#<application android:usesCleartextTraffic="true"#' $M
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
+
+      - name: Flutter test
+        run: flutter test
+
+      - name: Build APK
+        run: flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
