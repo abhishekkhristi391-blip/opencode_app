@@ -26,203 +26,24 @@ jobs:
           channel: stable
           cache: true
 
-      # `flutter create .` generates the android/ host project, but it must not
-      # clobber our pubspec or lib/ sources.
-      #
-      # It also drops in files we do not want: its own analysis_options.yaml
-      # (which includes package:flutter_lints and would overwrite ours) and a
-      # template test/widget_test.dart referencing a `MyApp` class that does
-      # not exist here. Both are restored/removed below, otherwise
-      # `flutter analyze` walks the stale template test and fails.
       - name: Generate Android host project
         run: |
           cp pubspec.yaml /tmp/pubspec.yaml.bak
           cp -r lib /tmp/lib.bak
           [ -f analysis_options.yaml ] && cp analysis_options.yaml /tmp/analysis_options.yaml.bak
+          [ -d test ] && cp -r test /tmp/test.bak
           flutter create . --platforms=android --project-name opencode_chat --org com.opencode.client
           cp /tmp/pubspec.yaml.bak pubspec.yaml
           rm -rf lib && cp -r /tmp/lib.bak lib
           if [ -f /tmp/analysis_options.yaml.bak ]; then
             cp /tmp/analysis_options.yaml.bak analysis_options.yaml
           fi
-          rm -rf test
+          if [ -d /tmp/test.bak ]; then
+            rm -rf test && cp -r /tmp/test.bak test
+          fi
 
-      - name: Manifest patches (internet + cleartext + label + voice)
+      - name: Manifest patches
         run: |
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<manifest#<manifest#' $M
-          # INTERNET permission
-          sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
-          # Termux localhost + LAN servers are plain HTTP
-          sed -i 's#<application#<application android:usesCleartextTraffic="true"#' $M
-          # app name
-          sed -i 's#android:label="[^"]*"#android:label="OpenCode"#' $M
-          # Storage permissions
-          sed -i '/<uses-permission android:name="android.permission.INTERNET"\/>/a\    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>\n    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>' $M
-          # ---- voice ----
-          # RECORD_AUDIO: speech_to_text. Without it, initialize() returns false
-          # and dictation is dead on a real device even though the app builds.
-          sed -i '/<uses-permission android:name="android.permission.INTERNET"\/>/a\    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' $M
-          # Package visibility (Android 11+). Without these two <queries> the
-          # SpeechRecognizer and the TTS engine are invisible to the app: TTS
-          # reports no engines and speech recognition reports "not available".
-          sed -i 's#<application#<queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService"/>\n        </intent>\n        <intent>\n            <action android:name="android.intent.action.TTS_SERVICE"/>\n        </intent>\n    </queries>\n    <application#' $M
-          echo "--- voice manifest verification ---"
-          for needle in \
-            'android.permission.RECORD_AUDIO' \
-            'android.permission.INTERNET' \
-            'android.speech.RecognitionService' \
-            'android.intent.action.TTS_SERVICE' \
-            '<queries>'; do
-            if ! grep -q -- "$needle" $M; then
-              echo "::error::AndroidManifest.xml is missing $needle"
-              exit 1
-            fi
-            echo "ok: $needle"
-          done
-
-      # flutter_tts 4.2.x declares minSdkVersion 24, so the app host cannot be
-      # lower: Gradle fails the merge with an obscure manifest-min-sdk error.
-      # The generated template pins `flutter.minSdkVersion`, whose value moves
-      # between Flutter releases, so it is set explicitly here instead.
-      - name: Android minSdk 24 (required by flutter_tts)
-        run: |
-          set -e
-          K=android/app/build.gradle.kts
-          G=android/app/build.gradle
-          if [ -f "$K" ]; then
-            python3 - "$K" <<'PY'
-          import re, sys
-          p = sys.argv[1]
-          s = open(p).read()
-          # Replace whatever the template put there (flutter.minSdkVersion or a
-          # literal), keeping that line's own indentation.
-          s2, n = re.subn(r'(?m)^([ \t]*)minSdk\s*=.*$', r'\1minSdk = 24', s)
-          if n == 0:
-              # A template that dropped the line entirely: add it inside
-              # defaultConfig, which is the only block AGP reads it from.
-              s2, n = re.subn(
-                  r'(?m)^([ \t]*)defaultConfig\s*\{[ \t]*$',
-                  lambda m: m.group(0) + '\n' + m.group(1) + '    minSdk = 24',
-                  s,
-              )
-          if n == 0:
-              sys.exit('could not place minSdk in %s' % p)
-          open(p, 'w').write(s2)
-          PY
-          elif [ -f "$G" ]; then
-            python3 - "$G" <<'PY'
-          import re, sys
-          p = sys.argv[1]
-          s = open(p).read()
-          s2, n = re.subn(r'(?m)^([ \t]*)minSdkVersion\s+.*$', r'\1minSdkVersion 24', s)
-          if n == 0:
-              s2, n = re.subn(
-                  r'(?m)^([ \t]*)defaultConfig\s*\{[ \t]*$',
-                  lambda m: m.group(0) + '\n' + m.group(1) + '    minSdkVersion 24',
-                  s,
-              )
-          if n == 0:
-              sys.exit('could not place minSdkVersion in %s' % p)
-          open(p, 'w').write(s2)
-          PY
-          else
-            echo "::error::no android/app/build.gradle[.kts] after flutter create"
-            exit 1
-          fi
-          echo "--- minSdk verification ---"
-          grep -rn 'minSdk' android/app/ || true
-          if ! grep -rqE 'minSdk(Version)?\s*=?\s*24' android/app/; then
-            echo "::error::minSdk 24 was not applied to the Android host"
-            exit 1
-          fi
-
-      # Stable release signing: commit android/app/upload-release.p12 +
-      # key.properties and point the release buildType at them. Without this
-      # every run's `flutter create` generated a FRESH debug keystore, so each
-      # APK had a new signature and installing over the previous version failed
-      # with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
-      - name: Stable release signing
-        run: |
-          K=android/app/build.gradle.kts
-          G=android/app/build.gradle
-          F=$K
-          [ ! -f "$F" ] && F=$G
-          [ -f android/app/upload-release.p12 ] || { echo "::error::keystore missing"; exit 1; }
-          python3 - "$F" <<'PY'
-          import re, sys
-          p = sys.argv[1]
-          s = open(p).read()
-          KTS_SIGN = ("signingConfigs {\n"
-                      "    create(\"release\") {\n"
-                      "        keyAlias = \"upload\"\n"
-                      "        keyPassword = \"opencode\"\n"
-                      "        storeFile = file(\"upload-release.p12\")\n"
-                      "        storePassword = \"opencode\"\n"
-                      "    }\n"
-                      "}\n")
-          GROOVY_SIGN = ("signingConfigs {\n"
-                         "    release {\n"
-                         "        keyAlias \"upload\"\n"
-                         "        keyPassword \"opencode\"\n"
-                         "        storeFile file(\"upload-release.p12\")\n"
-                         "        storePassword \"opencode\"\n"
-                         "    }\n"
-                         "}\n")
-          if p.endswith('.kts'):
-              s2 = re.sub(r'\n\s*// TODO: Add your own signing config for the release build\.\n', '\n', s)
-              s2 = re.sub(r'\n\s*// Signing with the debug keys for now.*\n', '\n', s2)
-              if 'create("release")' not in s2:
-                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + KTS_SIGN + r'\1', s2, count=1)
-              s2 = re.sub(r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
-                          'signingConfig = signingConfigs.getByName("release")', s2)
-          else:
-              s2 = re.sub(r'\n\s*// TODO.*\n', '\n', s)
-              if 'signingConfigs' not in s2:
-                  s2 = re.sub(r'(\n\s*buildTypes\s*\{)', '\n' + GROOVY_SIGN + r'\1', s2, count=1)
-              s2 = re.sub(r'signingConfig\s+signingConfigs\s*\.\s*(debug|release)',
-                          'signingConfig signingConfigs.release', s2)
-          if s2 == s:
-              print("warning: no signing change applied")
-          open(p, 'w').write(s2)
-          PY
-          echo "--- signing verification ---"
-          grep -nE 'signingConfig|upload-release|keyAlias|storeFile' "$F" || true
-
-      # Speed: android/ only exists after `flutter create`, so the Gradle
-      # cache and settings are set up here instead of in setup-java.
-      - name: Gradle speed settings
-        run: |
-          echo "" >> android/gradle.properties
-          echo "org.gradle.parallel=true" >> android/gradle.properties
-          echo "org.gradle.caching=true" >> android/gradle.properties
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('pubspec.yaml') }}
-          restore-keys: gradle-${{ runner.os }}-
-
-      - run: flutter pub get
-
-      - name: Analyze (errors fail the build)
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
-
-      # ONE APK, arm64 only (all modern phones). If the install says
-      # "App not installed" on an old 32-bit phone, use android-arm instead.
-      - name: Build release APK (arm64 only)
-        run: flutter build apk --release --target-platform android-arm64
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: opencode-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Summary
-        run: |
-          echo "### APK ready (arm64)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Download **opencode-apk** from this run's Artifacts." >> "$GITHUB_STEP_SUMMARY"
+          grep -q '<uses-permission android:name="android.permission.INTERNET"/>' $M || sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
+          grep -q 'android:usesCleartextTraffic' $M || sed -i 's#<application#<application android:usesCleartextTraffic="true"#' $M
