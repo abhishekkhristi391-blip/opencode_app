@@ -670,7 +670,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Look for URLs in general - OAuth auth URLs might not have obvious keywords
   final regex = RegExp(
-    r'https?://[^\s<>"\'\)\]\}]+',
+    r'''https?://[^\s<>"'\)\]\}]+''',
     caseSensitive: false,
   );
   for (final m in regex.allMatches(text)) {
@@ -688,39 +688,3 @@ class _SettingsPageState extends State<SettingsPage> {
   return null;
 }
 
-Future<void> _launchExternal(String url) async {
-  final uri = Uri.parse(url);
-  try {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  } catch (_) {
-    try {
-      await launchUrl(uri, mode: LaunchMode.platformDefault);
-    } catch (_) {
-      // ignore
-    }
-  }
-}
-
-Future<void> _handleMcpAuth(
-  BuildContext context,
-  Uri authUri,
-  String errorMsg,
-) async {
-  try {
-    await _launchExternal(authUri.toString());
-    if (context.mounted) {
-      showSnack(
-        context,
-        'Opened auth in browser. Complete login there, then retry connect.',
-      );
-    }
-  } catch (_) {
-    if (context.mounted) {
-      showSnack(
-        context,
-        errorMsg,
-        error: true,
-      );
-    }
-  }
-}

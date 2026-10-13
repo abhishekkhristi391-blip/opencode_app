@@ -1,5 +1,5 @@
 # GRAPH REPORT
-111 files, 1060 symbols, 2162 edges (1235 EXTRACTED, 927 INFERRED)
+111 files, 1059 symbols, 2161 edges (1234 EXTRACTED, 927 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - LIcon (class) - 22 links - lib/ui/line_icons/line_icons_widgets.dart:158

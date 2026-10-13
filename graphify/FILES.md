@@ -295,13 +295,13 @@ Format: Defines / Imports / Imported by / Calls into / If changed -> affected fi
 ## lib/ui/sessions_page/sessions_page_tiles.dart  (389 lines)
 - Defines (read with exact line ranges): class _SessionTile L3+, function build L13-118, function _showActions L119-213, function _showChildren L214-277, class _GroupedSessionList L278+, function _bucket L326-338, class _SessionGroup L339+, class _IndexedSession L347+, class _GroupHeaderDelegate L355+, function shouldRebuild L387-389
 
-## lib/ui/settings_page.dart  (26 lines)
+## lib/ui/settings_page.dart  (27 lines)
 - Imports: lib/api/client.dart, lib/l10n/strings.dart, lib/models/models.dart, lib/state/store.dart, lib/ui/app_scope.dart, lib/ui/chat.dart, lib/ui/commands_page.dart, lib/ui/primitives.dart, lib/ui/theme.dart, lib/ui/widgets.dart, lib/voice/voice_scope.dart, lib/voice/voice_service.dart, lib/widgets/buddy.dart
 - Imported by (1): lib/ui/home.dart
 - If changed, affects 2 file(s): lib/main.dart, lib/ui/home.dart
 
-## lib/ui/settings_page/settings_page_body.dart  (727 lines)
-- Defines (read with exact line ranges): class SettingsPage L3+, function createState L7-9, class _SettingsPageState L10+, function initState L12-17, function build L18-430, function _editServer L431-493, function _addMcp L494-569, function _handleMcpAuth L570-626, function _extractAuthUri L627-690, function _launchExternal L691-727
+## lib/ui/settings_page/settings_page_body.dart  (691 lines)
+- Defines (read with exact line ranges): class SettingsPage L3+, function createState L7-9, class _SettingsPageState L10+, function initState L12-17, function build L18-430, function _editServer L431-493, function _addMcp L494-569, function _handleMcpAuth L570-626, function _extractAuthUri L627-691
 
 ## lib/ui/settings_page/settings_page_sections.dart  (339 lines)
 - Defines (read with exact line ranges): class _Group L14+, function build L19-49, class _GroupDivider L50+, class _Providers L59+, function _addKey L131-169, class _ConfigEditor L170+, function createState L175-177, class _ConfigEditorState L178+, function _pretty L183-192, function didUpdateWidget L193-198, function dispose L199-258, class _StatusRow L259+, class _VoiceSettings L287+

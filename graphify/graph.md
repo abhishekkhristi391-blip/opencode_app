@@ -1661,19 +1661,19 @@ lib/ui/sessions_page/sessions_page_tiles.dart --calls--> lib/ui/widgets/widgets_
 lib/ui/sessions_page/sessions_page_tiles.dart --calls--> lib/ui/widgets/widgets_navigation_feedback.dart::showSnack [INFERRED 0.6] lib/ui/sessions_page/sessions_page_tiles.dart:0
 lib/ui/sessions_page/sessions_page_tiles.dart --calls--> lib/ui/widgets/widgets_navigation_feedback.dart::showUndoSnack [INFERRED 0.6] lib/ui/sessions_page/sessions_page_tiles.dart:0
 lib/ui/sessions_page/sessions_page_tiles.dart --calls--> lib/voice/voice_scope.dart::read [INFERRED 0.35] lib/ui/sessions_page/sessions_page_tiles.dart:0
-lib/ui/settings_page.dart --imports--> lib/api/client.dart [EXTRACTED] lib/ui/settings_page.dart:7
-lib/ui/settings_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/settings_page.dart:8
-lib/ui/settings_page.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/settings_page.dart:9
-lib/ui/settings_page.dart --imports--> lib/state/store.dart [EXTRACTED] lib/ui/settings_page.dart:10
-lib/ui/settings_page.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/settings_page.dart:14
-lib/ui/settings_page.dart --imports--> lib/ui/chat.dart [EXTRACTED] lib/ui/settings_page.dart:15
-lib/ui/settings_page.dart --imports--> lib/ui/commands_page.dart [EXTRACTED] lib/ui/settings_page.dart:16
-lib/ui/settings_page.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/settings_page.dart:17
-lib/ui/settings_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/settings_page.dart:18
-lib/ui/settings_page.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/settings_page.dart:19
-lib/ui/settings_page.dart --imports--> lib/voice/voice_scope.dart [EXTRACTED] lib/ui/settings_page.dart:11
-lib/ui/settings_page.dart --imports--> lib/voice/voice_service.dart [EXTRACTED] lib/ui/settings_page.dart:12
-lib/ui/settings_page.dart --imports--> lib/widgets/buddy.dart [EXTRACTED] lib/ui/settings_page.dart:13
+lib/ui/settings_page.dart --imports--> lib/api/client.dart [EXTRACTED] lib/ui/settings_page.dart:8
+lib/ui/settings_page.dart --imports--> lib/l10n/strings.dart [EXTRACTED] lib/ui/settings_page.dart:9
+lib/ui/settings_page.dart --imports--> lib/models/models.dart [EXTRACTED] lib/ui/settings_page.dart:10
+lib/ui/settings_page.dart --imports--> lib/state/store.dart [EXTRACTED] lib/ui/settings_page.dart:11
+lib/ui/settings_page.dart --imports--> lib/ui/app_scope.dart [EXTRACTED] lib/ui/settings_page.dart:15
+lib/ui/settings_page.dart --imports--> lib/ui/chat.dart [EXTRACTED] lib/ui/settings_page.dart:16
+lib/ui/settings_page.dart --imports--> lib/ui/commands_page.dart [EXTRACTED] lib/ui/settings_page.dart:17
+lib/ui/settings_page.dart --imports--> lib/ui/primitives.dart [EXTRACTED] lib/ui/settings_page.dart:18
+lib/ui/settings_page.dart --imports--> lib/ui/theme.dart [EXTRACTED] lib/ui/settings_page.dart:19
+lib/ui/settings_page.dart --imports--> lib/ui/widgets.dart [EXTRACTED] lib/ui/settings_page.dart:20
+lib/ui/settings_page.dart --imports--> lib/voice/voice_scope.dart [EXTRACTED] lib/ui/settings_page.dart:12
+lib/ui/settings_page.dart --imports--> lib/voice/voice_service.dart [EXTRACTED] lib/ui/settings_page.dart:13
+lib/ui/settings_page.dart --imports--> lib/widgets/buddy.dart [EXTRACTED] lib/ui/settings_page.dart:14
 lib/ui/settings_page/settings_page_body.dart --calls--> lib/api/client/client_oc_client_server.dart::disposeInstance [INFERRED 0.6] lib/ui/settings_page/settings_page_body.dart:0
 lib/ui/settings_page/settings_page_body.dart --calls--> lib/api/client/client_oc_client_server.dart::patchConfig [INFERRED 0.6] lib/ui/settings_page/settings_page_body.dart:0
 lib/ui/settings_page/settings_page_body.dart --calls--> lib/api/client/client_oc_client_server.dart::upgrade [INFERRED 0.6] lib/ui/settings_page/settings_page_body.dart:0
@@ -1704,7 +1704,6 @@ lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/s
 lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::_editServer [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:431
 lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::_extractAuthUri [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:627
 lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::_handleMcpAuth [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:570
-lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::_launchExternal [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:691
 lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::build [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:18
 lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::createState [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:7
 lib/ui/settings_page/settings_page_body.dart --defines--> lib/ui/settings_page/settings_page_body.dart::initState [EXTRACTED] lib/ui/settings_page/settings_page_body.dart:12
