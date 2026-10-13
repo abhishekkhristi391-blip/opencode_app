@@ -329,7 +329,7 @@ void _popTileErrorGuard() {
 class _GuardedSessionTile extends StatefulWidget {
   final Session s;
   final int index;
-  const _GuardedSessionTile({required this.s, required this.index});
+  const _GuardedSessionTile({super.key, required this.s, required this.index});
 
   @override
   State<_GuardedSessionTile> createState() => _GuardedSessionTileState();

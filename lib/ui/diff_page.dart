@@ -183,6 +183,13 @@ class _DiffPageState extends State<DiffPage> {
                   icon: Icons.error_outline,
                   title: S.diffLoadFailed,
                   message: err!,
+                  action: OCButton(
+                    onPressed: _load,
+                    icon: Icons.refresh,
+                    label: S.retry,
+                    variant: OCButtonVariant.secondaryPill,
+                    expand: true,
+                  ),
                 )
               : source == 'session'
               ? (sessionFiles.isEmpty
@@ -194,8 +201,10 @@ class _DiffPageState extends State<DiffPage> {
                     : ListView.builder(
                         padding: const EdgeInsets.only(bottom: OCSpace.lg),
                         itemCount: sessionFiles.length,
-                        itemBuilder: (_, i) =>
-                            _SessionDiffTile(d: sessionFiles[i]),
+                        itemBuilder: (_, i) => _SessionDiffTile(
+                          key: ValueKey(sessionFiles[i].path),
+                          d: sessionFiles[i],
+                        ),
                       ))
               : _GitDiffView(raw: rawDiff, files: vcsFiles),
         ),
@@ -204,14 +213,31 @@ class _DiffPageState extends State<DiffPage> {
   }
 }
 
-class _SessionDiffTile extends StatelessWidget {
+class _SessionDiffTile extends StatefulWidget {
   final FileDiff d;
-  const _SessionDiffTile({required this.d});
+  const _SessionDiffTile({super.key, required this.d});
+
+  @override
+  State<_SessionDiffTile> createState() => _SessionDiffTileState();
+}
+
+class _SessionDiffTileState extends State<_SessionDiffTile> {
+  /// Lines rendered before the tile folds the rest behind "Show more". A big
+  /// file still yields its whole patch to copy/apply; only the paint is capped.
+  static const _previewLines = 400;
+  bool _full = false;
+
+  FileDiff get d => widget.d;
 
   @override
   Widget build(BuildContext context) {
     final store = AppScope.of(context);
-    final preview = _unifiedPreview(d);
+    final full = _unifiedPreview(d);
+    final lines = full.isEmpty ? const <String>[] : full.split('\n');
+    final truncated = lines.length > _previewLines;
+    final preview = !truncated || _full
+        ? full
+        : lines.take(_previewLines).join('\n');
 
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -274,7 +300,7 @@ class _SessionDiffTile extends StatelessWidget {
           OCSpace.md,
         ),
         children: [
-          if (preview.isNotEmpty)
+          if (full.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(OCRadius.inner),
               child: DiffText(preview),
@@ -290,13 +316,22 @@ class _SessionDiffTile extends StatelessWidget {
             child: Wrap(
               spacing: OCSpace.sm,
               children: [
-                TextButton.icon(
-                  onPressed: () => copyToClipboard(context, preview),
-                  icon: const Icon(Icons.copy, size: 15),
-                  label: const Text(
-                    S.copyDiff,
-                    style: TextStyle(fontSize: 12),
+                if (truncated)
+                  TextButton.icon(
+                    onPressed: () => setState(() => _full = !_full),
+                    icon: Icon(
+                      _full ? Icons.expand_less : Icons.expand_more,
+                      size: 15,
+                    ),
+                    label: Text(
+                      _full ? S.showLess : S.showMore,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ),
+                TextButton.icon(
+                  onPressed: () => copyToClipboard(context, full),
+                  icon: const Icon(Icons.copy, size: 15),
+                  label: const Text(S.copyDiff, style: TextStyle(fontSize: 12)),
                 ),
                 if (store.vcs?.isRepo == true)
                   TextButton.icon(
@@ -337,7 +372,10 @@ class _SessionDiffTile extends StatelessWidget {
     );
   }
 
-  /// Build a unified diff from the session's before/after snapshots.
+  /// Build the full unified diff from the session's before/after snapshots.
+  ///
+  /// Untruncated: the tile caps what it *renders*, while copy and apply work
+  /// from the whole patch, so a big file is never silently applied in part.
   static String _unifiedPreview(FileDiff d) {
     if (d.before.isEmpty && d.after.isEmpty) return '';
     final a = _split(d.before);
@@ -346,11 +384,9 @@ class _SessionDiffTile extends StatelessWidget {
     final path = d.file.isEmpty ? d.path : d.file;
     out.writeln('--- a/$path');
     out.writeln('+++ b/$path');
-    final ops = _diffOps(a, b);
-    for (final o in ops.take(600)) {
+    for (final o in _diffOps(a, b)) {
       out.writeln(o);
     }
-    if (ops.length > 600) out.writeln('... ${ops.length - 600} aur lines');
     return out.toString();
   }
 
@@ -407,13 +443,24 @@ class _SessionDiffTile extends StatelessWidget {
   static String _toGitPatch(FileDiff d, String? base) => _unifiedPreview(d);
 }
 
-class _GitDiffView extends StatelessWidget {
+class _GitDiffView extends StatefulWidget {
   final String raw;
   final List<String> files;
   const _GitDiffView({required this.raw, required this.files});
 
   @override
+  State<_GitDiffView> createState() => _GitDiffViewState();
+}
+
+class _GitDiffViewState extends State<_GitDiffView> {
+  /// Lines painted before the fold. The raw string is kept whole for copy.
+  static const _previewLines = 400;
+  bool _full = false;
+
+  @override
   Widget build(BuildContext context) {
+    final raw = widget.raw;
+    final files = widget.files;
     if (files.isEmpty && raw.isEmpty) {
       return const EmptyHint(
         icon: Icons.check_circle_outline,
@@ -432,6 +479,7 @@ class _GitDiffView extends StatelessWidget {
               ? OCColors.redInk
               : null;
           return ListTile(
+            key: ValueKey(files[i]),
             dense: true,
             leading: Text(
               parts.first,
@@ -449,9 +497,14 @@ class _GitDiffView extends StatelessWidget {
         },
       );
     }
+    final all = raw.split('\n');
+    final truncated = all.length > _previewLines;
+    final shown = !truncated || _full
+        ? raw
+        : all.take(_previewLines).join('\n');
     return Column(
       children: [
-        Expanded(child: SingleChildScrollView(child: DiffText(raw))),
+        Expanded(child: SingleChildScrollView(child: DiffText(shown))),
         SafeArea(
           top: false,
           child: Padding(
@@ -465,10 +518,22 @@ class _GitDiffView extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${raw.split('\n').length} lines',
+                    S.partsThinkingLines(all.length),
                     style: OCTypography.micro,
                   ),
                 ),
+                if (truncated)
+                  TextButton.icon(
+                    onPressed: () => setState(() => _full = !_full),
+                    icon: Icon(
+                      _full ? Icons.expand_less : Icons.expand_more,
+                      size: 15,
+                    ),
+                    label: Text(
+                      _full ? S.showLess : S.showMore,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
                 TextButton.icon(
                   onPressed: () => copyToClipboard(context, raw),
                   icon: const Icon(Icons.copy, size: 15),

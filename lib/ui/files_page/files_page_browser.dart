@@ -323,6 +323,13 @@ class FilesPageState extends State<FilesPage> {
                   icon: Icons.error_outline,
                   title: S.filesLoadFailed,
                   message: err!,
+                  action: OCButton(
+                    onPressed: () => _load(),
+                    icon: Icons.refresh,
+                    label: S.retry,
+                    variant: OCButtonVariant.secondaryPill,
+                    expand: true,
+                  ),
                 )
               : nodes.isEmpty
               ? EmptyHint(
@@ -333,6 +340,7 @@ class FilesPageState extends State<FilesPage> {
               : ListView.builder(
                   itemCount: nodes.length,
                   itemBuilder: (_, i) => _FileTile(
+                    key: ValueKey(nodes[i].path),
                     node: nodes[i],
                     onOpen: () => _open(nodes[i]),
                     onMenu: () => _menu(nodes[i]),

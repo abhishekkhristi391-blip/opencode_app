@@ -320,8 +320,21 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   onSelected: (v) async {
                     if (v == 'connect') {
-                      await store.api.mcpConnect(e.key);
-                      store.refreshConfig();
+                      try {
+                        await store.api.mcpConnect(e.key);
+                        store.refreshConfig();
+                      } catch (err) {
+                        final msg = err.toString();
+                        final uri = _extractAuthUri(msg);
+                        if (uri != null) {
+                          debugPrint('MCP Auth: connect requires auth, URL: $uri');
+                          await _handleMcpAuth(context, uri, msg);
+                        } else {
+                          if (context.mounted) {
+                            showSnack(context, msg, error: true);
+                          }
+                        }
+                      }
                     } else if (v == 'disconnect') {
                       await store.api.mcpDisconnect(e.key);
                       store.refreshConfig();
@@ -522,21 +535,192 @@ class _SettingsPageState extends State<SettingsPage> {
             OCButton(
               label: S.setAdd,
               variant: OCButtonVariant.primaryBlack,
-              onPressed: () {
+              onPressed: () async {
                 if (name.text.trim().isEmpty || value.text.trim().isEmpty)
                   return;
-                store.addMcp(
-                  name.text.trim(),
-                  type,
-                  value.text.trim(),
-                  const [],
-                );
-                Navigator.pop(dlg);
+                try {
+                  await store.addMcp(
+                    name.text.trim(),
+                    type,
+                    value.text.trim(),
+                    const [],
+                  );
+                  Navigator.pop(dlg);
+                } catch (err) {
+                  final msg = err.toString();
+                  final uri = _extractAuthUri(msg);
+                  if (uri != null) {
+                    debugPrint('MCP Auth: add requires auth, URL: $uri');
+                    await _handleMcpAuth(context, uri, msg);
+                  } else {
+                    if (context.mounted) {
+                      showSnack(context, msg, error: true);
+                    }
+                  }
+                }
               },
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+  Future<void> _handleMcpAuth(
+    BuildContext context,
+    Uri authUri,
+    String errorMsg,
+  ) async {
+    bool launched = false;
+    try {
+      launched = await launchUrl(authUri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('MCP Auth: launchUrl failed: $e');
+    }
+    if (!launched) {
+      debugPrint('MCP Auth: browser launch failed, showing fallback');
+      if (!context.mounted) return;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text(S.mcpAuthRequiredTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(errorMsg, style: OCTypography.micro),
+              const SizedBox(height: OCSpace.md),
+              Container(
+                padding: const EdgeInsets.all(OCSpace.sm),
+                decoration: BoxDecoration(
+                  color: OCColors.surface,
+                  borderRadius: BorderRadius.circular(OCRadius.sm),
+                ),
+                child: SelectableText(
+                  authUri.toString(),
+                  style: OCTypography.micro,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(S.cancel),
+            ),
+            OCButton(
+              label: S.mcpCopyAuthUrl,
+              variant: OCButtonVariant.primaryBlack,
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: authUri.toString()));
+                Navigator.pop(ctx);
+                showSnack(context, S.mcpAuthUrlCopied);
+              },
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Uri? _extractAuthUri(String text) {
+  // Try to parse as JSON first
+  try {
+    final decoded = jsonDecode(text);
+    if (decoded is Map) {
+      // Look for common auth URL fields
+      final candidates = [
+        decoded['url'],
+        decoded['authUrl'],
+        decoded['authorizationUrl'],
+        decoded['location'],
+        decoded['redirectUrl'],
+        decoded['callbackUrl'],
+      ];
+      for (final c in candidates) {
+        if (c is String) {
+          final uri = Uri.tryParse(c);
+          if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+            return uri;
+          }
+        }
+      }
+      // Look in nested data
+      if (decoded['data'] is Map) {
+        final data = decoded['data'] as Map;
+        final dc = [
+          data['url'],
+          data['authUrl'],
+          data['authorizationUrl'],
+        ];
+        for (final c in dc) {
+          if (c is String) {
+            final uri = Uri.tryParse(c);
+            if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+              return uri;
+            }
+          }
+        }
+      }
+    }
+  } catch (_) {
+    // Not JSON
+  }
+
+  // Look for URLs in general - OAuth auth URLs might not have obvious keywords
+  final regex = RegExp(
+    r'https?://[^\s<>"\'\)\]\}]+',
+    caseSensitive: false,
+  );
+  for (final m in regex.allMatches(text)) {
+    final url = m.group(0);
+    if (url == null) continue;
+    // Clean trailing punctuation
+    final cleaned = url.replaceAll(RegExp(r'[.,;:]+$'), '');
+    final uri = Uri.tryParse(cleaned);
+    if (uri == null) continue;
+    // Accept any http(s) URL that might be an auth URL
+    if (uri.scheme == 'http' || uri.scheme == 'https') {
+      return uri;
+    }
+  }
+  return null;
+}
+
+Future<void> _launchExternal(String url) async {
+  final uri = Uri.parse(url);
+  try {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    try {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } catch (_) {
+      // ignore
+    }
+  }
+}
+
+Future<void> _handleMcpAuth(
+  BuildContext context,
+  Uri authUri,
+  String errorMsg,
+) async {
+  try {
+    await _launchExternal(authUri.toString());
+    if (context.mounted) {
+      showSnack(
+        context,
+        'Opened auth in browser. Complete login there, then retry connect.',
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      showSnack(
+        context,
+        errorMsg,
+        error: true,
+      );
+    }
   }
 }

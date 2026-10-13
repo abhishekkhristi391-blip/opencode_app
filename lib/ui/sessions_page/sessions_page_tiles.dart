@@ -281,17 +281,19 @@ class _GroupedSessionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sliver list of header+row pairs: one sliver keeps the whole history in a
-    // single lazily built list, so a long history still starts cheap.
-    final rows = <_Row>[];
+    // One group per sticky header, each group's rows in its own builder sliver:
+    // headers stay pinned while the tiles below them are built lazily, so a long
+    // history no longer constructs every row up front.
+    final groups = <_SessionGroup>[];
     String? group;
+    var index = 0;
     for (final s in list) {
       final g = _bucket(s.updated);
       if (g != group) {
         group = g;
-        rows.add(_Row.header(g));
+        groups.add(_SessionGroup(g));
       }
-      rows.add(_Row.tile(s));
+      groups.last.sessions.add(_IndexedSession(s, index++));
     }
 
     return CustomScrollView(
@@ -300,16 +302,23 @@ class _GroupedSessionList extends StatelessWidget {
         parent: BouncingScrollPhysics(),
       ),
       slivers: [
-        for (var i = 0; i < rows.length; i++)
-          if (rows[i].isHeader)
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _GroupHeaderDelegate(rows[i].label!),
-            )
-          else
-            SliverToBoxAdapter(
-              child: _GuardedSessionTile(s: rows[i].s!, index: i),
-            ),
+        for (final g in groups) ...[
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _GroupHeaderDelegate(g.label),
+          ),
+          SliverList.builder(
+            itemCount: g.sessions.length,
+            itemBuilder: (_, i) {
+              final e = g.sessions[i];
+              return _GuardedSessionTile(
+                key: ValueKey('sess:${e.index}:${e.s.id}'),
+                s: e.s,
+                index: e.index,
+              );
+            },
+          ),
+        ],
       ],
     );
   }
@@ -326,12 +335,19 @@ class _GroupedSessionList extends StatelessWidget {
   }
 }
 
-class _Row {
-  final String? label;
-  final Session? s;
-  final bool isHeader;
-  _Row.header(this.label) : s = null, isHeader = true;
-  _Row.tile(this.s) : label = null, isHeader = false;
+/// A bucket ("Today" / "Yesterday" / "Earlier") and the sessions in it.
+class _SessionGroup {
+  final String label;
+  final List<_IndexedSession> sessions = [];
+  _SessionGroup(this.label);
+}
+
+/// A session plus its position in the *whole* list, so row keys stay unique even
+/// when two cache-restored sessions share an id across group boundaries.
+class _IndexedSession {
+  final Session s;
+  final int index;
+  _IndexedSession(this.s, this.index);
 }
 
 /// Sticky section header. Opaque so rows scroll *under* it instead of showing

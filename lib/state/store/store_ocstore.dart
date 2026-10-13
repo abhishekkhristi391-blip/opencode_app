@@ -304,11 +304,13 @@ class OcStore extends ChangeNotifier {
 
   /// Newest-page size used when opening a session.
   ///
-  /// This is deliberately generous. The documented `before` query parameter
-  /// answers `HTTP 400 {"_tag":"BadRequest"}` for *any* value on opencode
-  /// 1.18.27, so server-side backwards pagination is unavailable there — a
-  /// small limit would permanently hide everything but the newest page.
-  static const pageLimit = 500;
+  /// Kept small so a session paints its latest turns immediately instead of
+  /// pulling an unbounded prefix; older history is paged in on demand. The
+  /// documented `before` parameter answers `HTTP 400 {"_tag":"BadRequest"}` for
+  /// *any* value on opencode 1.18.27, so when the server rejects it the store
+  /// widens `limit` ([_widenHistory]) and falls back to the local cache, both of
+  /// which cover the history a small first page would otherwise hide.
+  static const pageLimit = 40;
 
   /// Current page size; widened on demand for unusually long conversations.
   int _limit = pageLimit;

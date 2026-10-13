@@ -63,7 +63,11 @@ extension OcStoreHistory on OcStore {
     try {
       // Preferred path: ask for the page before the oldest message we hold.
       final fetched =
-          (await api.messages(id, limit: 60, before: _oldestMessageId))
+          (await api.messages(
+                id,
+                limit: OcStore.pageLimit,
+                before: _oldestMessageId,
+              ))
               .map((e) => ChatMessage(e.info, e.parts))
               .where((m) => !m.info.summary)
               .toList();
@@ -71,24 +75,64 @@ extension OcStoreHistory on OcStore {
       if (gen != _historyLoadGen || current?.id != id || _disposed) return;
       if (fetched.isNotEmpty) {
         _prependHistory(id, fetched);
-        hasMoreMessages = fetched.length >= 60;
+        hasMoreMessages = fetched.length >= OcStore.pageLimit;
       } else {
         hasMoreMessages = false;
       }
     } on ApiException {
       // `before` is unimplemented on some builds. Widening `limit` recovers the
       // history instead of giving up and hiding it permanently.
-      await _widenHistory(id, gen);
+      try {
+        await _widenHistory(id, gen);
+      } catch (e) {
+        debugPrint('Widen failed, falling back to cache: $e');
+        if (gen != _historyLoadGen || current?.id != id || _disposed) return;
+        await _loadOlderFromCache(id, gen);
+      }
     } catch (e) {
+      // The server is unreachable. Serve the older page from the local cache so
+      // the session still reads offline instead of stopping at the first page.
       debugPrint('Failed to load older messages: $e');
       // Guard against session switch during the await.
       if (gen != _historyLoadGen || current?.id != id || _disposed) return;
-      hasMoreMessages = false;
+      await _loadOlderFromCache(id, gen);
     }
     if (gen == _historyLoadGen && current?.id == id) {
       messagesLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Server-free counterpart to the `before` fetch: the next page the local
+  /// cache holds in front of the oldest message on screen.
+  Future<void> _loadOlderFromCache(String id, int gen) async {
+    if (messages.isEmpty) {
+      hasMoreMessages = false;
+      return;
+    }
+    final boundary = messages.first.info;
+    final rows = await ChatDB.instance.loadOlderThan(
+      id,
+      created: boundary.created,
+      id: boundary.id,
+      limit: OcStore.pageLimit,
+    );
+    if (gen != _historyLoadGen || current?.id != id || _disposed) return;
+    final older = rows
+        .map(
+          (r) => ChatMessage(
+            Message.fromJson(asMap(r['info'])),
+            asList(r['parts']).map((p) => Part.fromJson(asMap(p))).toList(),
+          ),
+        )
+        .where((m) => !m.info.summary)
+        .toList();
+    if (older.isEmpty) {
+      hasMoreMessages = false;
+      return;
+    }
+    _prependHistory(id, older);
+    hasMoreMessages = rows.length >= OcStore.pageLimit;
   }
 
   // =====================================================================

@@ -16,13 +16,29 @@ class TerminalPage extends StatefulWidget {
 
 class TerminalPageState extends State<TerminalPage> {
   final input = TextEditingController();
-  final out = TextEditingController();
   final scroll = ScrollController();
   final history = <String>[];
+
+  /// The scrollback, one entry per line. Kept as a list rather than one giant
+  /// string so it can be capped and paged without rebuilding the whole buffer.
+  final _lines = <String>[];
+
+  /// Hard ceiling on retained lines; oldest are dropped past this, like a real
+  /// terminal's scrollback limit.
+  static const _scrollbackLimit = 5000;
+
+  /// Lines painted at once before the rest fold behind "Show more".
+  static const _visibleLines = 500;
+
+  bool _showAll = false;
   int historyIndex = -1;
 
   bool running = false;
   bool wrap = true;
+
+  /// Last failed command, kept so the error bar can offer a one-tap re-run.
+  String? _lastError;
+  String? _lastErrorCommand;
 
   final shortcuts = <String, String>{
     'pwd': 'pwd',
@@ -41,14 +57,16 @@ class TerminalPageState extends State<TerminalPage> {
   /// shell has a PTY attached, so clearing the scrollback has to be a local
   /// action.
   void clear() {
-    out.clear();
+    _lines.clear();
+    _showAll = false;
     setState(() {});
   }
 
   /// Runs `clear` and drops the stale scrollback, so "New session" visibly
   /// resets the view instead of leaving the old output behind it.
   void newSession() {
-    out.clear();
+    _lines.clear();
+    _showAll = false;
     history.clear();
     historyIndex = -1;
     _run('clear');
@@ -57,13 +75,18 @@ class TerminalPageState extends State<TerminalPage> {
   @override
   void dispose() {
     input.dispose();
-    out.dispose();
     scroll.dispose();
     super.dispose();
   }
 
   void _append(String s) {
-    out.text += s.endsWith('\n') ? s : '$s\n';
+    // Split multi-line output so the cap is line-accurate, and drop any trailing
+    // newline rather than storing a blank line for it.
+    final text = s.endsWith('\n') ? s.substring(0, s.length - 1) : s;
+    _lines.addAll(text.split('\n'));
+    if (_lines.length > _scrollbackLimit) {
+      _lines.removeRange(0, _lines.length - _scrollbackLimit);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (scroll.hasClients) scroll.jumpTo(scroll.position.maxScrollExtent);
     });
@@ -74,11 +97,17 @@ class TerminalPageState extends State<TerminalPage> {
     final command = (cmd ?? input.text).trim();
     if (command.isEmpty || running) return;
     if (command == 'clear') {
-      out.clear();
+      _lines.clear();
+      _showAll = false;
       input.clear();
+      setState(() {});
       return;
     }
-    setState(() => running = true);
+    setState(() {
+      running = true;
+      _lastError = null;
+      _lastErrorCommand = null;
+    });
     if (input.text.isNotEmpty) {
       history.insert(0, command);
       historyIndex = -1;
@@ -91,8 +120,55 @@ class TerminalPageState extends State<TerminalPage> {
       _append('[exit ${r.exit}]');
     } catch (e) {
       _append('error: $e');
+      if (mounted) {
+        setState(() {
+          _lastError = '$e';
+          _lastErrorCommand = command;
+        });
+      }
     }
     if (mounted) setState(() => running = false);
+  }
+
+  /// The scrollback well, capped to the newest [_visibleLines] until the user
+  /// asks for the rest. Building a single Text from the whole buffer made a
+  /// long-running shell progressively slower to paint.
+  Widget _buildOutput(BuildContext context) {
+    final total = _lines.length;
+    final truncated = total > _visibleLines;
+    final start = (!truncated || _showAll) ? 0 : total - _visibleLines;
+    final visible = _lines.sublist(start).join('\n');
+    return Column(
+      children: [
+        if (truncated)
+          Padding(
+            padding: const EdgeInsets.only(top: OCSpace.xs),
+            child: TextButton.icon(
+              onPressed: () => setState(() => _showAll = !_showAll),
+              icon: Icon(
+                _showAll ? Icons.expand_less : Icons.expand_more,
+                size: 15,
+              ),
+              label: Text(
+                _showAll ? S.showLess : S.showMore,
+                style: OCTypography.micro,
+              ),
+            ),
+          ),
+        Expanded(
+          child: SingleChildScrollView(
+            controller: scroll,
+            padding: const EdgeInsets.all(OCSpace.md),
+            child: wrap
+                ? Text(visible, style: _terminalStyle(context))
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Text(visible, style: _terminalStyle(context)),
+                  ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -173,7 +249,7 @@ class TerminalPageState extends State<TerminalPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             clipBehavior: Clip.antiAlias,
-            child: out.text.isEmpty
+            child: _lines.isEmpty
                 ? Center(
                     child: Text(
                       S.terminalEmpty,
@@ -184,21 +260,51 @@ class TerminalPageState extends State<TerminalPage> {
                       ),
                     ),
                   )
-                : SingleChildScrollView(
-                    controller: scroll,
-                    padding: const EdgeInsets.all(OCSpace.md),
-                    child: wrap
-                        ? Text(out.text, style: _terminalStyle(context))
-                        : SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              out.text,
-                              style: _terminalStyle(context),
-                            ),
-                          ),
-                  ),
+                : _buildOutput(context),
           ),
         ),
+        if (_lastError != null)
+          Container(
+            margin: const EdgeInsets.fromLTRB(
+              OCSpace.sm,
+              0,
+              OCSpace.sm,
+              OCSpace.xs,
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              OCSpace.md,
+              OCSpace.xs,
+              OCSpace.sm,
+              OCSpace.xs,
+            ),
+            decoration: BoxDecoration(
+              color: context.oc.errSoft,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, size: 15, color: context.oc.err),
+                const SizedBox(width: OCSpace.sm),
+                Expanded(
+                  child: Text(
+                    _lastError!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: OCTypography.micro.copyWith(color: context.oc.err),
+                  ),
+                ),
+                TextButton(
+                  onPressed: running
+                      ? null
+                      : () => _run(_lastErrorCommand ?? ''),
+                  child: Text(
+                    S.retry,
+                    style: OCTypography.micro.copyWith(color: context.oc.err),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (running) const OCProgressBar(value: 1, height: 4, animate: false),
         Container(
           decoration: BoxDecoration(

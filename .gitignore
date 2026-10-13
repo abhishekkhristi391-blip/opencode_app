@@ -19,3 +19,5 @@ android/app/release/
 *.log
 config.json
 graphify-out/
+__pycache__/
+*.pyc

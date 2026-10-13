@@ -112,7 +112,10 @@ extension OcStoreCache on OcStore {
   /// than throwing: a broken cache must never block opening a session.
   Future<List<ChatMessage>> _cachedHistory(String id) async {
     try {
-      final rows = await ChatDB.instance.loadMessages(id);
+      final rows = await ChatDB.instance.loadMessages(
+        id,
+        limit: OcStore.pageLimit,
+      );
       return rows
           .map(
             (r) => ChatMessage(

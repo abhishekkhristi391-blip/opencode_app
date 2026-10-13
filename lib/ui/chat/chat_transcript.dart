@@ -30,6 +30,7 @@ class _ChatMessages extends StatelessWidget {
   final bool Function(ScrollNotification) onNotification;
   final VoidCallback onJump;
   final Future<void> Function(OcStore) onLoadOlder;
+  final Future<void> Function(OcStore) onRetry;
   final void Function(String) onPickSuggestion;
 
   const _ChatMessages({
@@ -39,6 +40,7 @@ class _ChatMessages extends StatelessWidget {
     required this.onNotification,
     required this.onJump,
     required this.onLoadOlder,
+    required this.onRetry,
     required this.onPickSuggestion,
   });
 
@@ -66,6 +68,13 @@ class _ChatMessages extends StatelessWidget {
       return const OCSkeletonList(rows: 6, semanticLabel: S.chatLoading);
     }
     if (messages.isEmpty) {
+      final error = store.sessionError;
+      // A failed open must not masquerade as a brand-new chat: the Welcome hero
+      // belongs to a session that genuinely has no turns, not one that could
+      // not be read.
+      if (error != null) {
+        return _TranscriptError(message: error, onRetry: () => onRetry(store));
+      }
       return _Welcome(store, onPick: onPickSuggestion);
     }
 
@@ -244,6 +253,30 @@ class _JumpToLatest extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------
+
+/// Full-transcript error state, shown when a session could not be opened at
+/// all (as opposed to a single turn failing, which keeps [_InlineError]).
+class _TranscriptError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _TranscriptError({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return EmptyHint(
+      icon: Icons.cloud_off,
+      title: S.connectionFailedTitle,
+      message: message,
+      action: OCButton(
+        onPressed: onRetry,
+        icon: Icons.refresh,
+        label: S.retry,
+        variant: OCButtonVariant.secondaryPill,
+        expand: true,
+      ),
+    );
+  }
+}
 
 class _LoadOlderButton extends StatelessWidget {
   final VoidCallback onTap;

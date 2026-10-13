@@ -65,6 +65,7 @@ class _FileTile extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onMenu;
   const _FileTile({
+    super.key,
     required this.node,
     required this.onOpen,
     required this.onMenu,

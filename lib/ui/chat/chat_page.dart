@@ -260,6 +260,14 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
+  /// Re-opens the current session after a failed load, so the transcript's
+  /// error state has a way back.
+  Future<void> _retryOpenSession(OcStore store) async {
+    final id = store.current?.id;
+    if (id == null) return;
+    await store.openSession(id);
+  }
+
   /// Runs after every store notification: decides whether the tail should
   /// move. Never called per token — [OcStore] already coalesces notifications
   /// to ~16/s, and [_queueAutoScroll] collapses whatever is left to one jump
@@ -323,6 +331,7 @@ class _ChatPageState extends State<ChatPage> {
             onNotification: _handleNotification,
             onJump: _jumpToLatest,
             onLoadOlder: _loadOlderMessages,
+            onRetry: _retryOpenSession,
             onPickSuggestion: _sendSuggestion,
           ),
         ),

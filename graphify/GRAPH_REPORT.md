@@ -1,18 +1,19 @@
 # GRAPH REPORT
-107 files, 1033 symbols, 2078 edges (1200 EXTRACTED, 878 INFERRED)
+111 files, 1055 symbols, 2142 edges (1231 EXTRACTED, 911 INFERRED)
 
 ## God nodes (most connected = riskiest to edit)
 - LIcon (class) - 22 links - lib/ui/line_icons/line_icons_widgets.dart:158
 - read (function) - 19 links - lib/ui/app_scope.dart:17
-- mono (function) - 19 links - lib/ui/theme/theme_radius_typography.dart:284
 - read (function) - 19 links - lib/voice/voice_scope.dart:26
+- asMap (function) - 18 links - lib/models/models/models_session_message.dart:3
 - OCIconTile (class) - 18 links - lib/ui/primitives/primitives_cells_controls.dart:58
+- mono (function) - 18 links - lib/ui/theme/theme_radius_typography.dart:284
 - showSnack (function) - 18 links - lib/ui/widgets/widgets_navigation_feedback.dart:131
 - notifyListeners (function) - 17 links - lib/state/store/store_ocstore.dart:167
-- asMap (function) - 16 links - lib/models/models/models_session_message.dart:3
+- OCButton (class) - 15 links - lib/ui/primitives/primitives_buttons_cards.dart:94
 
 ## Communities (modules that talk to each other)
-1. 30 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...
+1. 34 files: lib/api/client.dart, lib/api/events.dart, lib/db/chat_db.dart, lib/l10n/strings.dart, lib/main.dart ...
 
 ## Folder dependencies (who imports whom)
 - lib/ui -> lib/l10n  (15 imports)
@@ -44,7 +45,7 @@
 - lib/state/store/store_ocstore_view_state.dart
 - lib/state/store/store_ocstore_workspace.dart
 - lib/state/store/store_types.dart
-- lib/ui/chat/chat_agent_sheets.dart
+- lib/ui/buddy_avatar.dart
 
 ## Issues / suspicious spots
 - none

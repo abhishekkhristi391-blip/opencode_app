@@ -195,7 +195,8 @@ extension OcStoreWorkspace on OcStore {
       mcp = await api.mcp();
       _toast(S.added(name));
     } on ApiException catch (e) {
-      _toast(e.message);
+      // Don't show toast here if we might handle it elsewhere - but let it bubble
+      rethrow;
     }
     notifyListeners();
   }
